@@ -1,0 +1,14 @@
+../Core/Src/bluetooth.c:29:14:AtParsing_Ble	3
+../Core/Src/bluetooth.c:48:8:SerializeString_Ble	1
+../Core/Src/bluetooth.c:57:8:SerializeString2	1
+../Core/Src/bluetooth.c:66:6:serialEvent_Ble	5
+../Core/Src/bluetooth.c:111:14:SendATreply_Ble	3
+../Core/Src/bluetooth.c:144:6:SetUpBluetooth_Ble	3
+../Core/Src/bluetooth.c:157:6:ConfigBLE_Ble	16
+../Core/Src/bluetooth.c:265:6:ChangeBaud_Ble	1
+../Core/Src/bluetooth.c:273:6:GetParamBluetooth_Ble	5
+../Core/Src/bluetooth.c:299:6:TransmitReceive_Ble	37
+../Core/Src/bluetooth.c:443:6:Read_Inpunts_ble	5
+../Core/Src/bluetooth.c:468:6:WaitSerAnsw_Ble_func	1
+../Core/Src/bluetooth.c:474:6:grabacion_exitosa_handshake	1
+../Core/Src/bluetooth.c:480:6:manda_transmision	1

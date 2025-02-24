@@ -1,0 +1,8 @@
+../Core/Src/temper.c:53:6:temper	64
+../Core/Src/temper.c:788:6:linealiza	7
+../Core/Src/temper.c:906:6:mult1x2	1
+../Core/Src/temper.c:931:6:capturaAD	3
+../Core/Src/temper.c:947:6:wise_hot_rep	1
+../Core/Src/temper.c:959:6:Y_A	1
+../Core/Src/temper.c:965:6:Bset_Clear_trfst	1
+../Core/Src/temper.c:972:6:Bclear_Clear_trfst	1

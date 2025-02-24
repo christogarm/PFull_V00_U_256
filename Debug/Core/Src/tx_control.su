@@ -1,0 +1,17 @@
+../Core/Src/tx_control.c:27:6:tx_control	72	static,ignoring_inline_asm
+../Core/Src/tx_control.c:3024:6:prepTXlogg_2	16	static
+../Core/Src/tx_control.c:3091:6:tx_control_write_firm	8	static
+../Core/Src/tx_control.c:3101:6:rx_firmware	48	static
+../Core/Src/tx_control.c:3308:6:graba_bloque_fw	40	static
+../Core/Src/tx_control.c:3364:6:borra_pagina_logger	32	static
+../Core/Src/tx_control.c:3395:6:bloc_fin_comu	24	static
+../Core/Src/tx_control.c:3409:6:bloq_transmi_header	24	static
+../Core/Src/tx_control.c:3429:6:buffer_Tx_control_copy	24	static
+../Core/Src/tx_control.c:3444:6:Bloq_logger_correct	8	static
+../Core/Src/tx_control.c:3451:6:Bloq_logger_correct_tx	8	static
+../Core/Src/tx_control.c:3457:6:Termination_WIFICOM	16	static
+../Core/Src/tx_control.c:3465:6:Wifi_Buffer_Trans	16	static
+../Core/Src/tx_control.c:3478:6:Wifi_Buffer_Trans2	16	static
+../Core/Src/tx_control.c:3517:6:recepcion_inc_bloq_fw	16	static
+../Core/Src/tx_control.c:3542:6:compare_chksum_func	24	static
+../Core/Src/tx_control.c:3551:6:BloqDatalooger_Incorrect	8	static

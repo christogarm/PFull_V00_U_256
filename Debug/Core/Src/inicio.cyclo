@@ -1,0 +1,3 @@
+../Core/Src/inicio.c:8:6:inicio	9
+../Core/Src/inicio.c:180:6:timeBCD_to_UNIX	1
+../Core/Src/inicio.c:225:9:BCDtoByte	1

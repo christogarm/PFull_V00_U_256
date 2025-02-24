@@ -1,0 +1,9 @@
+../Core/Src/ModbusRTU.c:39:9:serialEvent_RS485	5
+../Core/Src/ModbusRTU.c:81:8:SerializeDMAArray_RS485	1
+../Core/Src/ModbusRTU.c:103:17:crc16_update	3
+../Core/Src/ModbusRTU.c:124:6:Modbus_ModbusSalave	1
+../Core/Src/ModbusRTU.c:145:6:ModbusMaster_begin	1
+../Core/Src/ModbusRTU.c:169:9:ModbusSlave_setTransmitBuffer	2
+../Core/Src/ModbusRTU.c:195:7:ModbusSlaveTransaction	7
+../Core/Src/ModbusRTU.c:252:7:ModbusSlaveExceptionTransaction	2
+../Core/Src/ModbusRTU.c:292:10:ModbusSlavePool	12

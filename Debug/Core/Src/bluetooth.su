@@ -1,0 +1,14 @@
+../Core/Src/bluetooth.c:29:14:AtParsing_Ble	32	static
+../Core/Src/bluetooth.c:48:8:SerializeString_Ble	32	static,ignoring_inline_asm
+../Core/Src/bluetooth.c:57:8:SerializeString2	32	static,ignoring_inline_asm
+../Core/Src/bluetooth.c:66:6:serialEvent_Ble	16	static,ignoring_inline_asm
+../Core/Src/bluetooth.c:111:14:SendATreply_Ble	48	static
+../Core/Src/bluetooth.c:144:6:SetUpBluetooth_Ble	8	static
+../Core/Src/bluetooth.c:157:6:ConfigBLE_Ble	16	static,ignoring_inline_asm
+../Core/Src/bluetooth.c:265:6:ChangeBaud_Ble	16	static
+../Core/Src/bluetooth.c:273:6:GetParamBluetooth_Ble	24	static
+../Core/Src/bluetooth.c:299:6:TransmitReceive_Ble	16	static,ignoring_inline_asm
+../Core/Src/bluetooth.c:443:6:Read_Inpunts_ble	8	static
+../Core/Src/bluetooth.c:468:6:WaitSerAnsw_Ble_func	16	static
+../Core/Src/bluetooth.c:474:6:grabacion_exitosa_handshake	8	static
+../Core/Src/bluetooth.c:480:6:manda_transmision	8	static

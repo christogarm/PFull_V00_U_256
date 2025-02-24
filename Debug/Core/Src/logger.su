@@ -1,0 +1,3 @@
+../Core/Src/logger.c:10:6:logger	8	static
+../Core/Src/logger.c:358:6:load_event	8	static
+../Core/Src/logger.c:402:6:load_buffer_logger	24	static,ignoring_inline_asm

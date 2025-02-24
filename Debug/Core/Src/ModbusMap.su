@@ -1,0 +1,3 @@
+../Core/Src/ModbusMap.c:13:13:MacStringtoHex	16	static
+../Core/Src/ModbusMap.c:72:8:ReadHoldingRegistersFunctionRev	32	static
+../Core/Src/ModbusMap.c:94:6:ModbusMap	16	static,ignoring_inline_asm

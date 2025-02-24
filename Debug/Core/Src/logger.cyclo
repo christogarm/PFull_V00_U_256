@@ -1,0 +1,3 @@
+../Core/Src/logger.c:10:6:logger	23
+../Core/Src/logger.c:358:6:load_event	2
+../Core/Src/logger.c:402:6:load_buffer_logger	4
