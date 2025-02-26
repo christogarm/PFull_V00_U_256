@@ -13,6 +13,8 @@
 #include "customMain.h"
 #include "ModbusRTU.h"
 #include "temper.h"
+#include "ELTEC_EmulatedEEPROM.h"
+
 
 uint32_t    cksum_aux = 0;
 uint32_t    chksumFirm = 0;
@@ -669,10 +671,11 @@ tx_control_parameters:
 	//	; carga parametross eeprom al buffer a transmitir
 	//	;Indica direcciones iniciales de datos a copiar y cantidad de datos (X origen, Y destino, wreg tamaño)
 	//	;copia los datos al buffer de tx
-		point_X = &eePlantilla[eedato_seg1];	 // ldw		X,#softVersion1
+		//point_X = &eePlantilla[eedato_seg1];	 // ldw		X,#softVersion1
 		point_Y = &bufferTxControl[8];	 //
 		for(uint8_t i = 0; i < 128 ; i++ )
-			point_Y[i] = point_X[i];
+			//point_Y[i] = point_X[i];
+			point_Y[i] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[i]);
 
 		chksum_32_HW_LW = 0;					// limpia registros de checksum
 
@@ -706,12 +709,14 @@ tx_control_writeParam:
 		//28-oct-2024 RGM:		uint8_t *point_Y;
 
 verifica_version1:
-			if (RxBuffer_Ble[125] == eePlantilla[eeversion1]){
+			//if (RxBuffer_Ble[125] == eePlantilla[eeversion1]){
+			if (RxBuffer_Ble[125] == findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1])){
 				goto 	verifica_version2;		//jreq	verifica_version2
 			}
 			goto	no_writeParam;				//jp		no_writeParam
 verifica_version2:
-			if(RxBuffer_Ble[126] == eePlantilla[eeversion2]){
+			//if(RxBuffer_Ble[126] == eePlantilla[eeversion2]){
+			if (RxBuffer_Ble[126] == findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2])){
 				goto 	verifica_version3;		//jreq	verifica_version3
 			}
 			goto	no_writeParam;				//jp		no_writeParam
@@ -2014,8 +2019,10 @@ tx_wifi_timeLogger:
 		bufferWifiTx[1] = 0x85;
 		// ; carga versión de firmware
 		// ldw		X,eeversion1
-		bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
-		bufferWifiTx[3] = eePlantilla[eeversion2];
+//		bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
+//		bufferWifiTx[3] = eePlantilla[eeversion2];
+		bufferWifiTx[2] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
+		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 		// ; carga hora actual
 		// ldw		X,timeSeconds_HW
 		bufferWifiTx[4] = (uint8_t) ((timeSeconds_HW & 0xFF00)>>8);// ldw		bufferWifiTx+4,X
@@ -2135,9 +2142,10 @@ tx_wifi_timeLogger_04:
 		bufferWifiTx[2] = 3;// mov		bufferWifiTx+2,#3
 		// ; carga versión de firmware
 		// ldw		X,eeversion1
-		bufferWifiTx[3] = eePlantilla[eeversion1];	// ldw		bufferWifiTx+3,X
-		bufferWifiTx[4] = eePlantilla[eeversion2];
-
+		//bufferWifiTx[3] = eePlantilla[eeversion1];	// ldw		bufferWifiTx+3,X
+		//bufferWifiTx[4] = eePlantilla[eeversion2];
+		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
+		bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 tx_wifi_timeLogger_loadLogger_01:
 
 		/* ; Si el contador de bytes loggeado viene en cero quiere decir que ya no hay información en el bloque actual de 128 bytes
@@ -2283,9 +2291,10 @@ tx_wifi_eventDelayAsk:
 		bufferWifiTx[1] = 0x86;
 		//; carga versión de firmware
 		// ldw		X,eeversion1
-		bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
-		bufferWifiTx[3] = eePlantilla[eeversion2];
-
+		//bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
+		//bufferWifiTx[3] = eePlantilla[eeversion2];
+		bufferWifiTx[2] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
+		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 		//; carga hora actual
 		// ldw		X,timeSeconds_HW
 		bufferWifiTx[4] = (uint8_t) ((timeSeconds_HW & 0xFF00)>>8); // ldw		bufferWifiTx+4,X
@@ -2401,9 +2410,10 @@ tx_wifi_eventLogger_04:
 		bufferWifiTx[2] = 3;// mov		bufferWifiTx+2,#3
 		//; carga versión de firmware
 		// ldw		X,eeversion1
-		bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
-		bufferWifiTx[4] = eePlantilla[eeversion2];
-
+		//bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
+		//bufferWifiTx[4] = eePlantilla[eeversion2];
+		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
+		bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 tx_wifi_eventLogger_loadLogger_01:
 
 		//; Si el contador de bytes loggeado viene en cero quiere decir que ya no hay información en el bloque actual de 128 bytes
@@ -2516,8 +2526,10 @@ ask_DE_start_01_WF:
 		// ldw		X,#$4082
 		BloqEventPuerta[comandoEP_2] = 0x40;// ldw		comandoEP,X
 		BloqEventPuerta[comandoEP_1] = 0x82;
-		BloqEventPuerta[softVersion1EP] = eePlantilla[eeversion1];// mov		softVersion1EP,eeversion1
-		BloqEventPuerta[softVersion2EP] = eePlantilla[eeversion2];
+		//BloqEventPuerta[softVersion1EP] = eePlantilla[eeversion1];// mov		softVersion1EP,eeversion1
+		//BloqEventPuerta[softVersion2EP] = eePlantilla[eeversion2];
+		BloqEventPuerta[softVersion1EP] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
+		BloqEventPuerta[softVersion2EP] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 		// mov		softVersion2EP,eeversion2
 
 		// ldw		X,timeSeconds_HW
@@ -2586,8 +2598,10 @@ ask_CE_start_01_WF:
 		// ldw		X,#$4082
 		BloqEventComp[comandoEC_2] = 0x40;// ldw		comandoEC,X
 		BloqEventComp[comandoEC_1] = 0x82;
-		BloqEventComp[softVersion1EC] = eePlantilla[eeversion1];// mov		softVersion1EC,eeversion1
-		BloqEventComp[softVersion2EC] = eePlantilla[eeversion2];// mov		softVersion2EC,eeversion2
+//		BloqEventComp[softVersion1EC] = eePlantilla[eeversion1];// mov		softVersion1EC,eeversion1
+//		BloqEventComp[softVersion2EC] = eePlantilla[eeversion2];// mov		softVersion2EC,eeversion2
+		BloqEventComp[softVersion1EC] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
+		BloqEventComp[softVersion2EC] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 
 		// ldw		X,timeSeconds_HW
 		// ldw		EC_timeInit_HW,X
@@ -2657,9 +2671,10 @@ ask_DhE_start_WF:
 		// ldw		comandoED,X
 		//mov		softVersion1ED,eeversion1
 		// mov		softVersion2ED,eeversion2
-		BloqEventDesh[softVersion1ED] = eePlantilla[eeversion1];
-		BloqEventDesh[softVersion2ED] = eePlantilla[eeversion2];
-
+//		BloqEventDesh[softVersion1ED] = eePlantilla[eeversion1];
+//		BloqEventDesh[softVersion2ED] = eePlantilla[eeversion2];
+		BloqEventDesh[softVersion1ED] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
+		BloqEventDesh[softVersion2ED] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 		// ldw		X,timeSeconds_HW
 		// ldw		ED_timeInit_HW,X
 		// ldw		X,timeSeconds_LW
@@ -2736,8 +2751,11 @@ power_event_end_01_WF:
 		BloqEventPwrOn[comandoEPo_2] = 0x40;
 		BloqEventPwrOn[comandoEPo_1] = 0x82;
 
-		BloqEventPwrOn[softVersion1EPo] = eePlantilla[eeversion1];
-		BloqEventPwrOn[softVersion1EPo] = eePlantilla[eeversion2];
+//		BloqEventPwrOn[softVersion1EPo] = eePlantilla[eeversion1];
+//		BloqEventPwrOn[softVersion2EPo] = eePlantilla[eeversion2];
+
+		BloqEventPwrOn[softVersion1EPo] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
+		BloqEventPwrOn[softVersion2EPo] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 
 		// ldw		X,timeSeconds_HW
 		// ldw		EPo_timeInit_HW,X
@@ -2805,8 +2823,10 @@ tx_wifiEvent:
 		bufferWifiTx[2] = 3;// mov		bufferWifiTx+2,#3
 		// ; carga versión de firmware
 		// ldw		X,eeversion1
-		bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
-		bufferWifiTx[4] = eePlantilla[eeversion2];
+//		bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
+//		bufferWifiTx[4] = eePlantilla[eeversion2];
+		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
+		bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);;
 		// ;Indica direcciones iniciales de datos a copiar y cantidad de datos (X origen, Y destino, wreg tamaño)
 		// ;copia los datos al buffer de tx
 		// ldw		X,pointTx
@@ -2940,9 +2960,11 @@ noFlag_Aux_TD:
 		// ; manda cantidad de datos de 2 bytes en la Tx
 		bufferWifiTx[2] = 7;// mov		bufferWifiTx+2,#7
 		//; carga versión de firmware
-		// ldw		X,eeversion1
-		bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
-		bufferWifiTx[4] = eePlantilla[eeversion2];
+//		// ldw		X,eeversion1
+//		bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
+//		bufferWifiTx[4] = eePlantilla[eeversion2];
+		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
+		bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 		//; carga tiempo
 		/*ldw		X,timeSeconds_HW
 		ldw		bufferWifiTx+5,X
@@ -3470,8 +3492,10 @@ void Wifi_Buffer_Trans(uint8_t Pos1, uint8_t Pos2)
 	bufferWifiTx[2] = Pos2;// mov		bufferWifiTx+2,#3
 	// ; carga versión de firmware
 	// ldw		X,eeversion1
-	bufferWifiTx[3] = eePlantilla[eeversion1];	// ldw		bufferWifiTx+3,X
-	bufferWifiTx[4] = eePlantilla[eeversion2];
+//	bufferWifiTx[3] = eePlantilla[eeversion1];	// ldw		bufferWifiTx+3,X
+//	bufferWifiTx[4] = eePlantilla[eeversion2];
+	bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
+	bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 
 }
 
@@ -3485,8 +3509,10 @@ void Wifi_Buffer_Trans2(uint8_t Pos2_2)
 	bufferWifiTx[1] = Pos2_2;
 	// ; carga versión de firmware
 	// ldw		X,eeversion1
-	bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
-	bufferWifiTx[3] = eePlantilla[eeversion2];
+//	bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
+//	bufferWifiTx[3] = eePlantilla[eeversion2];
+	bufferWifiTx[2] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
+	bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 	// ; carga hora actual
 	// ldw		X,timeSeconds_HW
 	bufferWifiTx[4] = (uint8_t) ((timeSeconds_HW & 0xFF00)>>8);// ldw		bufferWifiTx+4,X

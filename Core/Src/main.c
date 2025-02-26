@@ -26,6 +26,7 @@
 #include "customMain.h"
 #include "ModbusRTU.h"
 #include "stm32u0xx_hal_adc_ex.h"
+#include "ELTEC_EmulatedEEPROM.h"
 
 /* USER CODE END Includes */
 
@@ -715,7 +716,8 @@ _Bool Botones_T[8] = {0}; // uint8_t		Botones_T = 0;				//08/FEB/2022		DS.B 1 ;7
 
 // LN_833:	#pragma space extern [] @eeprom @near
 
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eePlantilla [128] = {
+
+__attribute__((section(".myBufSectionEEPROMP"))) uint8_t	eePlantilla [128] ={
 		[eedato_seg1]= 0xAA,										//uint8_t		eedato_seg1 = 0xAA;			//09/FEB/2022		DC.B	$AA	;	16384 d	4000 h	;Dato de seguridad 1
 
 		//;-------------------  GRUPO DE PAR�?METROS T (Temperatura)  -------------------------
@@ -847,33 +849,33 @@ __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eePlantilla [128] = {
 
 
 //		[128]=56, 										//uint8_t		eedato_string [512] = {0};		//RM_20220707 Espacio para que no se declaren juntas las variables de calibración
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t		eevolt_div = 0x4C; //64; 		//1;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t		eevolt_mul = 0x64; //100;	    // 1;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t		eef_voltaje = 0x3C;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t		eevolt_div = 0x4C; //64; 		//1;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t		eevolt_mul = 0x64; //100;	    // 1;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t		eef_voltaje = 0x3C;
 
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t eeEstado1 = 0x05;	//	uint8_t		eeEstado1 = 0x05;	// inicia con refrigerador encendido y lámpara encedida y cerradura en off
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeEstado1 = 0x05;	//	uint8_t		eeEstado1 = 0x05;	// inicia con refrigerador encendido y lámpara encedida y cerradura en off
 //		[133]=56, 										//uint8_t		eeEstado2 = 0;
 //		[134]=56, 										//uint8_t		eeEstado3 = 0;
 //		[135]=56, 										//uint8_t		eeEstado4 = 0;
 //
 //		[136]=56, 										//uint8_t		eedato_espacio_01 [8] = {0};
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t eeTimeUnix1 = 0;	//	uint8_t		eeTimeUnix1 = 0;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t eeTimeUnix2 = 0;	//	uint8_t		eeTimeUnix2 = 0;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t eeTimeUnix3 = 0;	//	uint8_t		eeTimeUnix3 = 0;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t eeTimeUnix4 = 0;	//	uint8_t		eeTimeUnix4 = 0;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeTimeUnix1 = 0;	//	uint8_t		eeTimeUnix1 = 0;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeTimeUnix2 = 0;	//	uint8_t		eeTimeUnix2 = 0;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeTimeUnix3 = 0;	//	uint8_t		eeTimeUnix3 = 0;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeTimeUnix4 = 0;	//	uint8_t		eeTimeUnix4 = 0;
 //		[141]=56, 										//uint8_t		eedato_espacio_02 [8] = {0};
 //
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLat1 = 1;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLat2 = 2;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLat3 = 3;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLat4 = 4;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLong1 = 5;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLong2 = 6;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLong3 = 7;
-__attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLong4 = 8;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLat1 = 1;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLat2 = 2;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLat3 = 3;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLat4 = 4;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLong1 = 5;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLong2 = 6;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLong3 = 7;
+__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLong4 = 8;
 //
-__attribute__((section(".myBufSectionEEPROM"))) uint16_t eeCntRegDATA = 0;	//
-__attribute__((section(".myBufSectionEEPROM"))) uint16_t eeCntRegEVENT = 0;	//
+__attribute__((section(".myBufSectionEEPROMV"))) uint16_t eeCntRegDATA = 0;	//
+__attribute__((section(".myBufSectionEEPROMV"))) uint16_t eeCntRegEVENT = 0;	//
 
 
 
@@ -2370,9 +2372,11 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	initEEPROMEmulated(); // Init EEPROM Emulated
 	timeRstBLE = 1;
 	inicio ();
 	ProcesosC = 6;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -2405,7 +2409,8 @@ int main(void)
   MX_FLASH_Init();
   /* USER CODE BEGIN 2 */
   Modbus_ModbusSalave ();
-  ModbusMaster_begin(eePlantilla[eeAddModBus]);		// Manuel 23-MAR-2022	ModbusMaster_begin(222);
+  //ModbusMaster_begin(eePlantilla[eeAddModBus]);		// Manuel 23-MAR-2022	ModbusMaster_begin(222);
+  ModbusMaster_begin((uint8_t)findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeAddModBus]));
   TR485_Trasnmiting = 0;					//17-DIC-2021		El dispositivo inicialmente escucha
   HAL_GPIO_WritePin(GPIOC, PFULLDEF_MAX485_DE_AND_RE_NEG, GPIO_PIN_RESET);      //17-DIC-2021 El Driver inicalmente Escucha
   /* USER CODE END 2 */

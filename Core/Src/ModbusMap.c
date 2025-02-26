@@ -7,7 +7,7 @@
 #include "customMain.h"
 #include "ModbusMap.h"
 #include "ModbusRTU.h"
-
+#include "ELTEC_EmulatedEEPROM.h"
 
 //-------------------------------------------------------
 static void MacStringtoHex(){
@@ -147,7 +147,8 @@ void ModbusMap(void){
 	MacStringtoHex();
 
 
-    DatosFirmware[0] =(uint16_t) ((eePlantilla[eeversion1]*256) + eePlantilla[eeversion2]);
+    //DatosFirmware[0] =(uint16_t) ((eePlantilla[eeversion1]*256) + eePlantilla[eeversion2]);
+	DatosFirmware[0] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1])*256 + findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
 
     //*********************************************************************************************
     //****************  Registros OXXO Control demo RW
@@ -172,16 +173,19 @@ void ModbusMap(void){
 			    asm ("nop");
 
 					PNU_0x3002 = 0;
-					if (eePlantilla[eeescala] == 32)									//Manuel 23-Mar-2023
+					//if (eePlantilla[eeescala] == 32)									//Manuel 23-Mar-2023
+					if(findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeescala]) == 32)
 					PNU_0x3002 = 1;
 
-					PNU_0x3004 = eePlantilla[eespdiur_H] * 256 + eePlantilla[eespdiur_L];    // eespdiur_w;       //Manuel 22-Mar-2022
+					//PNU_0x3004 = eePlantilla[eespdiur_H] * 256 + eePlantilla[eespdiur_L];    // eespdiur_w;       //Manuel 22-Mar-2022
+					PNU_0x3004 = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eespdiur_H]) * 256 + findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eespdiur_L]);
 
-					PNU_0x3006 = eePlantilla[eedifdiur_H] * 256 + eePlantilla[eedifdiur_L];	//eedifdiur_w;       //Manuel 23-Mar-2022
-
-					PNU_0x301E  = (uint16_t) eePlantilla[eeAddModBus];       //Manuel 23-MAR-2022
-
-				  PNU_0x3104 = (uint16_t) eePlantilla[eetimepa];     // Manuel 23/MAR/2022
+					//PNU_0x3006 = eePlantilla[eedifdiur_H] * 256 + eePlantilla[eedifdiur_L];	//eedifdiur_w;       //Manuel 23-Mar-2022
+					PNU_0x3006 = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eedifdiur_H]) * 256 + findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eedifdiur_L]);
+					//PNU_0x301E  = (uint16_t) eePlantilla[eeAddModBus];       //Manuel 23-MAR-2022
+					PNU_0x301E  = (uint16_t) findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeAddModBus]);
+				  //PNU_0x3104 = (uint16_t) eePlantilla[eetimepa];     // Manuel 23/MAR/2022
+					PNU_0x3104 = (uint16_t) findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetimepa]);
 
 				//---------------      Imbera Control solo de Lectura  --------------------------------------------
 				//---------------      Imbera Control solo de Lectura  --------------------------------------------
@@ -318,7 +322,8 @@ void ModbusMap(void){
 				if(_u16WriteAddress >= PNU_0x3002_AddressBegin && _u16WriteAddress <= PNU_0x3002_AddressEnd){    // Contador de prueba
 					PNU_0x3002 = lowByte(_u16WriteVal);
 					if (PNU_0x3002 == 1){
-						if((uint16_t) (eePlantilla[eeescala] == 32)){
+						//if((uint16_t) (eePlantilla[eeescala] == 32)){
+						if(findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeescala]) == 32){
 							asm ("nop");
 						}
 						else{
@@ -331,7 +336,8 @@ void ModbusMap(void){
 						}
 					}
 					if (PNU_0x3002 == 0){
-						if((uint16_t) (eePlantilla[eeescala] == 32)){
+						//if((uint16_t) (eePlantilla[eeescala] == 32)){
+						if(findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeescala]== 32)){
 							waux = 0;//mov			waux,#0;	/ Carga
 							// ldw			X,#eeescala; / Escribe en EEPROM
 							wreeprom(waux , &eePlantilla[eeescala]);// call		wreeprom

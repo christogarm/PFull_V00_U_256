@@ -55,9 +55,6 @@ Pfull_V00_U_256.list \
 OBJCOPY_HEX += \
 Pfull_V00_U_256.hex \
 
-OBJCOPY_SREC += \
-Pfull_V00_U_256.srec \
-
 
 # All Target
 all: main-build
@@ -86,17 +83,12 @@ Pfull_V00_U_256.hex: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-Pfull_V00_U_256.srec: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objcopy  -O srec $(EXECUTABLES) "Pfull_V00_U_256.srec"
-	@echo 'Finished building: $@'
-	@echo ' '
-
 # Other Targets
 clean:
-	-$(RM) Pfull_V00_U_256.elf Pfull_V00_U_256.hex Pfull_V00_U_256.list Pfull_V00_U_256.map Pfull_V00_U_256.srec default.size.stdout
+	-$(RM) Pfull_V00_U_256.elf Pfull_V00_U_256.hex Pfull_V00_U_256.list Pfull_V00_U_256.map default.size.stdout
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_HEX) $(OBJCOPY_SREC)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_HEX)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'

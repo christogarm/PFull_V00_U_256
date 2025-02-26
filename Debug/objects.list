@@ -1,3 +1,4 @@
+"./Core/Src/ELTEC_EmulatedEEPROM.o"
 "./Core/Src/ModbusMap.o"
 "./Core/Src/ModbusRTU.o"
 "./Core/Src/bluetooth.o"

@@ -9,6 +9,8 @@
 #include "bluetooth.h"
 
 
+#include "ELTEC_EmulatedEEPROM.h"
+
 _Bool WaitSerAnsw_Ble = 0;  					// bandera, esperando respuesta por el puerto serial
 _Bool receivecomplete_Ble = 0;					// recepcion completa DMA
 
@@ -142,7 +144,7 @@ static unsigned int  ParamItem = 1;
 static unsigned int  BaudRateTest = 1;
 
 void SetUpBluetooth_Ble(){
-	if (eePlantilla[eeFlagBLE] == 0){				// Mauel 09-dic-2021:	Si ya fue configurado "EEPROM VAR", jamas vuelve a llamar a configuracion ???
+	if (findLastValue((uint32_t *)Page_126,&eePlantilla[eeFlagBLE]) == 0){				// Mauel 09-dic-2021:	Si ya fue configurado "EEPROM VAR", jamas vuelve a llamar a configuracion ???
 		ConfigBLE_Ble ();
 	}
 	else{

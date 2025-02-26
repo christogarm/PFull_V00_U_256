@@ -2,6 +2,7 @@
 
 #include "main.h"
 #include "customMain.h"
+#include "ELTEC_EmulatedEEPROM.h"
 
 uint8_t BCDtoByte(uint8_t wreg_);
 
@@ -42,8 +43,8 @@ inicializa_comu:
 
 														//	ldw		X,#eeprotype				;// manuel_ apuntador para la eeprom
 														//	call	rdeeprom
-	Plantilla[protype] = eePlantilla[eeprotype];		//	mov    	protype,waux
-
+	//Plantilla[protype] = eePlantilla[eeprotype];		//	mov    	protype,waux
+	Plantilla[protype] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeprotype]);
 	voltl = 110;
 	if(Plantilla[protype] != 0x02){					// Protección de voltaje 220v?
 		goto no_ini_210;
@@ -65,7 +66,8 @@ no_ini_210:
 	Plantilla[dato_seg2] = 0x66;		//mov			dato_seg2,#$66
 	Plantilla[dato_seg3] = 0xCC;		//mov			dato_seg3,#$CC
 
-	cnt_pta_fan = eePlantilla[eetimepaf];			//mov			cnt_pta_fan,eetimepaf
+	//cnt_pta_fan = eePlantilla[eetimepaf];			//mov			cnt_pta_fan,eetimepaf
+	cnt_pta_fan = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetimepaf]);
 
 	load_tiempoAhorro1();		//call	load_tiempoAhorro1;				/ cada que se abre puerta vuelve a cargar tiempos de ahorro
 	load_tiempoAhorro2();		//call	load_tiempoAhorro2;

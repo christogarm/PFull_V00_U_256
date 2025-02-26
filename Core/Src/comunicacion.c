@@ -6,7 +6,7 @@
 #include "comunicacion.h"
 #include "customMain.h"
 #include "board_PFULLDEF.h"
-
+#include "ELTEC_EmulatedEEPROM.h"
 
 
 //*************************************************************************************************
@@ -277,7 +277,8 @@ noinc:
 	retLampOff=5;
 	cntHoldP= Plantilla[LD_b]; // Revisar esto el timeHoldP
 	retvent= 0x05;
-	if(eePlantilla[eetimepaf] != 0){ // // Se cambio a variable EEPROM porque no hay un refresco pronto en la RAM
+	//if(eePlantilla[eetimepaf] != 0){ // // Se cambio a variable EEPROM porque no hay un refresco pronto en la RAM
+	if(findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetimepaf])!= 0){
 		goto no_ld_timepaf;
 	}
 	//cnt_pta_fan= Plantilla[timepaf];

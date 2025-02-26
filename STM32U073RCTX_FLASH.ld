@@ -76,9 +76,14 @@ SECTIONS
   } >FLASH2
   
   /* The startup EEPROM */
-  .myBufSectionEEPROM 0x803F000:
+  .myBufSectionEEPROMP 0x803F000:
   {
-  	KEEP(*(.myBufSectionEEPROM))
+  	KEEP(*(.myBufSectionEEPROMP))
+  } >EEPROM
+  
+  .myBufSectionEEPROMV 0x803F800:
+  {
+  	KEEP(*(.myBufSectionEEPROMV))
   } >EEPROM
   
   .BOOTLOADER 0x801E800:

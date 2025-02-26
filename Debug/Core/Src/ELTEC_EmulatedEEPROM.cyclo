@@ -1,0 +1,7 @@
+../Core/Src/ELTEC_EmulatedEEPROM.c:17:6:erasePage	3
+../Core/Src/ELTEC_EmulatedEEPROM.c:38:6:writeFLASH	4
+../Core/Src/ELTEC_EmulatedEEPROM.c:51:6:initEEPROMEmulated	6
+../Core/Src/ELTEC_EmulatedEEPROM.c:106:10:findLastValue	2
+../Core/Src/ELTEC_EmulatedEEPROM.c:121:6:pushAddressData	1
+../Core/Src/ELTEC_EmulatedEEPROM.c:133:10:currentlyPoint	3
+../Core/Src/ELTEC_EmulatedEEPROM.c:148:6:FlashManager	7

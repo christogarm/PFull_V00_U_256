@@ -3,7 +3,7 @@
 #include "main.h"
 #include "customMain.h"
 #include "board_PFULLDEF.h"
-
+#include "ELTEC_EmulatedEEPROM.h"
 
 
 void refrigera (void){
@@ -400,9 +400,11 @@ indi_off:
 
            // MAN_paso 1 de indicacion parametros
 Indi_int:	 //mov			tempo2,interdh;	/ Muestra interdeshielo en horas
-             soloent (Plantilla [interdh]);	//call soloent		;	/ Muestra interdeshielo en horas
-             op_menu (eePlantilla [eeD1_Msg1], eePlantilla [eeD2_Msg1]);
-             //datdig1 = eePlantilla [eeD1_Msg1];		//"U"
+             //soloent (Plantilla [interdh]);	//call soloent		;	/ Muestra interdeshielo en horas
+			soloent (findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[interdh]));
+             //op_menu (eePlantilla [eeD1_Msg1], eePlantilla [eeD2_Msg1]);
+			op_menu (findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeD1_Msg1]) , findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeD2_Msg1]));
+			//datdig1 = eePlantilla [eeD1_Msg1];		//"U"
              //datdig2 = eePlantilla [eeD2_Msg1];		//"A"
              //datled = 0;			//clr	datled
              for(uint8_t k=0; k<8; k++){
@@ -413,10 +415,12 @@ Indi_int:	 //mov			tempo2,interdh;	/ Muestra interdeshielo en horas
 //------------------------------------------------------------------------
 Indi_time:
             //tempo2 = Plantilla[timedh];		//mov			tempo2,timedh;	/ Toma el tiempo de duración del deshielo en minutos
-            if(Plantilla[dhmode] != 1 ){  /// ¿El deshielo es por gas caliente?
-            	goto indica45;
+            //if(Plantilla[dhmode] != 1 ){  /// ¿El deshielo es por gas caliente?
+            if(findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[dhmode]) != 1){
+				goto indica45;
             }
-            soloent(Plantilla[timedh]);		//call soloent
+            //soloent(Plantilla[timedh]);		//call soloent
+            soloent( findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[timedh]) );
             datled[dp] = 1;					//;	/ Enciende el punto
             goto defindi;
 indica45:   // tempo1 = 0;
@@ -424,10 +428,12 @@ indica45:   // tempo1 = 0;
 
             //;cambia mensajes
             //A,eeprotype
-            if(eePlantilla[eeprotype] == 1){//cp A,#1
+            //if(eePlantilla[eeprotype] == 1){//cp A,#1
+            if(findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeprotype])){
             	goto indica_110v; //jreq indica_110v
             }
-            if(eePlantilla[eeprotype] == 2){
+            //if(eePlantilla[eeprotype] == 2){
+            if(findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeprotype]) == 2){
             	goto indica_220v; //jreq indica_220v
             }
 

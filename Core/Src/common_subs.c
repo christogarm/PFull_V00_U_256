@@ -3,6 +3,7 @@
 #include "main.h"
 #include "customMain.h"
 #include "temper.h"
+#include "ELTEC_EmulatedEEPROM.h"
 //#include "stm32l0xx_hal_flash_ex.h"
 
 uint16_t TwoByteInArrayToWord (uint8_t  *PointArray);
@@ -43,7 +44,7 @@ void  prog_param (void){
 copy_eeprom: //********************************?
 		//call rdeeprom
 		//ld A,waux
-		*Y = *X;	//ld (Y), A
+		*Y = (uint8_t) findLastValue((uint32_t *)Page_126,(uint32_t)X);	//ld (Y), A
 		X++;//incw X
 		Y++;//incw Y
 		if(Y <= &copiaPlantilla[cdato_seg3]){//cpw Y,#cdato_seg3
@@ -453,7 +454,8 @@ opc05m01nv2:
 opc06m01nv2:
 			//;mov			datdig1,#$0F;	"F"
 			//;mov			datdig2,#$27;	"U"
-			op_menu (eePlantilla[eeversion1], eePlantilla[eeversion2] / 10);
+			//op_menu (eePlantilla[eeversion1], eePlantilla[eeversion2] / 10);
+			op_menu  (findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]) , findLastValue((uint32_t *)Page_126,(uint32_t) &eePlantilla[eeversion2])/10);
 //			datdig1 = eePlantilla[eeversion1];//mov datdig1,eeversion1
 			//ldw X,eeversion2
 			//ld A,#10
@@ -659,7 +661,8 @@ noOffManto:
 		copiaPlantilla [cescala] = 0x20;//mov cescala,#$20
 noFahrenheitFlagDpy:
 		//	ld			A,cescala;
-		if(copiaPlantilla [cescala] == eePlantilla [eeescala] ){//	cp A,eeescala
+		//if(copiaPlantilla [cescala] == eePlantilla [eeescala] ){//	cp A,eeescala
+		if(copiaPlantilla [cescala] == findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeescala])){
 			goto noCambiaEscala;//	jreq noCambiaEscala
 		}
 		waux = copiaPlantilla [cescala];//	mov			waux,cescala;
@@ -1649,19 +1652,27 @@ GRABA_SIG:
 //			JRULE			GRABA_SIG
 
 			// Graba 128 Bytes  de Data Memory
-			for(uint8_t i = 0; i < 32 ; i++ ){
-				AddressDestination = dirPointer;
-			   	// Data = (uint32_t)(*dataPointer);
-
-				Data  =  (uint32_t)(*dataPointer);						dataPointer++;
-				Data  += ((uint32_t)(*dataPointer)) <<8;				dataPointer++;
-				Data  += ((uint32_t)(*dataPointer)) <<16;				dataPointer++;
-				Data  += ((uint32_t)(*dataPointer))  <<24;			   	dataPointer++;
-
-//				while( HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_WORD, AddressDestination, Data) !=  HAL_OK );		// HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
-			   	dirPointer +=4;
-				HAL_IWDG_Refresh( &hiwdg );				// evita time out watch
-				asm ("nop");
+//			for(uint8_t i = 0; i < 32 ; i++ ){
+//				AddressDestination = dirPointer;
+//			   	// Data = (uint32_t)(*dataPointer);
+//
+//				Data  =  (uint32_t)(*dataPointer);						dataPointer++;
+//				Data  += ((uint32_t)(*dataPointer)) <<8;				dataPointer++;
+//				Data  += ((uint32_t)(*dataPointer)) <<16;				dataPointer++;
+//				Data  += ((uint32_t)(*dataPointer))  <<24;			   	dataPointer++;
+//
+////				while( HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_WORD, AddressDestination, Data) !=  HAL_OK );		// HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
+//
+//				dirPointer +=4;
+//				HAL_IWDG_Refresh( &hiwdg );				// evita time out watch
+//				asm ("nop");
+//			}
+			HAL_IWDG_Refresh( &hiwdg );
+			for(uint8_t i = 0; i < 128 ; i++){
+				FlashManager((uint32_t *)Page_126, dirPointer, *dataPointer);
+				dataPointer++;
+				dirPointer++;
+				HAL_IWDG_Refresh( &hiwdg );
 			}
 
 
@@ -1702,7 +1713,8 @@ noOvfTIM4:
 //;  ----- _Rev STM32	CUBE IDE
 void load_tiempoAhorro1(){
 	uint16_t	foo = 0;
-	foo = eePlantilla[eetiempoAhorro1]*360;		//	mov			wreg,eetiempoAhorro1;	/ Toma el tiempo para entrar a Ahorro1
+	foo= findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetiempoAhorro1])*360;
+	//foo = eePlantilla[eetiempoAhorro1]*360;		//	mov			wreg,eetiempoAhorro1;	/ Toma el tiempo para entrar a Ahorro1
 													//	ldw			Y,#360;		/ Número de segundos por hora (entre 10)
 													//	;ldw			Y,#30;#60;		/ Número de segundos por minuto (para prueba solamente)
 													//	call		mult1x2;		/ Multiplicalos
@@ -1714,7 +1726,8 @@ void load_tiempoAhorro1(){
 //;  ----- _Rev STM32	CUBE IDE
 void load_tiempoAhorro2(){
 		uint16_t	foo = 0;
-		foo = eePlantilla[eetiempoAhorro2]*360;		//	mov			wreg,eetiempoAhorro2;	/ Toma el tiempo para entrar a Ahorro2
+		foo= findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetiempoAhorro2])*360;
+		//foo = eePlantilla[eetiempoAhorro2]*360;		//	mov			wreg,eetiempoAhorro2;	/ Toma el tiempo para entrar a Ahorro2
 														//	ldw			Y,#360;		/ Número de segundos por hora  (entre 10)
 														//	;ldw			Y,#30;#60;		/ Número de segundos por minuto (para prueba solamente)
 														//	call		mult1x2;		/ Multiplicalos
@@ -1724,7 +1737,8 @@ void load_tiempoAhorro2(){
 }
 
 void load_timeNoct(){
-	cntNoct_H = eePlantilla[eetimeNoct] * 60;
+	//cntNoct_H = eePlantilla[eetimeNoct] * 60;
+	cntNoct_H = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetimeNoct])*60;
 }
 
 //;=====================================================================
@@ -1979,7 +1993,8 @@ grabmemo:
 
 loaddat:
 			//call		rdeeprom;								// Toma el dato de la EEPROM
-			point_Y[cntmemo] = point_X[cntmemo]; 				// y cargalo a la RAM
+			//point_Y[cntmemo] = point_X[cntmemo]; 				// y cargalo a la RAM
+			point_Y[cntmemo] = findLastValue((uint32_t *)Page_126 , &eePlantilla[cntmemo]);
 nextdat:	cntmemo++;							// Para apuntar al siguiente dato
 			if(cntmemo < Fam_ID){
 				goto finmemodr;
@@ -2001,7 +2016,12 @@ void wreeprom (uint8_t Data8bit, uint32_t AddressDestination) {
 //	while( HAL_FLASHEx_DATAEEPROM_Unlock() != HAL_OK);
 //	while(HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data) != HAL_OK);
 //	HAL_FLASHEx_DATAEEPROM_Lock();
-
+	if(AddressDestination >= Page_127){
+		FlashManager((uint64_t *) Page_127, AddressDestination, Data);
+	}
+	else{
+		FlashManager((uint64_t *) Page_126, AddressDestination, Data);
+	}
 }
 
 void op_menu (uint8_t dig1, uint8_t dig2)
