@@ -717,7 +717,7 @@ _Bool Botones_T[8] = {0}; // uint8_t		Botones_T = 0;				//08/FEB/2022		DS.B 1 ;7
 // LN_833:	#pragma space extern [] @eeprom @near
 
 
-__attribute__((section(".myBufSectionEEPROMP"))) uint8_t	eePlantilla [128] ={
+__attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		[eedato_seg1]= 0xAA,										//uint8_t		eedato_seg1 = 0xAA;			//09/FEB/2022		DC.B	$AA	;	16384 d	4000 h	;Dato de seguridad 1
 
 		//;-------------------  GRUPO DE PAR�?METROS T (Temperatura)  -------------------------
@@ -838,7 +838,7 @@ __attribute__((section(".myBufSectionEEPROMP"))) uint8_t	eePlantilla [128] ={
 		//;------------------  Identificador y bytes disponibles  -----------------------
 		[eeparam_ID]=0, 										//uint8_t		eeparam_ID = 0;				//09/FEB/2022	    DC.B	0	;	16506 d	407A h	;B0 – Identificador de parámetros programados	00: fábrica, 01: teclado, XX: llave fija
 		[eeversion1]=00, 										//uint8_t	 eeversion1				=	00		;// versión 0.03
-		[eeversion2]=01, 										//uint8_t	 eeversion2	      =	20		;
+		[eeversion2]=06, 										//uint8_t	 eeversion2	      =	20		;
 		//uint8_t	 eeversion2	      =	02		;//RM_20230908 VFW 0.002 Ajuste en calibración y envio de MAC a llave
 		[eeplantilla1]=0, 										//uint8_t	 eeplantilla1     =	0			;
 		[eeplantilla2]=01, 										//uint8_t	 eeplantilla2	    =	10		;
@@ -849,33 +849,33 @@ __attribute__((section(".myBufSectionEEPROMP"))) uint8_t	eePlantilla [128] ={
 
 
 //		[128]=56, 										//uint8_t		eedato_string [512] = {0};		//RM_20220707 Espacio para que no se declaren juntas las variables de calibración
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t		eevolt_div = 0x4C; //64; 		//1;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t		eevolt_mul = 0x64; //100;	    // 1;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t		eef_voltaje = 0x3C;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_div = 0x4C; //64; 		//1;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_mul = 0x64; //100;	    // 1;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eef_voltaje = 0x3C;
 
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeEstado1 = 0x05;	//	uint8_t		eeEstado1 = 0x05;	// inicia con refrigerador encendido y lámpara encedida y cerradura en off
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t eeEstado1 = 0x05;	//	uint8_t		eeEstado1 = 0x05;	// inicia con refrigerador encendido y lámpara encedida y cerradura en off
 //		[133]=56, 										//uint8_t		eeEstado2 = 0;
 //		[134]=56, 										//uint8_t		eeEstado3 = 0;
 //		[135]=56, 										//uint8_t		eeEstado4 = 0;
 //
 //		[136]=56, 										//uint8_t		eedato_espacio_01 [8] = {0};
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeTimeUnix1 = 0;	//	uint8_t		eeTimeUnix1 = 0;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeTimeUnix2 = 0;	//	uint8_t		eeTimeUnix2 = 0;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeTimeUnix3 = 0;	//	uint8_t		eeTimeUnix3 = 0;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t eeTimeUnix4 = 0;	//	uint8_t		eeTimeUnix4 = 0;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t eeTimeUnix1 = 0;	//	uint8_t		eeTimeUnix1 = 0;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t eeTimeUnix2 = 0;	//	uint8_t		eeTimeUnix2 = 0;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t eeTimeUnix3 = 0;	//	uint8_t		eeTimeUnix3 = 0;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t eeTimeUnix4 = 0;	//	uint8_t		eeTimeUnix4 = 0;
 //		[141]=56, 										//uint8_t		eedato_espacio_02 [8] = {0};
 //
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLat1 = 1;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLat2 = 2;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLat3 = 3;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLat4 = 4;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLong1 = 5;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLong2 = 6;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLong3 = 7;
-__attribute__((section(".myBufSectionEEPROMV"))) uint8_t	eeLong4 = 8;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLat1 = 1;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLat2 = 2;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLat3 = 3;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLat4 = 4;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLong1 = 5;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLong2 = 6;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLong3 = 7;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLong4 = 8;
 //
-__attribute__((section(".myBufSectionEEPROMV"))) uint16_t eeCntRegDATA = 0;	//
-__attribute__((section(".myBufSectionEEPROMV"))) uint16_t eeCntRegEVENT = 0;	//
+__attribute__((section(".myBufSectionEEPROM_V"))) uint16_t eeCntRegDATA = 0;	//
+__attribute__((section(".myBufSectionEEPROM_V"))) uint16_t eeCntRegEVENT = 0;	//
 
 
 
@@ -1215,12 +1215,12 @@ uint8_t timeBCD_sec_ANT		= 0;
 
 // para reservar memoria Flash dedicada a Logger
 //#pragma section @near {eventLogger}
-__attribute__((section(".eventLogger"))) uint8_t eventLogger[20480-1] = {1,1,1,1,1,1,1,1,1};
+__attribute__((section(".eventLogger"))) uint8_t eventLogger[20480-1] = {0};
 __attribute__((section(".eventLogger"))) uint8_t eventLoggerFin = 0;
 
 
 //#pragma section @near {dataLogger}
-__attribute__((section(".dataLogger"))) uint8_t dataLogger[12288-1] = {1,1,1,1,1,1,1,1};
+__attribute__((section(".dataLogger"))) uint8_t dataLogger[12288-1] = {0};
 __attribute__((section(".dataLogger"))) uint8_t dataLoggerFin = 0;
 
 
@@ -2410,7 +2410,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   Modbus_ModbusSalave ();
   //ModbusMaster_begin(eePlantilla[eeAddModBus]);		// Manuel 23-MAR-2022	ModbusMaster_begin(222);
-  ModbusMaster_begin((uint8_t)findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeAddModBus]));
+  ModbusMaster_begin((uint8_t)findLastValue((uint32_t) &eePlantilla[eeAddModBus]));
   TR485_Trasnmiting = 0;					//17-DIC-2021		El dispositivo inicialmente escucha
   HAL_GPIO_WritePin(GPIOC, PFULLDEF_MAX485_DE_AND_RE_NEG, GPIO_PIN_RESET);      //17-DIC-2021 El Driver inicalmente Escucha
   /* USER CODE END 2 */
@@ -2673,16 +2673,19 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2);
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI
+                              |RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_8;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_11;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -2869,8 +2872,6 @@ static void MX_FLASH_Init(void)
 
   /* USER CODE END FLASH_Init 0 */
 
-  FLASH_OBProgramInitTypeDef pOBInit = {0};
-
   /* USER CODE BEGIN FLASH_Init 1 */
 
   /* USER CODE END FLASH_Init 1 */
@@ -2878,38 +2879,10 @@ static void MX_FLASH_Init(void)
   {
     Error_Handler();
   }
-
-  /* Option Bytes settings */
-
-  if (HAL_FLASH_OB_Unlock() != HAL_OK)
-  {
-    Error_Handler();
-  }
-  pOBInit.OptionType = OPTIONBYTE_WRP;
-  pOBInit.WRPArea = OB_WRPAREA_ZONE_A;
-  pOBInit.WRPStartOffset = 0;
-  pOBInit.WRPEndOffset = 31;
-  if (HAL_FLASHEx_OBProgram(&pOBInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  pOBInit.WRPArea = OB_WRPAREA_ZONE_B;
-  if (HAL_FLASHEx_OBProgram(&pOBInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_FLASH_OB_Lock() != HAL_OK)
-  {
-    Error_Handler();
-  }
   if (HAL_FLASH_Lock() != HAL_OK)
   {
     Error_Handler();
   }
-
-  /* Launch Option Bytes Loading */
-  /*HAL_FLASH_OB_Launch(); */
-
   /* USER CODE BEGIN FLASH_Init 2 */
 
 
@@ -3090,7 +3063,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 4000;
+  htim3.Init.Period = 12000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -3147,7 +3120,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 31;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 125;
+  htim6.Init.Period = 375;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {

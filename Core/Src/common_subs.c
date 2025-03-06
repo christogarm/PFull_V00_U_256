@@ -44,7 +44,7 @@ void  prog_param (void){
 copy_eeprom: //********************************?
 		//call rdeeprom
 		//ld A,waux
-		*Y = (uint8_t) findLastValue((uint32_t *)Page_126,(uint32_t)X);	//ld (Y), A
+		*Y = (uint8_t) findLastValue((uint32_t)X);	//ld (Y), A
 		X++;//incw X
 		Y++;//incw Y
 		if(Y <= &copiaPlantilla[cdato_seg3]){//cpw Y,#cdato_seg3
@@ -455,7 +455,7 @@ opc06m01nv2:
 			//;mov			datdig1,#$0F;	"F"
 			//;mov			datdig2,#$27;	"U"
 			//op_menu (eePlantilla[eeversion1], eePlantilla[eeversion2] / 10);
-			op_menu  (findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]) , findLastValue((uint32_t *)Page_126,(uint32_t) &eePlantilla[eeversion2])/10);
+			op_menu  (findLastValue((uint32_t) &eePlantilla[eeversion1]) , findLastValue((uint32_t) &eePlantilla[eeversion2])/10);
 //			datdig1 = eePlantilla[eeversion1];//mov datdig1,eeversion1
 			//ldw X,eeversion2
 			//ld A,#10
@@ -662,7 +662,7 @@ noOffManto:
 noFahrenheitFlagDpy:
 		//	ld			A,cescala;
 		//if(copiaPlantilla [cescala] == eePlantilla [eeescala] ){//	cp A,eeescala
-		if(copiaPlantilla [cescala] == findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeescala])){
+		if(copiaPlantilla [cescala] == findLastValue((uint32_t) &eePlantilla[eeescala])){
 			goto noCambiaEscala;//	jreq noCambiaEscala
 		}
 		waux = copiaPlantilla [cescala];//	mov			waux,cescala;
@@ -1270,7 +1270,7 @@ finconvad:
 //;en wreg esta el dato a convertir, y se regresa en waux las decenas y en wreg el residuo
 //;--------------------------------------------------------------------------------------------------
 //;  ----- _Rev STM32	CUBE IDE
-void	BaBentre10_math(){
+void	BaBentre10_math(void){
 		waux = 0;						//clr		 waux;    waux:wreg   ; solo trabaja sobre WREG
 		STM8_16_X = (uint16_t)wreg;
 		wreg =  (uint8_t)STM8_16_X%10;				// wreg el residuo
@@ -1283,7 +1283,7 @@ void	BaBentre10_math(){
 //;wreg y waux no sufern cambio
 //;¡¡¡¡¡¡OJO!!!!!!   NO QUITAR DE AQUI PORQUE ES CONTINUACIÓN DE LA RUTINA ANTERIOR
 //;  ----- Manuel_Rev
-void conv60_6_math () {
+void conv60_6_math (void) {
 	uint16_t  foo = 0;
 	foo = (uint16_t)(6 * wreg); 						// ldw     X,#$0006, Convierte el Byte de residuo a valor de cuenta
 	foo = foo + (uint16_t)(60* waux);		// Convierte el Byte de decenas a valor de cuenta
@@ -1669,7 +1669,7 @@ GRABA_SIG:
 //			}
 			HAL_IWDG_Refresh( &hiwdg );
 			for(uint8_t i = 0; i < 128 ; i++){
-				FlashManager((uint32_t *)Page_126, dirPointer, *dataPointer);
+				FlashManager((uint32_t)dirPointer, (uint32_t)*dataPointer);
 				dataPointer++;
 				dirPointer++;
 				HAL_IWDG_Refresh( &hiwdg );
@@ -1713,7 +1713,7 @@ noOvfTIM4:
 //;  ----- _Rev STM32	CUBE IDE
 void load_tiempoAhorro1(){
 	uint16_t	foo = 0;
-	foo= findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetiempoAhorro1])*360;
+	foo= findLastValue((uint32_t) &eePlantilla[eetiempoAhorro1])*360;
 	//foo = eePlantilla[eetiempoAhorro1]*360;		//	mov			wreg,eetiempoAhorro1;	/ Toma el tiempo para entrar a Ahorro1
 													//	ldw			Y,#360;		/ Número de segundos por hora (entre 10)
 													//	;ldw			Y,#30;#60;		/ Número de segundos por minuto (para prueba solamente)
@@ -1726,7 +1726,7 @@ void load_tiempoAhorro1(){
 //;  ----- _Rev STM32	CUBE IDE
 void load_tiempoAhorro2(){
 		uint16_t	foo = 0;
-		foo= findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetiempoAhorro2])*360;
+		foo= findLastValue((uint32_t) &eePlantilla[eetiempoAhorro2])*360;
 		//foo = eePlantilla[eetiempoAhorro2]*360;		//	mov			wreg,eetiempoAhorro2;	/ Toma el tiempo para entrar a Ahorro2
 														//	ldw			Y,#360;		/ Número de segundos por hora  (entre 10)
 														//	;ldw			Y,#30;#60;		/ Número de segundos por minuto (para prueba solamente)
@@ -1738,7 +1738,7 @@ void load_tiempoAhorro2(){
 
 void load_timeNoct(){
 	//cntNoct_H = eePlantilla[eetimeNoct] * 60;
-	cntNoct_H = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetimeNoct])*60;
+	cntNoct_H = findLastValue((uint32_t) &eePlantilla[eetimeNoct])*60;
 }
 
 //;=====================================================================
@@ -1776,7 +1776,7 @@ void	save_cntReg (){
 		//		ldw		resulh,X
 
 		uint32_t *point_X;
-		point_X = (uint32_t) (cntRegPNT);
+		point_X = (uint32_t *) (cntRegPNT);
 
 		waux = highByte(cntReg);			//		mov		waux,resulh;
 		//		ldw		X,cntRegPNT;
@@ -1994,7 +1994,7 @@ grabmemo:
 loaddat:
 			//call		rdeeprom;								// Toma el dato de la EEPROM
 			//point_Y[cntmemo] = point_X[cntmemo]; 				// y cargalo a la RAM
-			point_Y[cntmemo] = findLastValue((uint32_t *)Page_126 , &eePlantilla[cntmemo]);
+			point_Y[cntmemo] = findLastValue((uint32_t)&eePlantilla[cntmemo]);
 nextdat:	cntmemo++;							// Para apuntar al siguiente dato
 			if(cntmemo < Fam_ID){
 				goto finmemodr;
@@ -2016,12 +2016,7 @@ void wreeprom (uint8_t Data8bit, uint32_t AddressDestination) {
 //	while( HAL_FLASHEx_DATAEEPROM_Unlock() != HAL_OK);
 //	while(HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data) != HAL_OK);
 //	HAL_FLASHEx_DATAEEPROM_Lock();
-	if(AddressDestination >= Page_127){
-		FlashManager((uint64_t *) Page_127, AddressDestination, Data);
-	}
-	else{
-		FlashManager((uint64_t *) Page_126, AddressDestination, Data);
-	}
+	FlashManager((uint32_t)AddressDestination, (uint32_t)Data);
 }
 
 void op_menu (uint8_t dig1, uint8_t dig2)

@@ -7,6 +7,16 @@
 
 #include "ELTEC_EmulatedEEPROM.h"
 #include "customMain.h"
+#include <stdlib.h>
+
+/**
+  * @brief  Get Page
+  * @param  Adrress_: 	any Address in the Flash memory
+  * @retval Address the Page
+  */
+uint64_t getAddressPage(uint32_t Address_){
+	return ( (uint64_t) (Address_ & 0xFFFFF800) );
+}
 
 
 /**
@@ -35,11 +45,11 @@ void erasePage(uint32_t numberPage_){
   * @param  size_:			Amount of data to save
   * @retval None
   */
-void writeFLASH(uint64_t * Adrress_, uint64_t * arrayData_,uint8_t size_){
+void writeFLASH(uint64_t * Address_, uint64_t * arrayData_,uint8_t size_){
 	while( HAL_FLASH_Unlock() !=  HAL_OK );
 	for(uint8_t i =0; i<size_; i++){
-		HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t) Adrress_, arrayData_[i]);
-		Adrress_++;
+		HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t) Address_, arrayData_[i]);
+		Address_++;
 	}
 	while( HAL_FLASH_Lock() !=  HAL_OK);
 }
@@ -57,8 +67,8 @@ void initEEPROMEmulated(void){
 
 	// Init eePlantilla
 initEEPROM_P:
-	uint32_t * Flag_EEPROM = ((uint32_t *) Page_126)+1 ;
-	if(*Flag_EEPROM == (uint32_t) Page_126){
+	uint32_t * Flag_EEPROM = ((uint32_t *) Page_126)+1 ; //
+	if(*Flag_EEPROM == (uint32_t) Page_126){	// Verify Format Flash is correct
 		goto initEEPROM_V;
 	}
 	flagVar_ = 0;
@@ -69,7 +79,7 @@ initEEPROM_P:
 	// Init eeVariables
 initEEPROM_V:
 	Flag_EEPROM = ((uint32_t *) Page_127)+1 ;
-	if(*Flag_EEPROM == (uint32_t) Page_127){
+	if(*Flag_EEPROM == (uint32_t) Page_127){ // Verify Format Flash is correct
 		return;
 	}
 	varInit = (uint8_t *) Page_127;
@@ -91,10 +101,45 @@ newFormatFlash:
 	}
 	erasePage(Page_);
 	writeFLASH((uint64_t *) (Flag_EEPROM-1),pointArray_,size_);
-//	if(!flagVar_){
-//		flagVar_ = 1;
-//		goto initEEPROM_V;
-//	}
+	if(!flagVar_){
+		flagVar_ = 1;
+		goto initEEPROM_V;
+	}
+}
+
+/**
+  * @brief  Restart Flash Memory
+  * @param
+  * @retval
+  */
+void restartFlashMemory(void){
+	uint64_t arrayDataP_[sizeEEPROM_P] = {0};
+	uint64_t arrayDataV_[sizeEEPROM_V] = {0};
+
+	uint8_t * varInit = (uint8_t *) Page_126;
+	for(uint8_t i =0; i<sizeEEPROM_P; i++){
+		arrayDataP_[i] = ((uint64_t )(varInit) << 32);
+		varInit ++;
+	}
+
+	arrayDataP_[eedato_seg1] |= 0xAA;
+	arrayDataP_[eedato_seg2] |= 0x66;
+	arrayDataP_[eedato_seg3] |= 0xCC;
+	arrayDataP_[eeversion1] |= (uint32_t) versionFirm1;
+	arrayDataP_[eeversion2] |= (uint32_t) versionFirm2;
+
+	varInit = (uint8_t *) Page_127;
+	for(uint8_t i =0; i<sizeEEPROM_V; i++){
+		arrayDataV_[i] |= ((uint64_t )(varInit) << 32);
+		if( (varInit >= ((uint8_t * ) &eeCntRegDATA))){
+			varInit++;
+		}
+		varInit++;
+	}
+	erasePage(126);
+	erasePage(127);
+	writeFLASH((uint64_t *) (Page_126),&arrayDataP_[0],sizeEEPROM_P);
+	writeFLASH((uint64_t *) (Page_127),&arrayDataV_[0],sizeEEPROM_V);
 }
 
 /**
@@ -103,10 +148,18 @@ newFormatFlash:
   * @param	AddressValue_:		Address Variable
   * @retval Return AddressValue_'s Data
   */
-uint32_t findLastValue(uint32_t * AddressPage_,uint32_t AddressValue_){
+uint32_t findLastValue(uint32_t AddressValue_){
+	uint32_t * AddressPage_ = (uint32_t *) getAddressPage(AddressValue_);
 	uint32_t *pointValuex = AddressPage_ + SizePage_32Bits -1;
+	if(AddressPage_ < ((uint32_t *) 0x803F000) || AddressPage_ >= ((uint32_t *) 0x8040000)){ // Invalid Direction
+		return 0xFFFFFFFF;
+	}
 	while(*pointValuex != AddressValue_){
 		pointValuex -= 2;
+		if(pointValuex < AddressPage_){
+			restartFlashMemory();
+			return 0xFFFFFFFF;
+		}
 	}
 	return *(pointValuex-1);
 }
@@ -145,25 +198,26 @@ uint64_t currentlyPoint(uint64_t * AddressPage_){
   * @param	Value_:				Data
   * @retval None
   */
-void FlashManager(uint64_t * AddressPage_, uint32_t AddressValue_, uint32_t Value_){
+void FlashManager(uint32_t AddressValue_, uint32_t Value_){
 	_Bool flag_Page127 = 1;
 	uint8_t size_ = sizeEEPROM_V;
-	if(AddressPage_ == (uint64_t *) (Page_126)){
+	uint64_t * AddressPage_ = (uint64_t *) getAddressPage(AddressValue_);
+	if(AddressPage_ == (uint64_t *) (Page_126)){	// Is here Page 126?
 		flag_Page127 = 0;
 		size_ = sizeEEPROM_P;
 	}
 
 	// Manager Characteristics
-	uint64_t * managerPointInit = AddressPage_;
-	uint64_t * managerPoint =  (uint64_t *) currentlyPoint(AddressPage_);
-	uint64_t * managerPointEnd = managerPointInit + SizePage_64Bits -1;
+	uint64_t * managerPointInit = AddressPage_;									// Start Page
+	uint64_t * managerPoint =  (uint64_t *) currentlyPoint(AddressPage_);		// Current Point
+	uint64_t * managerPointEnd = managerPointInit + SizePage_64Bits -1;			// End Page
 
-	if((managerPoint - 1)== managerPointEnd){
+	if((managerPoint - 1)== managerPointEnd){	// Is here the End Page?
 		// Find the Last Values
 		uint32_t * arrayTemp = malloc(size_);
 		uint8_t * varInit = (uint8_t *) AddressPage_;
 		for(uint8_t i=0; i<size_; i++){
-			arrayTemp[i] = findLastValue((uint32_t *) AddressPage_,(uint32_t) varInit);
+			arrayTemp[i] = findLastValue((uint32_t) varInit);
 			varInit++;
 			if( (varInit > ((uint8_t * ) &eeCntRegDATA))&flag_Page127){
 				varInit++;
@@ -175,12 +229,12 @@ void FlashManager(uint64_t * AddressPage_, uint32_t AddressValue_, uint32_t Valu
 
 		erasePage(numberPage);
 
-		// Return the begin Page
+		// Return the begin Page in current Point
 
 		managerPoint = AddressPage_;
 		varInit =  (uint8_t *) AddressPage_;
 
-		// Write the new Values
+		// Write the new Values and its Addresses
 		for(uint8_t i=0; i<size_; i++){
 			pushAddressData(managerPoint,(uint32_t)varInit,arrayTemp[i]);
 			varInit++;

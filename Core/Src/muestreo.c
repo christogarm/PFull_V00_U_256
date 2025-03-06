@@ -5,7 +5,7 @@
 #include "board_PFULLDEF.h"
 #include "commonMainAsm.h"
 #include "customMain.h"
-
+#include "ELTEC_EmulatedEEPROM.h"
 
 //*************************************************************************************************
 void muestreo(void){
@@ -382,12 +382,14 @@ take_sampling:
 					//ld      A,eevolt_mul
 	                //eevolt_mul = waux * eevolt_mul;//mul     X,A ***************************????
 					uint16_t	foo = 0;
-					foo = (uint16_t)(wreg * eevolt_mul);
+					//foo = (uint16_t)(wreg * eevolt_mul);
+					foo = (uint16_t)(wreg * findLastValue((uint32_t)&eevolt_mul));
 					//resul = (uint16_t)(wreg * 100);
 					//ld      A,eevolt_div
 					//div     X,A
 	                //eevolt_div = waux / eevolt_div; //************************************?????
-					foo = foo / eevolt_div;
+					//foo = foo / eevolt_div;
+					foo = foo / findLastValue((uint32_t)&eevolt_div);
 					//resul = resul / 64;
 					//waux = eevolt_div; //ldw waux,X
 					//resulh = waux;//ldw resulh,X
@@ -620,8 +622,9 @@ square_ready:
 calibracion_voltaje:
 	        //ld A,eef_voltaje
 			asm ("nop");
-			if(eef_voltaje != 0x3C ){//cp A, #$3c					¿Esta calibrado en voltaje el equipo?
-				 goto realiza_cal_volt; //jrne realiza_cal_volt
+			//if(eef_voltaje != 0x3C ){//cp A, #$3c					¿Esta calibrado en voltaje el equipo?
+			if(findLastValue((uint32_t)&eef_voltaje)!= 0x3C){
+				goto realiza_cal_volt; //jrne realiza_cal_volt
 			}
 			goto fin_calibra_voltaje;
 
@@ -711,8 +714,10 @@ eeprom_desbloqueada:
 			//ld  A, wreg
 			//ldw  X, #eevolt_mul
 			// (eevolt_mul) = wreg; //ld (X), A
-			Data = (uint32_t)wreg;											//;Guarda la variable de multiplicación en EEPROM
-			AddressDestination = &eevolt_mul;
+			//Data = (uint32_t)wreg;											//;Guarda la variable de multiplicación en EEPROM
+			//AddressDestination = &eevolt_mul;
+			wreeprom(wreg,&eevolt_mul);
+
 //			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
 			HAL_IWDG_Refresh( &hiwdg );
 graba_1:
@@ -721,8 +726,9 @@ graba_1:
 			//ld  A,waux
 			 //ldw  X,#eevolt_div
 			 //ld	(X),A
-			Data = (uint32_t)waux;										//;Guarda la variable de división en EEPROM
-			AddressDestination = &eevolt_div;
+			//Data = (uint32_t)waux;										//;Guarda la variable de división en EEPROM
+			//AddressDestination = &eevolt_div;
+			wreeprom(waux,&eevolt_div);
 //			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
 			HAL_IWDG_Refresh( &hiwdg );
 graba_2:
@@ -731,9 +737,10 @@ graba_2:
 			// ld  A,#$3C
 			//ldw X,#eef_voltaje
 			//ld (X),A
-			Data = (uint32_t)0x3C;										//;Indica que ya se realizo calibración de voltaje en EEPROM
-			AddressDestination = &eef_voltaje;
+			//Data = (uint32_t)0x3C;										//;Indica que ya se realizo calibración de voltaje en EEPROM
+			//AddressDestination = &eef_voltaje;
 //			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
+			wreeprom(0x3C,&eef_voltaje);
 			HAL_IWDG_Refresh( &hiwdg );
 
 graba_3: //----------------------------------registro

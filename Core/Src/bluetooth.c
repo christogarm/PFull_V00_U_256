@@ -144,7 +144,7 @@ static unsigned int  ParamItem = 1;
 static unsigned int  BaudRateTest = 1;
 
 void SetUpBluetooth_Ble(){
-	if (findLastValue((uint32_t *)Page_126,&eePlantilla[eeFlagBLE]) == 0){				// Mauel 09-dic-2021:	Si ya fue configurado "EEPROM VAR", jamas vuelve a llamar a configuracion ???
+	if (findLastValue((uint32_t)&eePlantilla[eeFlagBLE]) == 0){				// Mauel 09-dic-2021:	Si ya fue configurado "EEPROM VAR", jamas vuelve a llamar a configuracion ???
 		ConfigBLE_Ble ();
 	}
 	else{
@@ -313,7 +313,7 @@ void TransmitReceive_Ble(){
 		 }
 
 		 // 18-oct-2021  if (strstr(SerialAnswBLE, "\x40\x21")){
-		 if (memcmp(SerialAnswBLE, "\x40\x21",2) == 0){	 		// CÓDIGO DE "CONFIRMACIÓN DE CONEXIÓN (HANDSHAKE)"
+		 if (memcmp(SerialAnswBLE, "\x40\x21",(size_t) 2) == 0){	 		// CÓDIGO DE "CONFIRMACIÓN DE CONEXIÓN (HANDSHAKE)"
 			 codeTX = 0x21;
 		 }
 		 if (memcmp(SerialAnswBLE, "\x40\x5C",2) == 0){		 	// CÓDIGO DE TIEMPO BCD "ESCRITURA DEL TIEMPO EN FORMATO BCD"

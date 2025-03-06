@@ -77,16 +77,25 @@ tx_tokenWiFi:
 
 		timeTxTWF = 30; //mov timeTxTWF,#30;  / vuelve a cargar tiempo para enviar Token (cada 30s)
 
-		bufferTxControl[0] = 0x40;		//ldw X,#$40F8
-		bufferTxControl[1] = 0xF8;		//ldw bufferTxControl,X
-		bufferTxControl[2] = eeLat1;	//ldw X,eeLat1
-		bufferTxControl[3] = eeLat2;	//ldw bufferTxControl+2,X
-		bufferTxControl[4] = eeLat3;	//ldw X,eeLat3
-		bufferTxControl[5] = eeLat4;	//ldw bufferTxControl+4,X
-		bufferTxControl[6] = eeLong1;	//ldw X,eeLong1
-		bufferTxControl[7] = eeLong2;	//ldw bufferTxControl+6,X
-		bufferTxControl[8] = eeLong3;	//ldw X,eeLong3
-		bufferTxControl[9] = eeLong4;	//ldw bufferTxControl+8,X
+//		bufferTxControl[0] = 0x40;		//ldw X,#$40F8
+//		bufferTxControl[1] = 0xF8;		//ldw bufferTxControl,X
+//		bufferTxControl[2] = eeLat1;	//ldw X,eeLat1
+//		bufferTxControl[3] = eeLat2;	//ldw bufferTxControl+2,X
+//		bufferTxControl[4] = eeLat3;	//ldw X,eeLat3
+//		bufferTxControl[5] = eeLat4;	//ldw bufferTxControl+4,X
+//		bufferTxControl[6] = eeLong1;	//ldw X,eeLong1
+//		bufferTxControl[7] = eeLong2;	//ldw bufferTxControl+6,X
+//		bufferTxControl[8] = eeLong3;	//ldw X,eeLong3
+//		bufferTxControl[9] = eeLong4;	//ldw bufferTxControl+8,X
+
+		bufferTxControl[2] = findLastValue((uint32_t) &eeLat1);	//ldw X,eeLat1
+		bufferTxControl[3] = findLastValue((uint32_t) &eeLat2);	//ldw bufferTxControl+2,X
+		bufferTxControl[4] = findLastValue((uint32_t) &eeLat3);	//ldw X,eeLat3
+		bufferTxControl[5] = findLastValue((uint32_t) &eeLat4);	//ldw bufferTxControl+4,X
+		bufferTxControl[6] = findLastValue((uint32_t) &eeLong1);	//ldw X,eeLong1
+		bufferTxControl[7] = findLastValue((uint32_t) &eeLong2);	//ldw bufferTxControl+6,X
+		bufferTxControl[8] = findLastValue((uint32_t) &eeLong3);	//ldw X,eeLong3
+		bufferTxControl[9] = findLastValue((uint32_t) &eeLong4);	//ldw bufferTxControl+8,X
 
 		flagsTX[2] = 0; //bres flagsTX,#2;	/ Indica que no hay que transmitir Header
 
@@ -585,7 +594,7 @@ tx_control_realTimeState:
 		}
 
 		Bloque_TiempoReal[alarmas2_RT] &= 0xFE;//BitClear(Bloque_TiempoReal[alarmas2_RT],0);
-		Bloque_TiempoReal [alarmas_RT] = trefst;
+		//Bloque_TiempoReal [alarmas_RT] = trefst;
 		for(uint8_t k=0; k<8; k++){
 			Bloque_TiempoReal [alarmas_RT] |= (uint8_t) trefst[k]<<k;
 		}
@@ -675,7 +684,7 @@ tx_control_parameters:
 		point_Y = &bufferTxControl[8];	 //
 		for(uint8_t i = 0; i < 128 ; i++ )
 			//point_Y[i] = point_X[i];
-			point_Y[i] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[i]);
+			point_Y[i] = findLastValue((uint32_t) &eePlantilla[i]);
 
 		chksum_32_HW_LW = 0;					// limpia registros de checksum
 
@@ -710,13 +719,13 @@ tx_control_writeParam:
 
 verifica_version1:
 			//if (RxBuffer_Ble[125] == eePlantilla[eeversion1]){
-			if (RxBuffer_Ble[125] == findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1])){
+			if (RxBuffer_Ble[125] == findLastValue((uint32_t) &eePlantilla[eeversion1])){
 				goto 	verifica_version2;		//jreq	verifica_version2
 			}
 			goto	no_writeParam;				//jp		no_writeParam
 verifica_version2:
 			//if(RxBuffer_Ble[126] == eePlantilla[eeversion2]){
-			if (RxBuffer_Ble[126] == findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2])){
+			if (RxBuffer_Ble[126] == findLastValue((uint32_t) &eePlantilla[eeversion2])){
 				goto 	verifica_version3;		//jreq	verifica_version3
 			}
 			goto	no_writeParam;				//jp		no_writeParam
@@ -760,7 +769,7 @@ write_param:
 			// Carga datos de bloque de handshake para transmitir la respuesta
 			Bloque_handshake[comando1] =	0xF1;	//mov		comando1,#$F1
 			Bloque_handshake[comando2] =	0x3D;	//mov		comando2,#$3D;				/ indica que la grabación fue exitosa
-			flagsTX[5]=1;						// bset 	flagsTX,#5;						/ inidca que hay que reiniciar el control.
+			flagsTX[5]=0;						// bset 	flagsTX,#5;						/ inidca que hay que reiniciar el control.
 
 			goto	ok_writeParam;				//jp		ok_writeParam
 
@@ -1152,8 +1161,8 @@ tx_write_status:
 			// ; Analiza el Registro de cambios 1
 			// ld		A,(Y);								/
 			wreg = RxBuffer_Ble[2];  // ld		wreg,A;
-			waux = eeEstado1; // mov		waux,eeEstado1;				/ carga estados actuales
-
+			//waux = eeEstado1; // mov		waux,eeEstado1;				/ carga estados actuales
+			waux = findLastValue((uint32_t)&eeEstado1);
 chk_est1_b0:
 			if(!GetRegFlagState(wreg, est1Refri)) {// btjf	wreg,#est1Refri,chk_est1_b1; / hay cambio de estado refrigerador on/off ?
 				goto chk_est1_b1;
@@ -1265,8 +1274,9 @@ fin_tx_write_status:
 tx_read_status:
 		// carga información a enviar.
 		// mov		estado1,eeEstado1
+		uint8_t estado1_Aux = findLastValue((uint32_t)&eeEstado1);
 		for(int k=0;k<8;k++)
-			estado1[k] = ((eeEstado1>>k) & 0x1);
+			estado1[k] = ((estado1_Aux>>k) & 0x1);
 
 
 estado1_b1:
@@ -1567,14 +1577,23 @@ tx_read_GEO:
 			ldw		bufferTxControl+14,X
 			*/
 
-			bufferTxControl[8] = eeLat1;
-			bufferTxControl[9] = eeLat2;
-			bufferTxControl[10] = eeLat3;
-			bufferTxControl[11] = eeLat4;
-			bufferTxControl[12]	= eeLong1;
-			bufferTxControl[13]	= eeLong2;
-			bufferTxControl[14] = eeLong3;
-			bufferTxControl[15] = eeLong4;
+//			bufferTxControl[8] = eeLat1;
+//			bufferTxControl[9] = eeLat2;
+//			bufferTxControl[10] = eeLat3;
+//			bufferTxControl[11] = eeLat4;
+//			bufferTxControl[12]	= eeLong1;
+//			bufferTxControl[13]	= eeLong2;
+//			bufferTxControl[14] = eeLong3;
+//			bufferTxControl[15] = eeLong4;
+
+			bufferTxControl[8] = findLastValue((uint32_t) &eeLat1);
+			bufferTxControl[9] = findLastValue((uint32_t) &eeLat2);
+			bufferTxControl[10] = findLastValue((uint32_t) &eeLat3);
+			bufferTxControl[11] = findLastValue((uint32_t) &eeLat4);
+			bufferTxControl[12]	= findLastValue((uint32_t) &eeLong1);
+			bufferTxControl[13]	= findLastValue((uint32_t) &eeLong2);
+			bufferTxControl[14] = findLastValue((uint32_t) &eeLong3);
+			bufferTxControl[15] = findLastValue((uint32_t) &eeLong4);
 
 			// Añade chksum al buffer a transmiir
 			// clrw	X
@@ -2021,8 +2040,8 @@ tx_wifi_timeLogger:
 		// ldw		X,eeversion1
 //		bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
 //		bufferWifiTx[3] = eePlantilla[eeversion2];
-		bufferWifiTx[2] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
-		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+		bufferWifiTx[2] = findLastValue((uint32_t) &eePlantilla[eeversion1]);
+		bufferWifiTx[3] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 		// ; carga hora actual
 		// ldw		X,timeSeconds_HW
 		bufferWifiTx[4] = (uint8_t) ((timeSeconds_HW & 0xFF00)>>8);// ldw		bufferWifiTx+4,X
@@ -2040,14 +2059,23 @@ tx_wifi_timeLogger:
 		//ldw		X,eeLong3
 		//ldw		bufferWifiTx+14,X
 
-		bufferWifiTx[8] = eeLat1;
-		bufferWifiTx[9] = eeLat2;
-		bufferWifiTx[10] = eeLat3;
-		bufferWifiTx[11] = eeLat4;
-		bufferWifiTx[12] = eeLong1;
-		bufferWifiTx[13] = eeLong2;
-		bufferWifiTx[14] = eeLong3;
-		bufferWifiTx[15] = eeLong4;
+
+//		bufferWifiTx[8] = eeLat1;
+//		bufferWifiTx[9] = eeLat2;
+//		bufferWifiTx[10] = eeLat3;
+//		bufferWifiTx[11] = eeLat4;
+//		bufferWifiTx[12] = eeLong1;
+//		bufferWifiTx[13] = eeLong2;
+//		bufferWifiTx[14] = eeLong3;
+//		bufferWifiTx[15] = eeLong4;
+		bufferWifiTx[8] = findLastValue((uint32_t) &eeLat1);
+		bufferWifiTx[9] = findLastValue((uint32_t) &eeLat2);
+		bufferWifiTx[10] = findLastValue((uint32_t) &eeLat3);
+		bufferWifiTx[11] = findLastValue((uint32_t) &eeLat4);
+		bufferWifiTx[12] = findLastValue((uint32_t) &eeLong1);
+		bufferWifiTx[13] = findLastValue((uint32_t) &eeLong2);
+		bufferWifiTx[14] = findLastValue((uint32_t) &eeLong3);
+		bufferWifiTx[15] = findLastValue((uint32_t) &eeLong4);
 
 		// ;define inicio, fin y tamaño de bloque de tx
 		// ldw		X,#bufferWifiTx
@@ -2080,11 +2108,12 @@ tx_wifi_timeLogger:
 		//; Indica cuantos registros se loggearon para mandar unicamente esa cantidad de registros
 		// ldw		X,eeCntRegDATA
 		// tnzw	X;										/ se logearon registros ?
-		if(eeCntRegDATA==0){
+		//if(eeCntRegDATA==0){
+		if(findLastValue((uint32_t)&eeCntRegDATA) == 0){
 			goto tx_wifi_timeLogger_END;// jreq	tx_wifi_timeLogger_END; / no, finaliza envío de logger de datos
 		}
-		numRegTx = eeCntRegDATA;// ldw		numRegTx,X
-
+		//numRegTx = eeCntRegDATA;// ldw		numRegTx,X
+		numRegTx = findLastValue((uint32_t)&eeCntRegDATA);
 		goto end_tx_wifi;// jp		end_tx_wifi
 /*;------------------------------------------------------------
 ;------------- Validación de respuesta, time out y envío de logger por Registro
@@ -2144,8 +2173,8 @@ tx_wifi_timeLogger_04:
 		// ldw		X,eeversion1
 		//bufferWifiTx[3] = eePlantilla[eeversion1];	// ldw		bufferWifiTx+3,X
 		//bufferWifiTx[4] = eePlantilla[eeversion2];
-		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
-		bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+		bufferWifiTx[3] = findLastValue((uint32_t) &eePlantilla[eeversion1]);
+		bufferWifiTx[4] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 tx_wifi_timeLogger_loadLogger_01:
 
 		/* ; Si el contador de bytes loggeado viene en cero quiere decir que ya no hay información en el bloque actual de 128 bytes
@@ -2293,8 +2322,8 @@ tx_wifi_eventDelayAsk:
 		// ldw		X,eeversion1
 		//bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
 		//bufferWifiTx[3] = eePlantilla[eeversion2];
-		bufferWifiTx[2] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
-		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+		bufferWifiTx[2] = findLastValue((uint32_t) &eePlantilla[eeversion1]);
+		bufferWifiTx[3] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 		//; carga hora actual
 		// ldw		X,timeSeconds_HW
 		bufferWifiTx[4] = (uint8_t) ((timeSeconds_HW & 0xFF00)>>8); // ldw		bufferWifiTx+4,X
@@ -2311,14 +2340,24 @@ tx_wifi_eventDelayAsk:
 		ldw		bufferWifiTx+12,X
 		ldw		X,eeLong3
 		ldw		bufferWifiTx+14,X*/
-		bufferWifiTx[8] = eeLat1;
-		bufferWifiTx[9] = eeLat2;
-		bufferWifiTx[10] = eeLat3;
-		bufferWifiTx[11] = eeLat4;
-		bufferWifiTx[12] = eeLong1;
-		bufferWifiTx[13] = eeLong2;
-		bufferWifiTx[14] = eeLong3;
-		bufferWifiTx[15] = eeLong4;
+//		bufferWifiTx[8] = eeLat1;
+//		bufferWifiTx[9] = eeLat2;
+//		bufferWifiTx[10] = eeLat3;
+//		bufferWifiTx[11] = eeLat4;
+//		bufferWifiTx[12] = eeLong1;
+//		bufferWifiTx[13] = eeLong2;
+//		bufferWifiTx[14] = eeLong3;
+//		bufferWifiTx[15] = eeLong4;
+
+		bufferWifiTx[8] = findLastValue((uint32_t) &eeLat1);
+		bufferWifiTx[9] = findLastValue((uint32_t) &eeLat2);
+		bufferWifiTx[10] = findLastValue((uint32_t) &eeLat3);
+		bufferWifiTx[11] = findLastValue((uint32_t) &eeLat4);
+		bufferWifiTx[12] = findLastValue((uint32_t) &eeLong1);
+		bufferWifiTx[13] = findLastValue((uint32_t) &eeLong2);
+		bufferWifiTx[14] = findLastValue((uint32_t) &eeLong3);
+		bufferWifiTx[15] = findLastValue((uint32_t) &eeLong4);
+
 
 		// ;define inicio, fin y tamaño de bloque de tx
 		// ldw		X,#bufferWifiTx
@@ -2350,11 +2389,12 @@ tx_wifi_eventDelayAsk:
 		//; Indica cuantos registros se loggearon para mandar unicamente esa cantidad de registros
 		// ldw		X,eeCntRegEVENT
 		// tnzw	X;										/ se logearon registros ?
-		if(eeCntRegEVENT==0){
+		//if(eeCntRegEVENT==0){
+		if(findLastValue((uint32_t)&eeCntRegEVENT)==0){
 			goto tx_wifi_eventLogger_END;// jreq	tx_wifi_eventLogger_END; / no, finaliza envío de logger de datos
 		}
-		numRegTx = eeCntRegEVENT;// ldw		numRegTx,X
-
+		//numRegTx = eeCntRegEVENT;// ldw		numRegTx,X
+		numRegTx = findLastValue((uint32_t)&eeCntRegEVENT);
 
 		goto end_tx_wifi;// jp		end_tx_wifi
 //;------------------------------------------------------------
@@ -2412,8 +2452,8 @@ tx_wifi_eventLogger_04:
 		// ldw		X,eeversion1
 		//bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
 		//bufferWifiTx[4] = eePlantilla[eeversion2];
-		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
-		bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+		bufferWifiTx[3] = findLastValue((uint32_t) &eePlantilla[eeversion1]);
+		bufferWifiTx[4] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 tx_wifi_eventLogger_loadLogger_01:
 
 		//; Si el contador de bytes loggeado viene en cero quiere decir que ya no hay información en el bloque actual de 128 bytes
@@ -2528,8 +2568,8 @@ ask_DE_start_01_WF:
 		BloqEventPuerta[comandoEP_1] = 0x82;
 		//BloqEventPuerta[softVersion1EP] = eePlantilla[eeversion1];// mov		softVersion1EP,eeversion1
 		//BloqEventPuerta[softVersion2EP] = eePlantilla[eeversion2];
-		BloqEventPuerta[softVersion1EP] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
-		BloqEventPuerta[softVersion2EP] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+		BloqEventPuerta[softVersion1EP] = findLastValue((uint32_t) &eePlantilla[eeversion1]);
+		BloqEventPuerta[softVersion2EP] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 		// mov		softVersion2EP,eeversion2
 
 		// ldw		X,timeSeconds_HW
@@ -2600,8 +2640,8 @@ ask_CE_start_01_WF:
 		BloqEventComp[comandoEC_1] = 0x82;
 //		BloqEventComp[softVersion1EC] = eePlantilla[eeversion1];// mov		softVersion1EC,eeversion1
 //		BloqEventComp[softVersion2EC] = eePlantilla[eeversion2];// mov		softVersion2EC,eeversion2
-		BloqEventComp[softVersion1EC] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
-		BloqEventComp[softVersion2EC] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+		BloqEventComp[softVersion1EC] = findLastValue((uint32_t) &eePlantilla[eeversion1]);
+		BloqEventComp[softVersion2EC] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 
 		// ldw		X,timeSeconds_HW
 		// ldw		EC_timeInit_HW,X
@@ -2673,8 +2713,8 @@ ask_DhE_start_WF:
 		// mov		softVersion2ED,eeversion2
 //		BloqEventDesh[softVersion1ED] = eePlantilla[eeversion1];
 //		BloqEventDesh[softVersion2ED] = eePlantilla[eeversion2];
-		BloqEventDesh[softVersion1ED] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
-		BloqEventDesh[softVersion2ED] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+		BloqEventDesh[softVersion1ED] = findLastValue((uint32_t) &eePlantilla[eeversion1]);
+		BloqEventDesh[softVersion2ED] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 		// ldw		X,timeSeconds_HW
 		// ldw		ED_timeInit_HW,X
 		// ldw		X,timeSeconds_LW
@@ -2754,8 +2794,8 @@ power_event_end_01_WF:
 //		BloqEventPwrOn[softVersion1EPo] = eePlantilla[eeversion1];
 //		BloqEventPwrOn[softVersion2EPo] = eePlantilla[eeversion2];
 
-		BloqEventPwrOn[softVersion1EPo] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);
-		BloqEventPwrOn[softVersion2EPo] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+		BloqEventPwrOn[softVersion1EPo] = findLastValue((uint32_t) &eePlantilla[eeversion1]);
+		BloqEventPwrOn[softVersion2EPo] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 
 		// ldw		X,timeSeconds_HW
 		// ldw		EPo_timeInit_HW,X
@@ -2825,8 +2865,8 @@ tx_wifiEvent:
 		// ldw		X,eeversion1
 //		bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
 //		bufferWifiTx[4] = eePlantilla[eeversion2];
-		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
-		bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);;
+		bufferWifiTx[3] = findLastValue((uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
+		bufferWifiTx[4] = findLastValue((uint32_t) &eePlantilla[eeversion2]);;
 		// ;Indica direcciones iniciales de datos a copiar y cantidad de datos (X origen, Y destino, wreg tamaño)
 		// ;copia los datos al buffer de tx
 		// ldw		X,pointTx
@@ -2962,9 +3002,8 @@ noFlag_Aux_TD:
 		//; carga versión de firmware
 //		// ldw		X,eeversion1
 //		bufferWifiTx[3] = eePlantilla[eeversion1];// ldw		bufferWifiTx+3,X
-//		bufferWifiTx[4] = eePlantilla[eeversion2];
-		bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
-		bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+//		bufferWifiTx[4] = eePlantilla[eeveTx[3] = findLastValue((uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
+		bufferWifiTx[4] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 		//; carga tiempo
 		/*ldw		X,timeSeconds_HW
 		ldw		bufferWifiTx+5,X
@@ -3494,8 +3533,8 @@ void Wifi_Buffer_Trans(uint8_t Pos1, uint8_t Pos2)
 	// ldw		X,eeversion1
 //	bufferWifiTx[3] = eePlantilla[eeversion1];	// ldw		bufferWifiTx+3,X
 //	bufferWifiTx[4] = eePlantilla[eeversion2];
-	bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
-	bufferWifiTx[4] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+	bufferWifiTx[3] = findLastValue((uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
+	bufferWifiTx[4] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 
 }
 
@@ -3511,8 +3550,8 @@ void Wifi_Buffer_Trans2(uint8_t Pos2_2)
 	// ldw		X,eeversion1
 //	bufferWifiTx[2] = eePlantilla[eeversion1];// ldw		bufferWifiTx+2,X
 //	bufferWifiTx[3] = eePlantilla[eeversion2];
-	bufferWifiTx[2] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
-	bufferWifiTx[3] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeversion2]);
+	bufferWifiTx[2] = findLastValue((uint32_t) &eePlantilla[eeversion1]);// ldw		bufferWifiTx+3,X
+	bufferWifiTx[3] = findLastValue((uint32_t) &eePlantilla[eeversion2]);
 	// ; carga hora actual
 	// ldw		X,timeSeconds_HW
 	bufferWifiTx[4] = (uint8_t) ((timeSeconds_HW & 0xFF00)>>8);// ldw		bufferWifiTx+4,X
@@ -3530,14 +3569,23 @@ void Wifi_Buffer_Trans2(uint8_t Pos2_2)
 			//ldw		X,eeLong3
 			//ldw		bufferWifiTx+14,X
 
-	bufferWifiTx[8] = eeLat1;
-	bufferWifiTx[9] = eeLat2;
-	bufferWifiTx[10] = eeLat3;
-	bufferWifiTx[11] = eeLat4;
-	bufferWifiTx[12] = eeLong1;
-	bufferWifiTx[13] = eeLong2;
-	bufferWifiTx[14] = eeLong3;
-	bufferWifiTx[15] = eeLong4;
+//	bufferWifiTx[8] = eeLat1;
+//	bufferWifiTx[9] = eeLat2;
+//	bufferWifiTx[10] = eeLat3;
+//	bufferWifiTx[11] = eeLat4;
+//	bufferWifiTx[12] = eeLong1;
+//	bufferWifiTx[13] = eeLong2;
+//	bufferWifiTx[14] = eeLong3;
+//	bufferWifiTx[15] = eeLong4;
+	bufferWifiTx[8] = findLastValue((uint32_t) &eeLat1);
+	bufferWifiTx[9] = findLastValue((uint32_t) &eeLat2);
+	bufferWifiTx[10] = findLastValue((uint32_t) &eeLat3);
+	bufferWifiTx[11] = findLastValue((uint32_t) &eeLat4);
+	bufferWifiTx[12] = findLastValue((uint32_t) &eeLong1);
+	bufferWifiTx[13] = findLastValue((uint32_t) &eeLong2);
+	bufferWifiTx[14] = findLastValue((uint32_t) &eeLong3);
+	bufferWifiTx[15] = findLastValue((uint32_t) &eeLong4);
+
 }
 
 void recepcion_inc_bloq_fw (void)

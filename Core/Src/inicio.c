@@ -44,7 +44,7 @@ inicializa_comu:
 														//	ldw		X,#eeprotype				;// manuel_ apuntador para la eeprom
 														//	call	rdeeprom
 	//Plantilla[protype] = eePlantilla[eeprotype];		//	mov    	protype,waux
-	Plantilla[protype] = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eeprotype]);
+	Plantilla[protype] = findLastValue((uint32_t) &eePlantilla[eeprotype]);
 	voltl = 110;
 	if(Plantilla[protype] != 0x02){					// Protección de voltaje 220v?
 		goto no_ini_210;
@@ -67,17 +67,19 @@ no_ini_210:
 	Plantilla[dato_seg3] = 0xCC;		//mov			dato_seg3,#$CC
 
 	//cnt_pta_fan = eePlantilla[eetimepaf];			//mov			cnt_pta_fan,eetimepaf
-	cnt_pta_fan = findLastValue((uint32_t *)Page_126, (uint32_t) &eePlantilla[eetimepaf]);
+	cnt_pta_fan = findLastValue((uint32_t) &eePlantilla[eetimepaf]);
 
 	load_tiempoAhorro1();		//call	load_tiempoAhorro1;				/ cada que se abre puerta vuelve a cargar tiempos de ahorro
 	load_tiempoAhorro2();		//call	load_tiempoAhorro2;
 
 //	;/ Inicializa los registros de tiempo UNIX
 
-	timeSeconds_HW = (uint16_t)(eeTimeUnix1 * 256) + (uint16_t)(eeTimeUnix2);		//	ldw		X,eeTimeUnix1
-																											//	ldw		timeSeconds_HW,X
-	timeSeconds_LW = (uint16_t)(eeTimeUnix3 * 256) + (uint16_t)(eeTimeUnix4);		//	ldw		X,eeTimeUnix3
-																											//	ldw		timeSeconds_LW,X
+	//timeSeconds_HW = (uint16_t)(eeTimeUnix1 * 256) + (uint16_t)(eeTimeUnix2);		//	ldw		X,eeTimeUnix1
+	timeSeconds_HW = (uint16_t)(findLastValue((uint32_t) &eeTimeUnix1) * 256) + (uint16_t)(findLastValue((uint32_t) &eeTimeUnix2));		//	ldw		X,eeTimeUnix1
+																									//	ldw		timeSeconds_HW,X
+	//timeSeconds_LW = (uint16_t)(eeTimeUnix3 * 256) + (uint16_t)(eeTimeUnix4);		//	ldw		X,eeTimeUnix3
+	timeSeconds_LW = (uint16_t)(findLastValue((uint32_t) &eeTimeUnix3) * 256) + (uint16_t)(findLastValue((uint32_t) &eeTimeUnix4));		//	ldw		X,eeTimeUnix3
+																										//	ldw		timeSeconds_LW,X
 	cntLogger_H	= 0;			//	clr		cntLogger_H				;
 	//	clr		cntLogger_L				;	contador en segundos para loggear datos
 	cntBlockFlash =	0;			//	clr		cntBlockFlash			;	contador de bloques de Flash grabados (con bloques de 128bytes se pueden grabar hasta 32k de memoria)
@@ -162,7 +164,8 @@ lastEventBlockFound:
 
 	//;/ carga estado inicial de la lampara
 		flagsC[f_lampDoor] = 0;			//	bres		flagsC,#f_lampDoor
-		if(!GetRegFlagState(eeEstado1, est1Lamp)){
+		uint8_t estado1_Aux = findLastValue((uint32_t)&eeEstado1); // Agrego para no realizar tantas llamadas; CGM 25/02/2025
+		if(!GetRegFlagState(estado1_Aux, est1Lamp)){
 			goto initLampOFF;
 		}
 		flagsC[f_lampDoor] = 1;			//	bset		flagsC,#f_lampDoor
@@ -170,7 +173,7 @@ initLampOFF:
 
 		//;/ carga estado inicial de la cerradura
 		GPIOR0[f_dh] = 0;			//	bres		GPIOR0,#f_dh
-		if(!GetRegFlagState(eeEstado1, est1LockDr)){
+		if(!GetRegFlagState(estado1_Aux, est1LockDr)){
 			goto initLockDrOFF;
 		}
 		GPIOR0[f_dh] = 1;			//	bset		GPIOR0,#f_dh

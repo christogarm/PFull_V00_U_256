@@ -779,7 +779,7 @@ extern uint8_t		dms_extra;				//08/FEB/2022		DS.B 1 ;4 1B - 2 Indicadores LED y 
 extern _Bool Botones_T[8];
 
 // LN_833:	#pragma space extern [] @eeprom @near
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eePlantilla [128];
+extern __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128];
 enum parametrosEEplantilla  {
 	eedato_seg1,											//;Dato de seguridad 1
 	//;-------------------  GRUPO DE PARÁMETROS T (Temperatura)  -------------------------
@@ -908,30 +908,30 @@ enum parametrosEEplantilla  {
 	eedato_seg3		//09/FEB/2022	    DC.B	$CC	;	16511 d	407F h	;Dato de seguridad 3
 };
 
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eevolt_div;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eevolt_mul;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eef_voltaje;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eevolt_div;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eevolt_mul;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eef_voltaje;
 
 
 
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t eeEstado1;	// inicia con refrigerador encendido y lámpara encedida y cerradura en off
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t eeEstado1;	// inicia con refrigerador encendido y lámpara encedida y cerradura en off
 
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeTimeUnix1;	//	uint8_t		eeTimeUnix1 = 0;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeTimeUnix2;	//	uint8_t		eeTimeUnix2 = 0;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeTimeUnix3;	//	uint8_t		eeTimeUnix3 = 0;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeTimeUnix4;	//	uint8_t		eeTimeUnix4 = 0;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeTimeUnix1;	//	uint8_t		eeTimeUnix1 = 0;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeTimeUnix2;	//	uint8_t		eeTimeUnix2 = 0;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeTimeUnix3;	//	uint8_t		eeTimeUnix3 = 0;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeTimeUnix4;	//	uint8_t		eeTimeUnix4 = 0;
 
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLat1;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLat2;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLat3;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLat4;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLong1;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLong2;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLong3;
-extern __attribute__((section(".myBufSectionEEPROM"))) uint8_t	eeLong4;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLat1;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLat2;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLat3;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLat4;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLong1;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLong2;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLong3;
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t	eeLong4;
 
-extern __attribute__((section(".myBufSectionEEPROM"))) uint16_t eeCntRegDATA;	//
-extern __attribute__((section(".myBufSectionEEPROM"))) uint16_t eeCntRegEVENT;	//
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint16_t eeCntRegDATA;	//
+extern __attribute__((section(".myBufSectionEEPROM_V"))) uint16_t eeCntRegEVENT;	//
 
 
 // LN_1013:	#pragma section @near {data}

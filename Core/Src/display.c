@@ -3,7 +3,7 @@
 #include "main.h"
 #include "customMain.h"
 #include "temper.h"
-
+#include "ELTEC_EmulatedEEPROM.h"
 
 //;************************************************************************************
 //;Número desplegado:	|  0 |   1 |   2 |   3 |   4 |   5 |   6  |  7 |   8 |   9 |   A |   b |   C |   d |   E |   F |
@@ -21,7 +21,7 @@ uint8_t	dpytab[]  =		{0x81, 0xBD, 0x92, 0x98, 0xAC, 0xC8, 0xC0, 0x9D, 0x80, 0x88
 
 
 void display (void){
-
+	uint8_t estado1_Aux = findLastValue((uint32_t)&eeEstado1); // Agrego para no realizar tantas llamadas; CGM 25/02/2025
     asm ("nop");
 
 	if(edorefri == 0x00){
@@ -48,7 +48,7 @@ void display (void){
 
 display_00:
 //;================= FIN RM_20231106 Agrega mensaje de despliegue bL fijo
-	if (GetRegFlagState(eeEstado1, est1Refri)){									//btjt   eeEstado1,#est1Refri,display_00b   ;¿Bandera on/off activada? O, no despliegues nada
+	if (GetRegFlagState(estado1_Aux, est1Refri)){									//btjt   eeEstado1,#est1Refri,display_00b   ;¿Bandera on/off activada? O, no despliegues nada
 		goto display_00b;
 	}
 	op_menu (0x11, 0x10);
@@ -103,7 +103,7 @@ msg1:
 	op_menu (0x11, 0x10);
 	//datdig1 = 0x11;//mov			datdig1,#$11
 	//datdig2 = 0x10;//mov			datdig2,#$10         ;/
-	if(!GetRegFlagState(eeEstado1, est1Refri)){//btjf		eeEstado1,#est1Refri,msg1_01 ***********
+	if(!GetRegFlagState(estado1_Aux, est1Refri)){//btjf		eeEstado1,#est1Refri,msg1_01 ***********
 		goto msg1_01;
 	}
 	datled[sign] = 1;		   //datled = sign; //bset		datled,#sign;
@@ -120,7 +120,7 @@ msg2:
 	op_menu (0x11, 0x01);
 	//datdig1 = 0x11; //mov  datdig1,#$11
 	//datdig2 = 0x01;//mov			datdig2,#$01
-	if(!GetRegFlagState(eeEstado1, est1Lamp)){//btjf		eeEstado1,#est1Lamp,msg2_01
+	if(!GetRegFlagState(estado1_Aux, est1Lamp)){//btjf		eeEstado1,#est1Lamp,msg2_01
 		goto	msg2_01;
 	}
 	datdig2 = 0x02;//mov datdig2,#$02
@@ -138,7 +138,7 @@ msg3:
 	op_menu (0x11, 0x00);
 	//datdig1 = 0x11;//mov			datdig1,#$11
 	//datdig2 = 0x00;//mov			datdig2,#$00
-	if(GetRegFlagState(eeEstado1, est1LockDr)){//btjt eeEstado1,#est1LockDr,msg3_01 ***************************
+	if(GetRegFlagState(estado1_Aux, est1LockDr)){//btjt eeEstado1,#est1LockDr,msg3_01 ***************************
 		goto msg3_01;
 	}
 	datled[sign] = 1;			//bset		datled,#sign;
@@ -593,7 +593,7 @@ no_blk:
 //;							Con refri OFF manten led puerta apagado.
 //;---------------------------------------------------------------------------
 
-	if (eeEstado1 & (1 << est1Refri)){									//btjt   eeEstado1,#est1Refri,display_00b   ;¿Bandera on/off activada? O, no despliegues nada
+	if (estado1_Aux & (1 << est1Refri)){									//btjt   eeEstado1,#est1Refri,display_00b   ;¿Bandera on/off activada? O, no despliegues nada
 		goto	refriON;
 	}
 refriOFF_2:
