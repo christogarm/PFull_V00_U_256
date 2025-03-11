@@ -1,7 +1,9 @@
-../Core/Src/ELTEC_EmulatedEEPROM.c:17:6:erasePage	3
-../Core/Src/ELTEC_EmulatedEEPROM.c:38:6:writeFLASH	4
-../Core/Src/ELTEC_EmulatedEEPROM.c:51:6:initEEPROMEmulated	6
-../Core/Src/ELTEC_EmulatedEEPROM.c:106:10:findLastValue	2
-../Core/Src/ELTEC_EmulatedEEPROM.c:121:6:pushAddressData	1
-../Core/Src/ELTEC_EmulatedEEPROM.c:133:10:currentlyPoint	3
-../Core/Src/ELTEC_EmulatedEEPROM.c:148:6:FlashManager	7
+../Core/Src/ELTEC_EmulatedEEPROM.c:17:10:getAddressPage	1
+../Core/Src/ELTEC_EmulatedEEPROM.c:27:6:erasePage	3
+../Core/Src/ELTEC_EmulatedEEPROM.c:48:6:writeFLASH	4
+../Core/Src/ELTEC_EmulatedEEPROM.c:61:6:initEEPROMEmulated	7
+../Core/Src/ELTEC_EmulatedEEPROM.c:115:6:restartFlashMemory	4
+../Core/Src/ELTEC_EmulatedEEPROM.c:151:10:findLastValue	5
+../Core/Src/ELTEC_EmulatedEEPROM.c:174:6:pushAddressData	1
+../Core/Src/ELTEC_EmulatedEEPROM.c:186:10:currentlyPoint	3
+../Core/Src/ELTEC_EmulatedEEPROM.c:201:6:FlashManager	7

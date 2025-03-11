@@ -21,6 +21,7 @@ void tiempo (void){
 tiempo10:
 				cntblkh++;						/// Cada 10 ms
 
+			   decwreg(&delayComStat);
 			   decwreg(&cntMsgCmd);			//	Decrementa tiempo de desplegado de mensajes de comando
 			   decwreg(&timeBuzzOn);		//	Decrementa tiempo de encedido del buzzer
 
@@ -52,21 +53,65 @@ no_dec_deb:
 		        goto fintiem;
 
 tiempo12:
-				cntcent = 0;					//clr			cntcent;		/ Si, inicia desde 0 centésimas
-				if (flagsTime [f_timeConfigRTC]){ //btjt salta si es = 1--- flagsTime,#f_timeConfigRTC,noIncTime; ***********************
-					goto	noIncTime;
-				}
-				timeSeconds_LW++;				// Incrementa parte baja del tiempo UNIX
-    		    if(timeSeconds_LW){  			//JRNE		no_inc_timeH;			/ Hubo overflow ?
-    		    	goto no_inc_timeH;			//
-    		    }
-    		    timeSeconds_HW++;				// Sí, Incrementa parte alta del tiempo UNIX
-no_inc_timeH:
+				cntcent = 0;				//clr			cntcent;		/ Si, inicia desde 0 centésimas
+//;***********************************************************************************
+//;-----------------------------------------------------------------------------------
 
-noIncTime:
+				//; Funciones de está seccción no se ejecutan hasta que la maquina de estados BLE esté en transmit/recieve
+				//ld			A,BluetoothState
+				//cp			A,#3
+				if(BluetoothState!=3)//jrne		endSelect
+					goto endSelect;
+				//ldw			X,#cntSetName;
+				decword(&cntSetName);//call		decword
+
+				//; Cambia canal de comunicacion BLE/WIFI
+selectCOM:
+				//btjt	flagsTxControl,#f_statBLE,no_toggleCOM;  Con conexión BLE activa no cambies el canal de comunicacion
+				//; no cambies de canal de comunicación si se está transmitiendo algun logger via wifi
+				//btjt	flagsWIFI,#f_timeLoggerCmd,no_toggleCOM;
+				//btjt	flagsWIFI,#f_eventLoggerCmd,no_toggleCOM;
+
+				if(flagsTxControl[f_statBLE] || flagsWIFI[f_timeLoggerCmd] || flagsWIFI[f_eventLoggerCmd])
+					goto no_toggleCOM;
+
+toggleCOM:
+				//; no cambies el canal de comunicación si hay una respuesta en transmisión en progreso
+				//tnz		keyTx
+				if(keyTx)//jrne	no_toggleCOM
+					goto no_toggleCOM;
+				flagsTxControl[f_select] ^= 0x1;// bcpl		flagsTxControl,#f_select
+				delayComStat = 10;//mov			delayComStat,#10
+no_toggleCOM:
+
+				if(!flagsTxControl[f_select])//btjf		flagsTxControl,#f_select,BLEselect
+					goto BLEselect;
+WIFIselect:
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12,GPIO_PIN_SET);//bset		PE_ODR,#2
+				goto endSelect;//jra			endSelect
+BLEselect:
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12,GPIO_PIN_RESET);//bres		PE_ODR,#2
+endSelect:
+
+//;-----------------------------------------------------------------------------------
+//;***********************************************************************************
+
+//				if (flagsTime [f_timeConfigRTC]){ //btjt salta si es = 1--- flagsTime,#f_timeConfigRTC,noIncTime; ***********************
+//					goto	noIncTime;
+//				}
+//				timeSeconds_LW++;				// Incrementa parte baja del tiempo UNIX
+//    		    if(timeSeconds_LW){  			//JRNE		no_inc_timeH;			/ Hubo overflow ?
+//    		    	goto no_inc_timeH;			//
+//    		    }
+//    		    timeSeconds_HW++;				// Sí, Incrementa parte alta del tiempo UNIX
+//no_inc_timeH:
+//
+//noIncTime:
 
 	            decword(&temp_doorEvent);		// decremnta registro de duración evento puerta
-		    	decwreg(&timeTxTWF);
+	            decwreg(&timeTxTBLE);
+				decword(&timeoutTBLE);
+	            decwreg(&timeTxTWF);
 		    	decword(&timeoutTWF);			// decrementa timeout token wifi
 		    	decwreg(&timeoutTxWifi);		// decrementa timeout respuesta de wifi
 		    	decwreg(&delayTxLoggWifi);		// decrementa tiempo entre envíos de logger
@@ -77,7 +122,7 @@ noIncTime:
 
 
 		    	decword(&silencioAlarmH);		// decremnta registro de duración evento puerta
-
+		    	decword(&timePreDh_h);
 
 
 

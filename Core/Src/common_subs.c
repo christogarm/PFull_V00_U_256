@@ -1325,8 +1325,9 @@ fallas12:
 	       	goto fallas16;//
 	    }
 	    datled[5] = 1;			//bset datled,#5
-	    flagsBuzzer[0] = 1;//bset flagsBuzzer,#0
-	    waux = 0x1F;//mov waux,#$1F;
+	    flagsBuzzer[0] = 1;		//bset flagsBuzzer,#0
+	    //waux = 0x1F;			//mov waux,#$1F;
+	    waux = 0x13;			//mov waux,#$13;
 	    if(!trefst[f_sac]){//btjf trefst,#f_sac,fallas_j00
 	       	goto fallas_j00;
 	    }
@@ -1339,7 +1340,8 @@ fallas_j00:
 	    goto fallas20;//jra fallas20
 
 fallas_j01:
-	    waux = 0x1F;//mov waux,#$1F
+	    //waux = 0x1F;//mov waux,#$1F
+		waux = 0x13;			//mov waux,#$13;
 
 fallas15:
 	    // tempo1 = waux;//mov tempo1, waux
@@ -1352,7 +1354,8 @@ fallas_j02:
 		datled_clear();
 		//BitClear(datled,0);			//bres datled,#0
 		//BitClear(datled,1);			//bres datled,#1;
-		wreg = 0x13;//mov wreg,#$13;
+		//wreg = 0x13;//mov wreg,#$13;
+		wreg = 0x01;//mov wreg,#$01;
 		op_menu (waux,wreg);
 		//datdig1 = waux;//mov datdig1,waux;
 		//datdig2 = wreg;//mov datdig2,wreg;
@@ -1399,10 +1402,13 @@ fallas_j08c:
 			goto fallas_j02c;
 		}
 fallas_j01c:
-		wreg_waux_conf(0x1F, 0x13, 1);
+		//wreg_waux_conf(0x1F, 0x13, 1);
         //wreg = 0x1F;//mov wreg,#$1F			" "
         //waux = 0x13;//mov	waux,#$13;		"H"
         //BitSet(flagsBuzzer, 0);//bset flagsBuzzer,#0
+		wreg_waux_conf(0x13, 0x04, 1);
+//		mov			wreg,#$13;					"H"
+//		mov			waux,#$04;
 fallas_j02c:
 
 		if(trefst2[f_s3short]){//btjt trefst2,#f_s3short,fallas_j01b
@@ -1412,10 +1418,11 @@ fallas_j02c:
 	       	  goto fallas_j02b;
 	    }
 fallas_j01b:
-		wreg_waux_conf(0x1F, 0x13, 1);
+		//wreg_waux_conf(0x1F, 0x13, 1);
 		//wreg = 0x1F;//mov wreg,#$1F;		" "
 	    //waux = 0x13;//mov waux,#$13			"H"
 	    //BitSet(flagsBuzzer, 0);//bset flagsBuzzer,#0
+		wreg_waux_conf(0x13, 0x2, 1);
 fallas_j02b:
 		if(trefst[f_sdc]){//btjt trefst,#f_sdc,fallas_j03
 			goto fallas_j03;

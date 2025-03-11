@@ -38,7 +38,6 @@ Core/Src/inicio.o: ../Core/Src/inicio.c ../Core/Inc/main.h \
  ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_tim_ex.h \
  ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_uart.h \
  ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_uart_ex.h \
- ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_flash_ex.h \
  ../Core/Inc/customMain.h ../Core/Inc/ELTEC_EmulatedEEPROM.h \
  ../Core/Inc/main.h
 ../Core/Inc/main.h:
@@ -81,7 +80,6 @@ Core/Src/inicio.o: ../Core/Src/inicio.c ../Core/Inc/main.h \
 ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_tim_ex.h:
 ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_uart.h:
 ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_uart_ex.h:
-../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_flash_ex.h:
 ../Core/Inc/customMain.h:
 ../Core/Inc/ELTEC_EmulatedEEPROM.h:
 ../Core/Inc/main.h:

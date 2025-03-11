@@ -6,10 +6,43 @@
 void watch (void){
 
 
-				memodriver();		//	call		memodriver	;		/ Refresca los parámetros de operación del refrigerador uno a la vez cada ms
+			memodriver();		//	call		memodriver	;		/ Refresca los parámetros de operación del refrigerador uno a la vez cada ms
+//;------------------------------------------------------------------------------------------------------------------
+//;							supervicion de timeout token wifi - ble
+//;------------------------------------------------------------------------------------------------------------------
+			//ldw		X,timeoutTBLE;					/ No,checa time out
+			//cpw		X,#1;
+			if(timeoutTBLE == 1)//jreq	resetComMod;					/
+				goto resetComMod;
+			//ldw		X,timeoutTWF;					/ No,checa time out
+			//cpw		X,#1;
+			if(timeoutTWF != 1)//jrne	fallas_temp;					/ No, continúa
+				goto fallas_temp;
+resetComMod:
+			timeTxTBLE = 20;	//mov		timeTxTBLE,#20
+			flagsTX2[2] =0;		//bres	flagsTX2,#2;					/ sí, cancela bandera de token recibido
+			//ldw		X,#300;
+			timeoutTBLE = 300;	//ldw		timeoutTBLE,X;					/ carga time out de Token BLE (5 min)
+
+			timeTxTWF = 30;			//mov		timeTxTWF,#30
+			flagsTX2 [1] = 0; 		//bres	flagsTX2,#1;					/ sí, cancela bandera de token recibido
+			timeRstBLE = 5;			//mov		timeRstBLE,#5;				/ carga 5 segundos de apagado para BLE (reinicia el modulo wifi)
+			//ldw		X,#300;
+			timeoutTWF = 300;		//ldw		timeoutTWF,X;					/ carga time out de Token (5 min)
+			keyTx = 0;				//clr		keyTx  ;// en caso de desconexion cancela toda transmisión
+			for(uint8_t i=0; i<8; i++){
+				flagsTX[i] = 0;		//clr		flagsTX
+				flagsRxFirm[i]= 0;	//clr		flagsRxFirm
+				flagsTxControl[i] = 0; // clr		flagsTxControl
+				flagsWIFI[i] = 0; 		//clr		flagsWIFI
+			}
+
+			flagsLogger[4] = 0;			//bres	flagsLogger,#4;				// permite loggeo de eventos
+			flagsLogger[5] = 0;			//bres	flagsLogger,#5;				// permite loggeo de datos
 
 
-
+//;------------------------------------------------------------------------------------------------------------------
+fallas_temp:
 
 ////;------------------------- Control del Activacion de Cargas
 watch50:

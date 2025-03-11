@@ -35,9 +35,16 @@ void display (void){
 	if(flagsBattery[batON]){
 		goto display_00;
 	}
-	if(flagsTX [7] == 0){
+	//if(flagsTX [7] == 0){
+	//	goto display_00;
+	//}
+
+	//btjf    flagsTxControl,#f_statBLE,display_00   ;¿Esta conectado un dispositivo BLE?
+	//btjf		flagsTX2,#2,display_00; Se ha respondido el token BLE alguna vez ?
+	if((!flagsTxControl[f_statBLE]) || (!flagsTX2[2]))
 		goto display_00;
-	}
+
+
 	op_menu (0x0B, 0x11);
 	//datdig1 = 0x0B;			//	mov			datdig1,#$0B         ;Despliega bL
 	//datdig2 = 0x11;			//	mov			datdig2,#$11         ;/

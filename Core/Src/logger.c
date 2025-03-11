@@ -58,20 +58,23 @@ voltArranFAIL:
 voltFlagOK:
 //;-----------------------------------------------------------
 //; Unicamente trabajo logger cuando no hay conexión al servidor
-		if(!flagsWIFI[f_serverConnect]){//btjf flagsWIFI,#f_serverConnect,serverDown
-	       	goto serverDown;
-	    }
-	    goto fin_logger; //fin_logger
-serverDown:
+//		if(!flagsWIFI[f_serverConnect]){//btjf flagsWIFI,#f_serverConnect,serverDown
+//	       	goto serverDown;
+//	    }
+//	    goto fin_logger; //fin_logger
+//serverDown:
 
 //;===========================================================
 //;					LOGGER DE EVENTOS
 //;===========================================================
 //				+++++	EVENTO PUERTA	++++++
 event_logg:
+		if(flagsWIFI[f_eventLoggerSend])	//btjt		flagsWIFI,#f_eventLoggerSend,event_logg_01; No loggear hasta terminar Tx
+			goto event_logg_01;
 		if(!flagsLogger[4]){//btjf	flagsLogger,#4,door_event; No loggear hasta terminar Tx
 			goto door_event;
 		}
+event_logg_01:
 		goto fin_logger; // jp fin_logger
 
 //				   Evento de apertura de puerta
@@ -228,12 +231,14 @@ desh_event_end:
 //;----------------------------------------------------------
 power_event:
 		if(retPowerOn != 0 ){//	tnz		retPowerOn
-			goto alarm_event;//	jrne	alarm_event
+			//goto alarm_event;//	jrne	alarm_event
+			goto wifi_event;
 		}
 		if(flagsEvent[3]){//	btjt flagsEvent,#3,power_event_end; Ya inició evento de power-on ?
 			goto power_event_end;
 		}
-		goto alarm_event;//	jra		alarm_event
+		//goto alarm_event;//	jra		alarm_event
+		goto wifi_event;
 power_event_end:
 //		BloqEventPwrOn[EPo_timeInit_4] = eeTimeUnix1;		//ldw	X,eeTimeUnix1
 //		BloqEventPwrOn[EPo_timeInit_3] = eeTimeUnix2;		//ldw	EPo_timeInit_HW,X
@@ -264,6 +269,47 @@ power_event_end:
 		load_event();				//call	load_event
 
 		flagsEvent[3] = 0;//bres flagsEvent,#3;	/ borra inicio de evento power-on
+		goto wifi_event;		//jra		wifi_event;
+
+//;----------------------------------------------------------
+//;										Evento de wifi
+//;----------------------------------------------------------
+wifi_event:
+		if(flagsEvent[4])		// btjt	flagsEvent,#4,ask_wfE_end;	/ ya había iniciado evento wifi? Sí, checa si ya se termina evento
+			goto ask_wfE_end;
+ask_wfE_start:
+		if(!flagsTxControl[f_statWIFI])// btjf	flagsTxControl,#f_statWIFI,wifi_event_start; Hubo desconexión con servidor Wifi ? Si, inicia evento falla wifi
+			goto alarm_event;			// jra		alarm_event;						/ No, continúa sin revisar evento wifi
+
+wifi_event_start:
+		//ldw		X,timeSeconds_HW
+		WF_timeInit_HW = timeSeconds_HW;	//ldw		WF_timeInit_HW,X
+		//ldw		X,timeSeconds_LW
+		WF_timeInit_LW = timeSeconds_LW;//ldw		WF_timeInit_LW,X;				/ guarda el tiempo de inicio
+		WF_eventType = 5;//mov		WF_eventType,#5;				/ carga el tipo de evento (5 para wifi)
+		//ldw		X,tdevl
+		WF_tempAmbInit = tdevl;		//ldw		WF_tempAmbInit,x;				/ carga temperatura ambiente
+		WF_voltInit = voltl;		//mov		WF_voltInit,voltl; /carga voltaje
+		flagsEvent[4] = 1;			//bset	flagsEvent,#4;					/ indica que el evento wifi ya inició
+		goto alarm_event;			//jp		alarm_event;						/ continúa
+ask_wfE_end:
+		if(flagsTxControl[f_statWIFI])	//btjt	flagsTxControl,#f_statWIFI,wifi_event_end; Volvió la conexión wifi ? Sí, termina evento falla de wifi
+			goto wifi_event_end;
+		goto alarm_event;				//jra	alarm_event;						/ Sí, continúa sin terminar evento
+wifi_event_end:
+		//ldw		X,timeSeconds_HW
+		WF_timeEnd_HW = timeSeconds_HW;	//ldw		WF_timeEnd_HW,X
+		//ldw		X,timeSeconds_LW
+		WF_timeEnd_LW = timeSeconds_LW;//ldw		WF_timeEnd_LW,X;				/ guarda el tiempo final
+		//ldw		X,teval
+		WF_tempEvaEnd = teval;//ldw		WF_tempEvaEnd,x;				/ copia el dato de temperatura evaporador
+
+		//ldw		X,#WF_timeInit_HW
+		dirDataLoad = &WF_timeInit_HW;//ldw		dirDataLoad,X;					/ indica el inicio del bloque de datos a cargar (evento wifi)
+		load_event();//call	load_event
+
+		flagsEvent[4] = 0;//bres	flagsEvent,#4;
+
 		goto alarm_event;//jra alarm_event;	/continúa
 
 
@@ -276,6 +322,8 @@ alarm_event:
 //;										LOGGER DE DATOS
 //;===========================================================
 data_logg:
+		if(flagsWIFI[f_timeLoggerSend])//btjt		flagsWIFI,#f_timeLoggerSend,jmp_fin_logger; No loggear hasta terminar Tx
+			goto jmp_fin_logger;
 		if(flagsLogger[5]){//btjt	flagsLogger,#5,jmp_fin_logger; No loggear hasta terminar Tx
 			goto jmp_fin_logger;
 		}
@@ -339,6 +387,15 @@ logger_02:
 
          //ldw		X,cntRegDATA
          cntRegDATA++;	//incw	X
+
+		//;Se agrega un limite para el contador de registros de datos (1120 registros en 10k de memoria ) (14 registros por cada 128 bytes)
+		//cpw		X,#1343
+		if(cntRegDATA<1343)//jrult	no_clrREG_01
+			goto no_clrREG_01;
+		cntRegDATA = 1343;// ldw		X,#1343
+no_clrREG_01:
+
+
          //ldw cntRegDATA,X
          cntReg = cntRegDATA;//ldw cntReg,X
 		 //ldw X,#eeCntRegDATA
@@ -387,6 +444,17 @@ void load_event(){
 
 		//ldw	X,cntRegEVENT
 		cntRegEVENT++;				//incw	X
+
+//		;Se agrega un limite para el contador de registros de datos (1120 registros en 10k de memoria ) (14 registros por cada 128 bytes)
+//		cpw		X,#1439
+//		jrult	no_clrREG_02
+//		;clrw	X
+//		ldw		X,#1439
+		if(cntRegEVENT<1439)
+			goto no_clrREG_02;
+		cntRegEVENT = 1439;
+no_clrREG_02:
+
 		//ldw	cntRegEVENT,X
 		cntReg = cntRegEVENT;			//ldw	cntReg,X
 		//ldw	X,#eeCntRegEVENT

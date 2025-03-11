@@ -1223,6 +1223,8 @@ extern _Bool 		flagsTC[3]; // uint8_t flagsTC;
 //;Definición de bits de estado a logicos2
 #define		doorOFF			0//;		Bandera para indicar que la puerta está inhabilitada (incluidas funciones asociadas) (programa mantien puerta cerrada y cancela funciones que se activan con puerta cerrada)
 #define		ventDoorOFF		1//;		Bandera que indica que el ventilador ignora señal de puerta como entrada de control.
+
+#define		funReleDesh		3//; Cambia funcion de relevador cerradura a deshielo en equipo Health
 #define		frecAC			7//;		Seleccion de frecuencia de alimentación de AC 0 = 60hz, 1 = 50 hz
 
 extern uint8_t bufferTxControl[144];
@@ -1303,6 +1305,55 @@ extern uint8_t typeClock;
 extern uint8_t 	fCOM;
 extern uint16_t timeClearComst;
 extern uint16_t timeClearComst1;     		//RM_20240425 Segundo timer para estado de comunicación MODBUS
+
+//;Definición de bits banderas de control para transmision con modulo wifi BLE
+#define	f_select 		0//;			Bandera para seleccionar BLE = 0 o WiFi = 1
+#define	f_statBLE		1//;			BLE status
+#define	f_statWIFI		2//;
+
+// Bloque de evento WiFi EX
+extern uint16_t comandoWF;	//
+extern uint8_t softVersion1WF;	// versión del software
+extern uint8_t softVersion2WF;	// versión del software
+// Bloque de evento WiFi
+extern uint16_t WF_timeInit_HW;	//
+extern uint16_t WF_timeInit_LW;	// tiempo de inicio del evento
+extern uint16_t WF_timeEnd_HW;	//
+extern uint16_t WF_timeEnd_LW;	// tiempo final del evento
+extern uint8_t WF_eventType	;	// tipo de evento
+extern uint16_t WF_tempAmbInit;	// Copia de temperatura ambiente
+extern uint16_t WF_tempEvaEnd;	// Copia de temperatura evaporador
+extern uint8_t WF_voltInit		;	// voltaje de AC
+// Fin del bloque de evento WiFi
+
+extern _Bool flagsTxControl[8];
+extern uint8_t delayComStat;
+extern uint8_t DevLock;
+extern uint8_t statComFlag;
+extern uint8_t statComWIFIFlag;
+extern uint16_t cntSetName;
+extern uint8_t difName[50];
+extern uint8_t timeTxTBLE;	//
+extern uint16_t timeoutTBLE;
+
+extern uint8_t timePreDh_h;
+extern uint8_t timePreDh_l;
+
+// Bloque de evento WiFi EX
+extern uint16_t comandoWF;	//
+extern uint8_t softVersion1WF;	// versión del software
+extern uint8_t softVersion2WF;	// versión del software
+// Bloque de evento WiFi
+extern uint16_t WF_timeInit_HW;	//
+extern uint16_t WF_timeInit_LW;	// tiempo de inicio del evento
+extern uint16_t WF_timeEnd_HW;	//
+extern uint16_t WF_timeEnd_LW;	// tiempo final del evento
+extern uint8_t WF_eventType;	// tipo de evento
+extern uint16_t WF_tempAmbInit;	// Copia de temperatura ambiente
+extern uint16_t WF_tempEvaEnd;	// Copia de temperatura evaporador
+extern uint8_t WF_voltInit;	// voltaje de AC
+// Fin del bloque de evento WiFi
+
 
 extern uint8_t timeBCD_sec_ANT;
 

@@ -75,10 +75,10 @@ no_ini_210:
 //	;/ Inicializa los registros de tiempo UNIX
 
 	//timeSeconds_HW = (uint16_t)(eeTimeUnix1 * 256) + (uint16_t)(eeTimeUnix2);		//	ldw		X,eeTimeUnix1
-	timeSeconds_HW = (uint16_t)(findLastValue((uint32_t) &eeTimeUnix1) * 256) + (uint16_t)(findLastValue((uint32_t) &eeTimeUnix2));		//	ldw		X,eeTimeUnix1
+	//timeSeconds_HW = (uint16_t)(findLastValue((uint32_t) &eeTimeUnix1) * 256) + (uint16_t)(findLastValue((uint32_t) &eeTimeUnix2));		//	ldw		X,eeTimeUnix1
 																									//	ldw		timeSeconds_HW,X
 	//timeSeconds_LW = (uint16_t)(eeTimeUnix3 * 256) + (uint16_t)(eeTimeUnix4);		//	ldw		X,eeTimeUnix3
-	timeSeconds_LW = (uint16_t)(findLastValue((uint32_t) &eeTimeUnix3) * 256) + (uint16_t)(findLastValue((uint32_t) &eeTimeUnix4));		//	ldw		X,eeTimeUnix3
+	//timeSeconds_LW = (uint16_t)(findLastValue((uint32_t) &eeTimeUnix3) * 256) + (uint16_t)(findLastValue((uint32_t) &eeTimeUnix4));		//	ldw		X,eeTimeUnix3
 																										//	ldw		timeSeconds_LW,X
 	cntLogger_H	= 0;			//	clr		cntLogger_H				;
 	//	clr		cntLogger_L				;	contador en segundos para loggear datos
@@ -89,9 +89,16 @@ no_ini_210:
 	flagsEvent[3] = 1;			// bset 	flagsEvent,#3			; Indica inicio de evento power-on
 
 
-	timeTxTWF = 15;			//	mov		timeTxTWF,#15;					/ carga tiempo de envio de token Wifi
+	//timeTxTWF = 15;			//	mov		timeTxTWF,#15;					/ carga tiempo de envio de token Wifi
 							//	ldw		X,#300;
+	timeTxTWF = 20;
 	timeoutTWF = 300;		//	ldw		timeoutTWF,X
+	// carga tiempo de envio de token BLE
+	//	mov		timeTxTBLE,#10;
+	//	ldw		X,#300;
+	//	ldw		timeoutTBLE,X
+	timeTxTBLE = 10;
+	timeoutTBLE = 300;
 //	;---  Obteniendo dirección de la última muestra tomada en el logger de datos
 
 
@@ -170,7 +177,8 @@ lastEventBlockFound:
 		}
 		flagsC[f_lampDoor] = 1;			//	bset		flagsC,#f_lampDoor
 initLampOFF:
-
+		if(GetRegFlagState(Plantilla[logicos2], funReleDesh))//btjt		logicos2,#funReleDesh,deshTypeAct_02; omite estado Lock sí se eligio función deshielo para relevador
+			goto deshTypeAct_02;
 		//;/ carga estado inicial de la cerradura
 		GPIOR0[f_dh] = 0;			//	bres		GPIOR0,#f_dh
 		if(!GetRegFlagState(estado1_Aux, est1LockDr)){
@@ -178,7 +186,10 @@ initLampOFF:
 		}
 		GPIOR0[f_dh] = 1;			//	bset		GPIOR0,#f_dh
 initLockDrOFF:
-
+deshTypeAct_02:
+//		ldw			X,#90
+//		ldw			cntSetName,X
+		cntSetName = 90;
 	//jp	end_init
 }
 

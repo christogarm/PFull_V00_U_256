@@ -144,16 +144,16 @@ static unsigned int  ParamItem = 1;
 static unsigned int  BaudRateTest = 1;
 
 void SetUpBluetooth_Ble(){
-	if (findLastValue((uint32_t)&eePlantilla[eeFlagBLE]) == 0){				// Mauel 09-dic-2021:	Si ya fue configurado "EEPROM VAR", jamas vuelve a llamar a configuracion ???
+	//if (findLastValue((uint32_t)&eePlantilla[eeFlagBLE]) == 0){				// Mauel 09-dic-2021:	Si ya fue configurado "EEPROM VAR", jamas vuelve a llamar a configuracion ???
 		ConfigBLE_Ble ();
-	}
-	else{
-		if (tick_1s == 1){
+	//}
+	//else{
+	//	if (tick_1s == 1){
 			BluetoothState = 2;
 			HAL_GPIO_WritePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI, GPIO_PIN_RESET);      //28-May-2024:  Enciende Modulo WIFI
 			//GPIOC->BSRR = GPIO_BSRR_BR_6;
-		}
-	}
+	//	}
+	//}
 }
 
 void	ConfigBLE_Ble (){
@@ -192,7 +192,7 @@ void	ConfigBLE_Ble (){
 			*/
 			break;
 //--------------------------------------
-		case 2:			//  Manuel,   Retardo tonto por el pin PWRC
+/*		case 2:			//  Manuel,   Retardo tonto por el pin PWRC
 			asm ("nop");
 
 			if (SendATreply_Ble("","",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
@@ -229,6 +229,7 @@ void	ConfigBLE_Ble (){
 				ParamItem = 1;
 			}
 			break;
+*/
 	  case 5:			//  Manuel,   Cambia el nombre de difusion
 			if (SendATreply_Ble("BLE_AT+NAMEIMBERA-CTOF-F\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
 				WaitSerAnsw_Ble_func(6);
@@ -289,13 +290,14 @@ void GetParamBluetooth_Ble(){
 		 break;
 	  case 2:			//  Manuel,   Obtiene la Mac Adress
 		 BluetoothState = 3;
+		 ParamItem = 1;
 	 break;
 	}
 }
 unsigned long TestMessMilis;
 uint8_t PasswordALG = 0 ;       // RGM_8-Dic-2023
 uint8_t RndNumber = 0 ;       // RGM_8-Dic-2023      //RM_20240304 Para agregar PASSWORD de seguridad BLE
-uint8_t DevLock = 0 ;       // RGM_8-Dic-2023        //RM_20240304 Para agregar PASSWORD de seguridad BLE
+//uint8_t DevLock = 0 ;       // RGM_8-Dic-2023        //RM_20240304 Para agregar PASSWORD de seguridad BLE
 
 //*************************************************************************************************
 void TransmitReceive_Ble(){
@@ -322,14 +324,17 @@ void TransmitReceive_Ble(){
 		 if (memcmp(SerialAnswBLE, "\x40\x80",2) == 0){			// "TOKEN DE FUNCIONAMIENTO AL MÓDULO WIFI"
 			 codeTX = 0x80;
 		 }
+		 if (memcmp(SerialAnswBLE, "\x40\x81",2) == 0){
+			 codeTX = 0x81;
+		 }
 		 if (memcmp(SerialAnswBLE, "\xF1\x3D",2) == 0){			// RESPUESTA ENVÍO DE LOGGER MODULO WIFI
 			 codeTX = 0x3D;
 		 }
 
 
 		 if (memcmp(SerialAnswBLE, "\x40\x5E",2) == 0){		   // CÓDIGO DE DESBLOQUEO TEMPORAL
-			 timeUnlockWIFI = 255;	// carga tiempo de desbloqueo de comandos protegidos por password
-
+			 //timeUnlockWIFI = 255;	// carga tiempo de desbloqueo de comandos protegidos por password
+			 DevLock = 0x72;
 			 //	#pragma asm
 			 // Carga datos de bloque para transmitir la respuesta
 			 grabacion_exitosa_handshake();
@@ -375,8 +380,8 @@ void TransmitReceive_Ble(){
 			}
 		}
 
-		if ( (DevLock == 0x72) || (timeUnlockWIFI) ){			// Dispositivo desbloqieado por password ?
-
+		//if ( (DevLock == 0x72) || (timeUnlockWIFI) ){			// Dispositivo desbloqieado por password ?
+		if ( (DevLock == 0x72) || (statComWIFIFlag) ){
 		  if (memcmp(SerialAnswBLE, "\x40\x60",2) == 0)			//"Lectura de datos tipo TIEMPO\n\r"
 			 codeTX = 0x60;
 		  if (memcmp(SerialAnswBLE, "\x40\x61",2) == 0)			//"Lectura de datos tipo EVENTO\n\r"
@@ -417,6 +422,10 @@ void TransmitReceive_Ble(){
 		 	 codeTX = 0x5C;
 	   	  if (memcmp(SerialAnswBLE, "\x40\x5F",2) == 0)			// CÓDIGO DE INFORMACION DE RELOJ
 			  codeTX = 0x5F;
+	   	  if (memcmp(SerialAnswBLE, "\x40\x62",2) == 0)	 		// CÓDIGO DE logger tiempo wifi
+	   		  codeTX = 0x62;
+	   	  if (memcmp(SerialAnswBLE, "\x40\x63",2) == 0)		 	// CÓDIGO DE logger eventos wifi
+	   		  codeTX = 0x63;
 	   	}// close  if (DevLock == 0x72)
 
 	} //Close if (receivecomplete_Ble)
@@ -455,14 +464,23 @@ void	Read_Inpunts_ble()
 						{
 							device_conected = 1;
 							CntDebInp1 = 51;
+							statComFlag = 255;
 						}
 				}
 			else
+			{
+//					CntDebInp1 = 0;				// contador debounce Boton 1
+//					device_conected = 0;
+//					DevLock = 0;    //RGM_29/NOV/2023     //RM_20240304 Para agregar PASSWORD de seguridad BLE
+				if (CntDebInp1 >= 1)
+					CntDebInp1--;
+				if (CntDebInp1==1)
 				{
-					CntDebInp1 = 0;				// contador debounce Boton 1
 					device_conected = 0;
-					DevLock = 0;    //RGM_29/NOV/2023     //RM_20240304 Para agregar PASSWORD de seguridad BLE
+					CntDebInp1 = 0;
+					statComFlag = 0;
 				}
+			}
 		}
 }
 

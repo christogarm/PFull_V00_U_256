@@ -650,7 +650,8 @@ det_j18:
 	botonst[b3_f1] = 0;// BitClear(botonst,b3_f1);
 
 det_j19:
-
+	uint8_t kkkkk;
+	kkkkk++;
 }
 
 //--------------------------------

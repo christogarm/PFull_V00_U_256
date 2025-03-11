@@ -32,6 +32,149 @@ void tx_control(void){
 	uint8_t *point_X;
 	uint8_t *point_Y;
 
+
+	//; Funciones de está seccción no se ejecutan hasta que la maquina de estados BLE esté en transmit/recieve
+	//ld			A,BluetoothState
+	//cp			A,#3
+	//jrne		end_tx_control_b ; directamente sal de tx_control
+	if(BluetoothState != 3)
+		goto end_tx_control_b;
+
+	//; / define el estado actual de la conexion correspondiente
+	//tnz			delayComStat
+	//jrne		end_tx_control
+	if(delayComStat)
+		goto end_tx_control;
+statDef:
+	//tnz			statComFlag
+	//jreq		statDef_clr
+	if(statComFlag==0)
+		goto statDef_clr;
+	//;si el pin de estado está en 1 , pregunta por que comunicacion está activa
+	if(flagsTxControl[f_select])//btjt		flagsTxControl,#f_select,statDef_WIFI
+		goto statDef_WIFI;
+statDef_BLE:
+	flagsTxControl[f_statBLE] = 1;	//bset		flagsTxControl,#f_statBLE
+	//ldw		X,#300;
+	timeoutTWF = 300;	//ldw		timeoutTWF,X;					/ manten carga time out de Token (5 min)
+	for(uint8_t i = 0; i<8; i++)		//clr		flagsWIFI;/				limpia banderas para permitir logger mientras hay conexión BLE
+		flagsWIFI[i] = 0;
+	goto end_statDef;//jra			end_statDef
+statDef_WIFI:
+	flagsTxControl[f_statWIFI] = 1;	//bset		flagsTxControl,#f_statWIFI
+	statComWIFIFlag = 255;			// mov			statComWIFIFlag,#255
+	goto end_statDef;				// jra			end_statDef
+statDef_clr:
+	//;pregunta por que comunicacion está inactiva
+	//btjt		flagsTxControl,#f_select,statDef_clrWIFI
+	if(flagsTxControl[f_select])
+		goto statDef_clrWIFI;
+statDef_clrBLE:
+
+	//btjf	flagsTxControl,#f_statBLE,noCancelTx ;// sólo si viene de una desconexión cancela la transmisión que estuviera en progreso
+	if(flagsTxControl[f_statBLE])
+		goto noCancelTx;
+
+	keyTx = 0;				//clr		keyTx  ;// en caso de desconexion cancela toda transmisión
+	// clr		flagsTX
+	//clr		flagsRxFirm
+	for(uint8_t i=0 ; i<8 ; i++){
+		flagsTX[i] = 0;
+		flagsRxFirm[i] = 0;
+	}
+
+	flagsLogger[4] = 0;			//bres	flagsLogger,#4;				// permite loggeo de eventos
+	flagsLogger[5] = 0;			//bres	flagsLogger,#5;				// permite loggeo de datos
+noCancelTx:
+
+	flagsTxControl[f_statBLE] = 0;		//bres		flagsTxControl,#f_statBLE
+	DevLock = 0;						//clr			DevLock;			sí se pierde conexión BLE el candado vuelve a estar activo
+	goto end_statDef;					//jra			end_statDef
+statDef_clrWIFI:
+	flagsTxControl[f_statWIFI] = 0;		//bres		flagsTxControl,#f_statWIFI
+	statComWIFIFlag = 0;				//clr			statComWIFIFlag
+end_statDef:
+
+
+//;===========================================================
+//;										TOKEN BLE
+//;===========================================================
+tokenBLE:
+	//;Token solo se manda cuando está seleccionada la comunicación BLE
+	if(!flagsTxControl[f_select])//btjf	flagsTxControl,#f_select,tokenBLE_01
+		goto tokenBLE_01;
+	goto finTokenBLE;//jra		finTokenBLE
+tokenBLE_01:
+
+//	btjt	flagsRxFirm,#0,tokenBLE_02; Empezó recepción de Firmware ?
+//	btjt	flagsLogger,#5,tokenBLE_02; Empezó Tx logger datos
+//	btjt	flagsLogger,#4,tokenBLE_02; Empezó Tx logger eventos
+	if(flagsRxFirm[0] || flagsLogger[4] || flagsLogger[5])
+		goto tokenBLE_02;
+
+	//tnz		codeTX
+	if(codeTX == 0)//jreq	tx_tokenBLE;			/se recibió algun comando valido? No, checa sí hay que mandar token
+		goto tx_tokenBLE;
+	//;Interpreta comando
+
+	//ld		A,codeTX
+	//cp		A,#$80;						/ se recibió respuesta WIFI ?
+	if(codeTX == 0x80)		//jreq	finTokenBLE
+		goto finTokenBLE;
+	//cp		A,#$81;						/ se recibió respuesta BLE ?
+	if(codeTX != 0x81)		//jrne	tokenBLE_03;			/ no, es otro comando, deja correr la ejecución
+		goto tokenBLE_03;
+	codeTX = 0;				// clr		codeTX;						/ sí, limpia código de Tx
+tokenBLE_02:
+	flagsTX2[2] = 1;		//bset	flagsTX2,#2;			/ sí se recibió repuesta, levanta bandera de token recibido
+
+tokenBLE_03:
+	//; la recepccion de cualquier comando tomala como una respuesta de  modulo de counicación
+	timeTxTBLE = 20;			//mov		timeTxTBLE,#20;		/ vuelve a cargar tiempo para enviar Token (cada 30s)
+	//ldw		X,#300;
+	timeoutTBLE = 300;			//ldw		timeoutTBLE,X;					/ carga time out de Token BLE (5 min)
+	goto finTokenBLE;			//jra		finTokenBLE
+
+tx_tokenBLE:
+	//tnz		keyTx;									/ se está atendiendo alguna transmisión?
+	if(keyTx)//jrne	finTokenBLE;						/ espera a que terminé
+		goto finTokenBLE;
+	//tnz		timeTxTBLE;						/ ya se cumplió tiempo para enviar Token Wifi ?
+	if(timeTxTBLE)//jrne	finTokenBLE;					/ no, continua
+		goto finTokenBLE;
+
+	timeTxTBLE = 20;//mov		timeTxTBLE,#20;				/ vuelve a cargar tiempo para enviar Token (cada 30s)
+
+	//ldw		X,#$40FA
+	//ldw		bufferTxControl,X
+	bufferTxControl[0] = 0x40;
+	bufferTxControl[1] = 0xFA;
+	flagsTX[2] = 0;				//bres	flagsTX,#2;						/ Indica que no hay que transmitir Header
+
+	//ldw		X,#bufferTxControl
+	//ldw		pointTx,X
+	//ldw		pointInitTx,X
+	//incw	X
+	//ldw		pointEndTx,X
+	//mov		blockSizeTX,#2
+	pointTx = &bufferTxControl[0];
+	pointInitTx = &bufferTxControl[0];
+	pointEndTx = &bufferTxControl[2];
+	blockSizeTX = 2;
+
+	//clrw	X
+	//ldw		chksum_HW,X
+	//ldw		chksum_LW,X;					/ limpia registros de checksum
+	chksum_32_HW_LW = 0;
+	flagsTX[3] = 1;					// bset	flagsTX,#3;						/ indica que ya se ha enviado el checksum
+	keyTx = 0x55;					//mov		keyTx,#$55;						/ listo para mandar transmisión
+	codeTX = 0;// clr		codeTX;								/ limpia código de Tx
+
+	goto finTokenBLE;//jra		finTokenBLE
+
+finTokenBLE:
+
+
 /*
  Nota: codeTX se escribio en bluetooth.c
  tnz		codeTX
@@ -42,6 +185,58 @@ void tx_control(void){
 //;										TOKEN WiFi
 //;===========================================================
 tokenWiFi:
+
+	//;Token solo se manda cuando está seleccionada la comunicación WIFI
+	if(flagsTxControl[f_select])	//btjt	flagsTxControl,#f_select,tokenWiFi_01
+		goto tokenWiFi_01;
+	goto finTokenWiFi;				//jra		finTokenWiFi
+tokenWiFi_01:
+
+	//btjt	flagsWIFI,#f_timeLoggerCmd,tokenWiFi_02; si se está transmitiendo logger Wifi no mandes nombre de difusion
+	//btjt	flagsWIFI,#f_eventLoggerCmd,tokenWiFi_02; si se está transmitiendo logger Wifi no mandes nombre de difusion
+	if(flagsWIFI[f_timeLoggerCmd] || flagsWIFI[f_eventLoggerCmd])
+		goto tokenWiFi_02;
+
+	//ldw		X,cntSetName
+	//tnzw	X
+	if(cntSetName)//jrne	tokenWiFi_02
+		goto tokenWiFi_02;
+
+	//ldw			X,#600
+	cntSetName = 600;	//ldw			cntSetName,X
+
+	//;Indica direcciones iniciales de datos a copiar y cantidad de datos (X origen, Y destino, wreg tamaño)
+	//;copia los datos al buffer de tx
+	//ldw		X,#difName
+	//ldw		Y,#bufferTxControl
+	wreg = 50;//mov		wreg,#50
+	copyVector(&difName[0],&bufferTxControl[0]);//call	copyVector
+
+
+//	ldw		X,#bufferTxControl
+//	ldw		pointTx,X
+//	ldw		pointInitTx,X
+//	ldw		X,#(bufferTxControl+50)
+//	ldw		pointEndTx,X
+//	mov		blockSizeTX,#50
+	pointTx = &bufferTxControl[0];
+	pointInitTx = &bufferTxControl[0];
+	pointEndTx = &bufferTxControl[50];
+	blockSizeTX = 50;
+
+	flagsTX[2] = 0;		//bres	flagsTX,#2;						/ Indica que no hay que transmitir Header
+
+	//clrw	X
+	//ldw		chksum_HW,X
+	chksum_32_HW_LW = 0;		//ldw		chksum_LW,X;					/ limpia registros de checksum
+	flagsTX[3] = 1;				//bset	flagsTX,#3;						/ indica que ya se ha enviado el checksum
+	keyTx = 0x55;				//mov		keyTx,#$55;						/ listo para mandar transmisión
+	codeTX= 0;					//clr		codeTX;								/ limpia código de Tx
+
+	goto finTokenWiFi;//jra		finTokenWiFi
+
+tokenWiFi_02:
+
 	//;comunicaciones que no admiten interrupción
 		/*if(flagsRxFirm[0]){//btjt	flagsRxFirm,#0,rx_tokenWiFi_02 / Empezó recepción de Firmware ?
 			goto rx_tokenWiFi_02;
@@ -96,6 +291,9 @@ tx_tokenWiFi:
 		bufferTxControl[7] = findLastValue((uint32_t) &eeLong2);	//ldw bufferTxControl+6,X
 		bufferTxControl[8] = findLastValue((uint32_t) &eeLong3);	//ldw X,eeLong3
 		bufferTxControl[9] = findLastValue((uint32_t) &eeLong4);	//ldw bufferTxControl+8,X
+		bufferTxControl[10] = versionFirm1;
+		bufferTxControl[11] = versionFirm2;
+		bufferTxControl[12] = fm_hardware;
 
 		flagsTX[2] = 0; //bres flagsTX,#2;	/ Indica que no hay que transmitir Header
 
@@ -103,10 +301,11 @@ tx_tokenWiFi:
 		pointTx = point_X;				// ldw		pointTx,X
 		pointInitTx = point_X;			// ldw		pointInitTx,X
 
-		pointEndTx = &bufferTxControl[10];		// ldw		X,#(bufferTxControl+10)
+		//pointEndTx = &bufferTxControl[10];		// ldw		X,#(bufferTxControl+10)
     										// ldw		pointEndTx,X
-		blockSizeTX = 10;						// mov		blockSizeTX,#10
-
+		pointEndTx = &bufferTxControl[13];
+		//blockSizeTX = 10;						// mov		blockSizeTX,#10
+		blockSizeTX = 13;
 		//clrw	X
 		//ldw	chksum_HW,X
 		chksum_32_HW_LW = 0;		// ldw	chksum_LW,X;					/ limpia registros de checksum
@@ -140,6 +339,7 @@ rx_tokenWiFi_02b:
 		if(codeTX == 0x80){//	cp	A,#$80;			/ se recibió respuesta del modulo WiFi ?
 			goto rx_tokenWiFi_01;//	jreq rx_tokenWiFi_01;  / Sí
 		}
+		timeoutTWF = 300;
 
 rx_tokenWiFi_02:
 
@@ -147,7 +347,7 @@ rx_tokenWiFi_02:
 
 		flagsTX2[1]=1; //bset	flagsTX2,#1; // sí se recibió repuesta, levanta bandera de token recibido
 		//ldw	X,#300;
-		timeoutTWF = 300;		//ldw	timeoutTWF,X;	/ carga time out de Token (5 min)
+		//timeoutTWF = 300;		//ldw	timeoutTWF,X;	/ carga time out de Token (5 min)
 		goto finTokenWiFi;		//jra	finTokenWiFi;
 
 finTokenWiFi:
@@ -187,7 +387,7 @@ noLoadResetBLE:
 
 		//ldw		X,#300;
 		timeoutTWF = 300;//ldw		timeoutTWF,X;	/ carga time out de Token (5 min)
-
+		timeoutTBLE = 300;
 		if(timeOutRx != 0){//tnz timeOutRx
 			goto noTimeOutRx;//jrne	noTimeOutRx;	/ se cumplió el time out de recepción ?
 		}
@@ -199,6 +399,16 @@ noLoadResetBLE:
 
 noTimeOutRx:
 		goto 	rx_firmware;			//jp		rx_firmware
+		//; Los comandos son permisibles si hay una conexión activa ya sea BLE o WIFI
+		//btjf	flagsTxControl,#f_select,tx_control_askStatBLE
+tx_control_askStatWIFI:
+		if(flagsTxControl[f_statWIFI])//btjt	flagsTxControl,#f_statWIFI,ask_tx_control_01
+			goto ask_tx_control_01;
+		goto jmp_tx_wifi;			//jp		jmp_tx_wifi
+tx_control_askStatBLE:
+		if(flagsTxControl[f_statBLE])// btjt	flagsTxControl,#f_statBLE,ask_tx_control_01
+			goto ask_tx_control_01;
+		goto jmp_tx_wifi;			//jp		jmp_tx_wifi
 
 
 
@@ -322,6 +532,20 @@ ask_tx_control_17:
 			timeOutRst = 240;//mov timeOutRst,#240;				// carga time out de resetcon 240 segundos
 			goto tx_infoReloj;//jp		tx_infoReloj
 ask_tx_control_18:
+			//ld		A,codeTX
+			//cp		A,#$62
+			if(codeTX!= 0x62)//jrne	ask_tx_control_19
+				goto ask_tx_control_19;
+			timeOutRst = 240; //mov		timeOutRst,#240;				// carga time out de resetcon 240 segundos
+			goto tx_wifi_datalogger;//jp		tx_wifi_datalogger
+ask_tx_control_19:
+			//ld		A,codeTX
+			//cp		A,#$63
+			if(codeTX!= 0x63)//jrne	ask_tx_control_20
+				goto ask_tx_control_20;
+			timeOutRst = 240;		//mov		timeOutRst,#240;				// carga time out de resetcon 240 segundos
+			goto tx_wifi_eventlogger;//jp		tx_wifi_eventlogger
+ask_tx_control_20:
 
 
 //;---------------------------------------------------------------------------------------------------------
@@ -1226,6 +1450,9 @@ chk_est1_b5:
 			ld_alarmDelay(); // call		ld_alarmDelay;				/ carga tiempo de Snooze LC
 
 chk_est1_b6:
+			if(GetRegFlagState(Plantilla[logicos2],funReleDesh)){
+				goto deshTypeAct_05;
+			}
 			if(!GetRegFlagState(wreg, est1LockDr)){		// btjf	wreg,#est1LockDr,chk_est1_b7; / hay cambio de estado en cerradura ?
 				goto chk_est1_b7;
 			}
@@ -1236,6 +1463,7 @@ chk_est1_b6:
 			numMsg = 3;	// mov		numMsg,#3
 
 chk_est1_b7:
+deshTypeAct_05:
 
 			// carga waux en eeprom
 			// ldw		X,#eeEstado1;
@@ -1859,13 +2087,13 @@ fin_tx_timeBCD:
 			goto end_tx_control;		//jp		end_tx_control
 //----------------------------------------------------------
 tx_infoReloj:
-			typeClock = 0;					// mov		typeClock,#0;				Reloj interno
+			//typeClock = 0;					// mov		typeClock,#0;				Reloj interno
 			// ;mov		typeClock,#1;				Reloj con señal de CA
-			if(!flagsTime[f_timeConfigRTC]){// btjf		flagsTime,#f_timeConfigRTC,noCristal;// Ya se configuro RTC ? no, no actualices tiempos
-				goto noCristal;
-			}
+			//if(!flagsTime[f_timeConfigRTC]){// btjf		flagsTime,#f_timeConfigRTC,noCristal;// Ya se configuro RTC ? no, no actualices tiempos
+			//	goto noCristal;
+			//}
 			typeClock = 2;					// mov		typeClock,#2;				Reloj cristal
-noCristal:
+//noCristal:
 
 			// ldw		X,#typeClock;				/ inicio del bloque
 			pointTx = &typeClock ;				// ldw		pointTx,X
@@ -1901,7 +2129,19 @@ noCristal:
 fin_tx_infoReloj:
 			goto end_tx_control;		//jp		end_tx_control
 //----------------------------------------------------------
+tx_wifi_datalogger:
 
+			flagsWIFI[f_timeLoggerSend] = 1;	//bset		flagsWIFI,#f_timeLoggerSend;
+			codeTX = 0;							//clr		codeTX;								/ limpia código de Tx
+
+			goto end_tx_control;				//jp		end_tx_control
+
+//;----------------------------------------------------------
+tx_wifi_eventlogger:
+			flagsWIFI[f_eventLoggerSend] = 1;	//bset		flagsWIFI,#f_eventLoggerSend;
+			codeTX = 0;							//clr		codeTX;								/ limpia código de Tx
+
+			goto end_tx_control;				//jp		end_tx_control
 
 
 //----------------------------------------------------------
@@ -1947,15 +2187,26 @@ no_resetLoopTx:
 
 tx_wifi:
 
-		if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12)){ // btjt 		PE_IDR,#wifi_connect,tx_wifi_OK
+		//if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12)){ // btjt 		PE_IDR,#wifi_connect,tx_wifi_OK
+		//	goto tx_wifi_OK;
+		//}
+		//; logger, telemetria y eventos por servidor solo están permitidos con comunicación WiFi seleccionada
+		if(flagsTxControl[f_select])//btjt		flagsTxControl,#f_select,tx_wifi_01
+			goto tx_wifi_01;
+		goto end_tx_wifi;//jp			end_tx_wifi
+tx_wifi_01:
+		//;  Pregunta por el estado de la conexión a Servidor
+		if(flagsTxControl[f_statWIFI])//btjt		flagsTxControl,#f_statWIFI,tx_wifi_OK
 			goto tx_wifi_OK;
-		}
 		flagsWIFI[f_serverConnect] = 0;// bres		flagsWIFI,#f_serverConnect; / baja bandera de conexión con servidor
 		// en desconexión borra banderas de logger enviado para que se envíen a la reconexión
 		flagsWIFI[f_timeLoggerSend] = 0;// bres		flagsWIFI,#f_timeLoggerSend;
 		flagsWIFI[f_eventLoggerSend] = 0;// bres		flagsWIFI,#f_eventLoggerSend;
 		flagsWIFI[f_timeLoggerCmd] = 0;// bres		flagsWIFI,#f_timeLoggerCmd;
 		flagsWIFI[f_eventLoggerCmd] = 0;// bres		flagsWIFI,#f_eventLoggerCmd;
+		cntRegTxWifi = 0;
+		blockLoggWifi = 0;
+		byteLoggWifi = 0;
 		goto end_tx_wifi;// jp			end_tx_wifi
 
 tx_wifi_OK:
@@ -1980,7 +2231,8 @@ tx_wifi_OK_02:
 //;===========================================================
 tx_wifi_timeLoggerAsk:
 		//; Pregunta si ya se envío el logger de tiempo
-		if(!flagsWIFI[f_timeLoggerSend]){
+		//if(!flagsWIFI[f_timeLoggerSend]){
+		if(flagsWIFI[f_timeLoggerSend]){
 			goto tx_wifi_timeLogger;// btjf		flagsWIFI,#f_timeLoggerSend,tx_wifi_timeLogger
 		}
 		goto tx_wifi_eventLoggerAsk;	//jp			tx_wifi_eventLoggerAsk
@@ -1996,6 +2248,12 @@ tx_wifi_timeLogger:
 		}
 		// ; en caso contrario carga información para transmitir comando
 		flagsWIFI[f_timeLoggerCmd] = 1;	//bset		flagsWIFI,#f_timeLoggerCmd
+		//;Sí el contador no viene en cero no grabes datos
+		//ldw		X,cntRegTxWifi
+		//tnzw	X
+		//jrne	tx_wifi_timeLogger_cmd
+		if(cntRegTxWifi)
+			goto tx_wifi_timeLogger_cmd;
 
 		// ;primero guarda lo que aun hay en el buffer .
 		cntBlockFlash = cntBlockDATA;// mov		cntBlockFlash,cntBlockDATA; /pasa el número de bloques de datos grabados
@@ -2032,6 +2290,7 @@ tx_wifi_timeLogger:
 
 		save_timeUNIX();// call	save_timeUNIX
 
+tx_wifi_timeLogger_cmd:
 		//; carga comando
 		// ldw		X,#$4085
 		bufferWifiTx[0] = 0x40;// ldw		bufferWifiTx,X
@@ -2094,6 +2353,13 @@ tx_wifi_timeLogger:
 		keyTx = 0x55;// mov		keyTx,#$55;						/ listo para mandar transmisión
 		codeTX = 0;// clr		codeTX;								/ limpia código de Tx
 
+		//;Sí el contador no viene en cero continua utilizando los punteros sin iniciarlos
+		//ldw		X,cntRegTxWifi
+		//tnzw	X
+		//jrne	tx_wifi_timeLogger_noInit
+		if(cntRegTxWifi)
+			goto tx_wifi_timeLogger_noInit;
+
 /*;Establece punteros iniciales y finales del envío de datos de tiempo
 ; pasa el número de bloques y bytes de datos de tiempo grabados
 ; limpia el contador de registros transmitidos
@@ -2103,17 +2369,19 @@ tx_wifi_timeLogger:
 		byteLoggWifi = cntByteBlockDATA;// mov		byteLoggWifi,cntByteBlockDATA
 		// clrw	X
 		cntRegTxWifi = 0;// ldw		cntRegTxWifi,X
+tx_wifi_timeLogger_noInit:
 		timeoutTxWifi = 3;// mov		timeoutTxWifi,#3
 
 		//; Indica cuantos registros se loggearon para mandar unicamente esa cantidad de registros
 		// ldw		X,eeCntRegDATA
 		// tnzw	X;										/ se logearon registros ?
 		//if(eeCntRegDATA==0){
-		if(findLastValue((uint32_t)&eeCntRegDATA) == 0){
-			goto tx_wifi_timeLogger_END;// jreq	tx_wifi_timeLogger_END; / no, finaliza envío de logger de datos
-		}
+		//if(findLastValue((uint32_t)&eeCntRegDATA) == 0){
+		//	goto tx_wifi_timeLogger_END;// jreq	tx_wifi_timeLogger_END; / no, finaliza envío de logger de datos
+		//}
 		//numRegTx = eeCntRegDATA;// ldw		numRegTx,X
-		numRegTx = findLastValue((uint32_t)&eeCntRegDATA);
+		//numRegTx = findLastValue((uint32_t)&eeCntRegDATA);
+		numRegTx = 1343;
 		goto end_tx_wifi;// jp		end_tx_wifi
 /*;------------------------------------------------------------
 ;------------- Validación de respuesta, time out y envío de logger por Registro
@@ -2124,6 +2392,7 @@ tx_wifi_timeLogger_01:
 		if(codeTX==0x3D){
 			goto tx_wifi_timeLogger_03; // jreq	tx_wifi_timeLogger_03
 		}
+		codeTX = 0;
 		//; checa timeout
 		// tnz		timeoutTxWifi
 		if(timeoutTxWifi != 0){
@@ -2135,6 +2404,12 @@ tx_wifi_timeLogger_02:
 		goto end_tx_wifi;// jp		end_tx_wifi
 
 tx_wifi_timeLogger_03:
+		//; Mientras exista comunicacion exitosa en este proceso mante timeout cargado
+		//ldw		X,#300;
+		timeoutTWF = 300;//ldw		timeoutTWF,X;					/ carga time out de Token (5 min)
+		//ldw		X,#300;
+		timeoutTBLE = 300;//ldw		timeoutTBLE,X;					/ carga time out de Token (5 min)
+
 		//;	carga timeout en segundos
 		timeoutTxWifi = 3;// mov		timeoutTxWifi,#3
 		//; checa si ya se terminaron de enviar todos los registros del logger
@@ -2148,17 +2423,24 @@ tx_wifi_timeLogger_03:
 		 }
 
 		// clrw	X
-		cntRegDATA = 0;// ldw		cntRegDATA,X
-		cntReg = 0;// ldw		cntReg,X
+		//cntRegDATA = 0;// ldw		cntRegDATA,X
+		//cntReg = 0;// ldw		cntReg,X
 		// ldw		X,#eeCntRegDATA
-		cntRegPNT = &eeCntRegDATA;// ldw		cntRegPNT,X
-		save_cntReg();// call	save_cntReg
+		//cntRegPNT = &eeCntRegDATA;// ldw		cntRegPNT,X
+		//save_cntReg();// call	save_cntReg
 
 tx_wifi_timeLogger_END:
 		//; indica que ya es enviaron todos los paquetes
-		flagsWIFI[f_timeLoggerSend] = 1;// bset	flagsWIFI,#f_timeLoggerSend
+		//flagsWIFI[f_timeLoggerSend] = 1;// bset	flagsWIFI,#f_timeLoggerSend
+		flagsWIFI[f_timeLoggerSend] = 0;
 		flagsWIFI[f_timeLoggerCmd] = 0;	// bres	flagsWIFI,#f_timeLoggerCmd; // borra bandera de comando para liberar envío de token
 		delayTxLoggWifi = 10;// mov		delayTxLoggWifi,#10; / carga un retardo para comenzar a envíar el siguiente logger en segundos
+
+		blockLoggWifi = 0; 		//clr	blockLoggWifi
+		byteLoggWifi = 0;		//clr		byteLoggWifi
+		//clrw	X
+		cntRegTxWifi = 0;//ldw		cntRegTxWifi,X
+
 		goto end_tx_wifi;// jp		end_tx_wifi
 
 tx_wifi_timeLogger_04:
@@ -2252,7 +2534,8 @@ tx_wifi_timeLogger_loadLogger_04:
 		// ;===========================================================
 tx_wifi_eventLoggerAsk:
 		// ; Pregunta si ya se envío el logger de eventos
-		if(!flagsWIFI[f_eventLoggerSend]){
+		//if(!flagsWIFI[f_eventLoggerSend]){
+		if(flagsWIFI[f_eventLoggerSend]){
 			goto tx_wifi_eventLogger;// btjf		flagsWIFI,#f_eventLoggerSend,tx_wifi_eventLogger
 		}
 		goto tx_wifi_eventData;// jp			tx_wifi_eventData
@@ -2262,12 +2545,12 @@ tx_wifi_eventLogger:
 		//;------------- Espera retardo para comenzar con rutina Tx logger eventos
 		//;Verifica si ya se consumio el retardo para comenzar la transmisión
 		// tnz		delayTxLoggWifi
-		if(delayTxLoggWifi==0){
-			goto tx_wifi_eventDelayAsk;// jreq	tx_wifi_eventDelayAsk
-		}
-		goto end_tx_wifi;// jp		end_tx_wifi
+//		if(delayTxLoggWifi==0){
+//			goto tx_wifi_eventDelayAsk;// jreq	tx_wifi_eventDelayAsk
+//		}
+//		goto end_tx_wifi;// jp		end_tx_wifi
 
-tx_wifi_eventDelayAsk:
+//tx_wifi_eventDelayAsk:
 		//;------------------------------------------------------------
 		//;------------- Envío de comando y tiempo actual
 		//; Ya se envió el comando con la estampa de tiempo ?
@@ -2279,6 +2562,12 @@ tx_wifi_eventDelayAsk:
 		//; en caso contrario carga información para transmitir comando
 		flagsWIFI[f_eventLoggerCmd]=1;// bset		flagsWIFI,#f_eventLoggerCmd
 
+		//;Sí el contador no viene en cero no grabes datos
+		//ldw		X,cntRegTxWifi
+		//tnzw	X
+		//jrne	tx_wifi_eventLogger_cmd
+		if(cntRegTxWifi)
+			goto tx_wifi_eventLogger_cmd;
 		//;primero guarda lo que aun hay en el buffer .
 		cntBlockFlash = cntBlockEVENT;// mov		cntBlockFlash,cntBlockEVENT; /pasa el número de bloques de datos grabados
 		cntByteBlock = cntByteBlockEVENT;// mov		cntByteBlock,cntByteBlockEVENT
@@ -2314,6 +2603,7 @@ tx_wifi_eventDelayAsk:
 
 		save_timeUNIX();	// call	save_timeUNIX
 
+tx_wifi_eventLogger_cmd:
 		//; carga comando
 		// ldw		X,#$4086
 		bufferWifiTx[0] = 0x40;// ldw		bufferWifiTx,X
@@ -2376,6 +2666,14 @@ tx_wifi_eventDelayAsk:
 		keyTx = 0X55; 	// mov		keyTx,#$55;						/ listo para mandar transmisión
 		codeTX = 0;//	clr		codeTX;								/ limpia código de Tx
 
+//		;Sí el contador no viene en cero continua utilizando los punteros sin iniciarlos
+//		ldw		X,cntRegTxWifi
+//		tnzw	X
+//		jrne	tx_wifi_eventLogger_noInit
+		if(cntRegTxWifi)
+			goto tx_wifi_eventLogger_noInit;
+
+
 		/*;Establece punteros iniciales y finales del envío de eventos
 		; pasa el número de bloques y bytes de datos de tiempo grabados
 		; limpia el contador de registros transmitidos
@@ -2384,18 +2682,20 @@ tx_wifi_eventDelayAsk:
 		byteLoggWifi = cntByteBlockEVENT;// mov		byteLoggWifi,cntByteBlockEVENT
 		// clrw	X
 		cntRegTxWifi = 0;	// ldw		cntRegTxWifi,X
+
+tx_wifi_eventLogger_noInit:
 		timeoutTxWifi = 3;	// mov		timeoutTxWifi,#3
 
 		//; Indica cuantos registros se loggearon para mandar unicamente esa cantidad de registros
 		// ldw		X,eeCntRegEVENT
 		// tnzw	X;										/ se logearon registros ?
 		//if(eeCntRegEVENT==0){
-		if(findLastValue((uint32_t)&eeCntRegEVENT)==0){
-			goto tx_wifi_eventLogger_END;// jreq	tx_wifi_eventLogger_END; / no, finaliza envío de logger de datos
-		}
+		//if(findLastValue((uint32_t)&eeCntRegEVENT)==0){
+		//	goto tx_wifi_eventLogger_END;// jreq	tx_wifi_eventLogger_END; / no, finaliza envío de logger de datos
+		//}
 		//numRegTx = eeCntRegEVENT;// ldw		numRegTx,X
-		numRegTx = findLastValue((uint32_t)&eeCntRegEVENT);
-
+		//numRegTx = findLastValue((uint32_t)&eeCntRegEVENT);
+		numRegTx = 1439;
 		goto end_tx_wifi;// jp		end_tx_wifi
 //;------------------------------------------------------------
 //;------------- Validación de respuesta, time out y envío de logger por Registro
@@ -2405,6 +2705,7 @@ tx_wifi_eventLogger_01:
 		if(codeTX == 0x3D){
 			goto tx_wifi_eventLogger_03;// jreq	tx_wifi_eventLogger_03
 		}
+		codeTX = 0;
 		//; checa timeout
 		// tnz		timeoutTxWifi
 		if(timeoutTxWifi != 0){
@@ -2416,6 +2717,13 @@ tx_wifi_eventLogger_02:
 		goto end_tx_wifi;// jp		end_tx_wifi
 
 tx_wifi_eventLogger_03:
+//		; Mientras exista comunicacion exitosa en este proceso mante timeout cargado
+//		ldw		X,#300;
+//		ldw		timeoutTWF,X;					/ carga time out de Token (5 min)
+//		ldw		X,#300;
+//		ldw		timeoutTBLE,X;					/ carga time out de Token (5 min)
+		timeoutTWF = 300;
+		timeoutTBLE = 300;
 		//;	carga timeout en segundos
 		timeoutTxWifi = 3;// mov		timeoutTxWifi,#3
 		//; checa si ya se terminaron de enviar todos los registros del logger
@@ -2428,17 +2736,23 @@ tx_wifi_eventLogger_03:
 		}
 
 		// clrw	X
-		cntRegEVENT = 0;// ldw		cntRegEVENT,X
-		cntReg = 0;// ldw		cntReg,X
-		// ldw		X,#eeCntRegEVENT
-		cntRegPNT = &eeCntRegEVENT;// ldw		cntRegPNT,X
-		save_cntReg();// call	save_cntReg
+//		cntRegEVENT = 0;// ldw		cntRegEVENT,X
+//		cntReg = 0;// ldw		cntReg,X
+//		// ldw		X,#eeCntRegEVENT
+//		cntRegPNT = &eeCntRegEVENT;// ldw		cntRegPNT,X
+//		save_cntReg();// call	save_cntReg
 
 tx_wifi_eventLogger_END:
 		//; indica que ya es enviaron todos los paquetes
-		flagsWIFI[f_eventLoggerSend] = 1; 	// bset	flagsWIFI,#f_eventLoggerSend
+		//flagsWIFI[f_eventLoggerSend] = 1; 	// bset	flagsWIFI,#f_eventLoggerSend
+		flagsWIFI[f_eventLoggerSend] = 0;
 		flagsWIFI[f_eventLoggerCmd] = 0;	// bres	flagsWIFI,#f_eventLoggerCmd; // borra bandera de comando para liberar envío de token
 		delayTxLoggWifi = 10;				// mov		delayTxLoggWifi,#10; / carga un retardo para comenzar a envíar el siguiente logger en segundos
+		blockLoggWifi = 0;//clr		blockLoggWifi
+		byteLoggWifi = 0;//clr		byteLoggWifi
+		//clrw	X
+		cntRegTxWifi = 0;//ldw		cntRegTxWifi,X
+
 		goto end_tx_wifi;//jp		end_tx_wifi
 tx_wifi_eventLogger_04:
 

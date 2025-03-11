@@ -78,12 +78,12 @@ SECTIONS
   /* The startup EEPROM */
   .myBufSectionEEPROMP 0x803F000:
   {
-  	KEEP(*(.myBufSectionEEPROMP))
+  	KEEP(*(.myBufSectionEEPROM_P))
   } >EEPROM
   
   .myBufSectionEEPROMV 0x803F800:
   {
-  	KEEP(*(.myBufSectionEEPROMV))
+  	KEEP(*(.myBufSectionEEPROM_V))
   } >EEPROM
   
   .BOOTLOADER 0x801E800:

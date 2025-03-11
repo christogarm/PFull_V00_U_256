@@ -1213,6 +1213,36 @@ uint32_t dateReg;
 
 uint8_t timeBCD_sec_ANT		= 0;
 
+_Bool flagsTxControl[8]		= {0};
+uint8_t delayComStat		= 0;
+uint8_t DevLock = 0 ;
+uint8_t statComFlag = 0 ;
+uint8_t statComWIFIFlag = 0 ;
+uint16_t cntSetName = 0 ;
+uint8_t difName[50] = "BLE_AT+NAMEIMBERA-HEALTH\r\n";
+uint8_t timeTxTBLE			= 0;	//
+uint16_t timeoutTBLE = 0;
+
+uint8_t timePreDh_h = 0;
+uint8_t timePreDh_l = 0;
+
+// Bloque de evento WiFi EX
+uint16_t comandoWF = 0;	//
+uint8_t softVersion1WF = 0;	// versión del software
+uint8_t softVersion2WF = 0;	// versión del software
+// Bloque de evento WiFi
+uint16_t WF_timeInit_HW		= 0;	//
+uint16_t WF_timeInit_LW		= 0;	// tiempo de inicio del evento
+uint16_t WF_timeEnd_HW		= 0;	//
+uint16_t WF_timeEnd_LW		= 0;	// tiempo final del evento
+uint8_t WF_eventType			= 0;	// tipo de evento
+uint16_t WF_tempAmbInit		= 0;	// Copia de temperatura ambiente
+uint16_t WF_tempEvaEnd		= 0;	// Copia de temperatura evaporador
+uint8_t WF_voltInit				= 0;	// voltaje de AC
+// Fin del bloque de evento WiFi
+
+
+
 // para reservar memoria Flash dedicada a Logger
 //#pragma section @near {eventLogger}
 __attribute__((section(".eventLogger"))) uint8_t eventLogger[20480-1] = {0};
@@ -2334,26 +2364,26 @@ static void check_Tick_1ms(void)
 {
 
 				presc_tick_1ms++;
-				if(presc_tick_1ms >= 4)			// contador prescala 1ms =
+				if(presc_tick_1ms >= 4)							// contador prescala 1ms =
 					{
 						presc_tick_1ms = 0;
-						tick_1ms = 1;								// Manuel, levanta flag 1ms
+						tick_1ms = 1;							// Manuel, levanta flag 1ms
 						presc_tick_10ms++;
-						timemilis++;			// variable contadora de milisegundos
+						timemilis++;							// variable contadora de milisegundos
 					}
-				if(presc_tick_10ms >= 10)					// contador prescala 10ms
+				if(presc_tick_10ms >= 10)						// contador prescala 10ms
 					{
 						presc_tick_10ms = 0;
-						tick_10ms =1;								// flag base de tiempo 10ms
+						tick_10ms =1;							// flag base de tiempo 10ms
 						presc_tick_100ms++;
 					}
-				if(presc_tick_100ms >= 10)				// contador prescala 100ms
+				if(presc_tick_100ms >= 10)						// contador prescala 100ms
 					{
 						presc_tick_100ms = 0;
-						tick_100ms =1;								// flag base de tiempo 100ms
+						tick_100ms =1;							// flag base de tiempo 100ms
 						presc_tick_1s++;
 					}
-				if(presc_tick_1s >= 10)					// contador prescala 1s
+				if(presc_tick_1s >= 10)							// contador prescala 1s
 					{
 						presc_tick_1s = 0;
 						tick_1s =1;								// flag base de tiempo 1s
@@ -2467,7 +2497,7 @@ testTimmingProcess:
 
     main10();					// ASM: <<<-- TRADUCCION COMPLETA -->>>
 
-    //muestreo();
+    muestreo();
 
   	if(StateSleep == 0x55){
   		// C: Pendiente a Adaptar
@@ -2511,30 +2541,30 @@ testTimmingProcess:
 
   	Read_Inpunts_ble();				// 14-Mar-2022
 
-  	if (device_conected){
-  		//ContadorDebugger++;
-  		// #pragma asm
-  		if(!flagsTX [7])
-  			timeOutRst = 241;				// carga time out de resetcon 60 segundos
-  		flagsTX [7] = 1;							// levanta bandera de dispositivo conectado
-
-  		if(flagsLogger2 [2])
-  			flagsTX [7] = 0;
-  	}
-  	else{
-  		if(flagsTX [7]){				// sólo si viene de una desconexión cancela la transmisión que estuviera en progreso
-  			keyTx = 0;// en caso de desconexion cancela toda transmisión
-  			//flagsTX = 0;
-  			for(uint8_t i = 0; i < 8 ; i++ )
-  				flagsTX [i] = 0;
-  			// flagsRxFirm = 0;
-  			for(uint8_t i = 0; i < 8 ; i++ )
-  				flagsRxFirm [i] = 0;
-  			flagsLogger [4] = 0;				// permite loggeo de eventos
-  			flagsLogger [5] = 0;				// permite loggeo de datos
-  		}
-  		flagsTX [7] = 0;				// borra bandera de dispositivo conectado
-  	}
+//  	if (device_conected){
+//  		//ContadorDebugger++;
+//  		// #pragma asm
+//  		if(!flagsTX [7])
+//  			timeOutRst = 241;				// carga time out de resetcon 60 segundos
+//  		flagsTX [7] = 1;							// levanta bandera de dispositivo conectado
+//
+//  		if(flagsLogger2 [2])
+//  			flagsTX [7] = 0;
+//  	}
+//  	else{
+//  		if(flagsTX [7]){				// sólo si viene de una desconexión cancela la transmisión que estuviera en progreso
+//  			keyTx = 0;// en caso de desconexion cancela toda transmisión
+//  			//flagsTX = 0;
+//  			for(uint8_t i = 0; i < 8 ; i++ )
+//  				flagsTX [i] = 0;
+//  			// flagsRxFirm = 0;
+//  			for(uint8_t i = 0; i < 8 ; i++ )
+//  				flagsRxFirm [i] = 0;
+//  			flagsLogger [4] = 0;				// permite loggeo de eventos
+//  			flagsLogger [5] = 0;				// permite loggeo de datos
+//  		}
+//  		flagsTX [7] = 0;				// borra bandera de dispositivo conectado
+//  	}
 
   	if(tick_1s){
   	  asm ("nop");
@@ -3274,7 +3304,8 @@ static void MX_GPIO_Init(void)
                           |GPIO_PIN_9|GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2|GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2|GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_3
+                          |GPIO_PIN_5, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, GPIO_PIN_RESET);
@@ -3288,15 +3319,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB2 PB10 PB3 PB5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_10|GPIO_PIN_3|GPIO_PIN_5;
+  /*Configure GPIO pins : PB2 PB10 PB12 PB3
+                           PB5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_3
+                          |GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB11 PB12 PB14 PB4 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_14|GPIO_PIN_4;
+  /*Configure GPIO pins : PB11 PB14 PB4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_14|GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
