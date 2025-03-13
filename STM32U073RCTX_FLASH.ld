@@ -76,12 +76,12 @@ SECTIONS
   } >FLASH2
   
   /* The startup EEPROM */
-  .myBufSectionEEPROMP 0x803F000:
+  .myBufSectionEEPROM_P 0x803F000:
   {
   	KEEP(*(.myBufSectionEEPROM_P))
   } >EEPROM
   
-  .myBufSectionEEPROMV 0x803F800:
+  .myBufSectionEEPROM_V 0x803F800:
   {
   	KEEP(*(.myBufSectionEEPROM_V))
   } >EEPROM

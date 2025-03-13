@@ -516,7 +516,7 @@ uint8_t	Plantilla [128] = {
 		[maxwork]=0, 								//uint8_t		maxwork = 0;				//08/FEB/2022		DS.B 1	;	equ	$0166	;	358 d	;F4 - Tiempo máximo de compresor encendido
 		[exhausted]=0, 								//uint8_t		exhausted = 0;			//08/FEB/2022		DS.B 1	;	equ	$0167	;	359 d	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON
 		[cicloFd]=0, 								//uint8_t		cicloFd = 0;				//08/FEB/2022		DS.B 1	;	equ	$0168	;	360 d	;F6 - Cicleo para ventilador en modo diurno
-		[cicloFn]=0, 								//uint8_t		cicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
+		[timeBreakDh]=0, 								//uint8_t		cicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
 		[timedoor]=0, 								//uint8_t		timedoor = 0;				//08/FEB/2022		DS.B 1	;	equ	$016A	;	362 d	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno
 		[paramSr]=0, 								//uint8_t		paramSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
 		[margdes]=0, 								//uint8_t		margdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
@@ -659,7 +659,7 @@ uint8_t	copiaPlantilla [128] = {
 		[cmaxwork]=0, 								//uint8_t		cmaxwork = 0;				//08/FEB/2022		DS.B 1	;	equ	$0166	;	358 d	;F4 - Tiempo máximo de compresor encendido
 		[cexhausted]=0, 							//uint8_t		cexhausted = 0;			//08/FEB/2022		DS.B 1	;	equ	$0167	;	359 d	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON
 		[ccicloFd]=0, 								//uint8_t		ccicloFd = 0;				//08/FEB/2022		DS.B 1	;	equ	$0168	;	360 d	;F6 - Cicleo para ventilador en modo diurno
-		[ccicloFn]=0, 								//uint8_t		ccicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
+		[ctimeBreakDh]=0, 								//uint8_t		ccicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
 		[ctimedoor]=0, 								//uint8_t		ctimedoor = 0;				//08/FEB/2022		DS.B 1	;	equ	$016A	;	362 d	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno
 		[cparamSr]=0, 								//uint8_t		cparamSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
 		[cmargdes]=0, 								//uint8_t		cmargdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
@@ -807,7 +807,7 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		[eemaxwork]=250, 										//uint8_t		eemaxwork = 250;					//09/FEB/2022			 	DC.B	00	;	16486 d	4066 h	;F4 - Tiempo máximo de compresor encendido	Indefinido
 		[eeexhausted]=250, 										//uint8_t		eeexhausted	= 250;			//09/FEB/2022		  	DC.B	250	;	16487 d	4067 h	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON	25 horas
 		[eecicloFd]=10, 										//uint8_t		eecicloFd = 10;					//09/FEB/2022				DC.B	33	;	16488 d	4068 h	;F6 - Cicleo para ventilador en modo diurno	3 minutos ON. 3 minutos OFF
-		[eecicloFn]=33, 										//uint8_t		eecicloFn = 33;					//09/FEB/2022			 	DC.B	33	;	16489 d	4069 h	;F7 - Cicleo para ventilador en modo nocturno	3 minutos ON. 3 minutos OFF
+		[eetimeBreakDh]=33, 										//uint8_t		eecicloFn = 33;					//09/FEB/2022			 	DC.B	33	;	16489 d	4069 h	;F7 - Cicleo para ventilador en modo nocturno	3 minutos ON. 3 minutos OFF
 		[eetimedoor]=20, 										//uint8_t		eetimedoor = 20;				//09/FEB/2022				DC.B	20	;	16490 d	406A h	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno	2 horas
 		[eeparamSr]=20, 										//uint8_t		eeparamSr = 20;					//09/FEB/2022			 	DC.B	20	;	16491 d	406B h	;F9 - Pre-salida del modo Nocturno	2 horas
 		[eemargdes]=35, 										//uint8_t		eemargdes = 35;					//09/FEB/2022			 	DC.B	35	;	16492 d	406C h	;FA - Margen de descarte 	3.5 horas
@@ -1219,7 +1219,7 @@ uint8_t DevLock = 0 ;
 uint8_t statComFlag = 0 ;
 uint8_t statComWIFIFlag = 0 ;
 uint16_t cntSetName = 0 ;
-uint8_t difName[50] = "BLE_AT+NAMEIMBERA-HEALTH\r\n";
+uint8_t difName[50] = "BLE_AT+NAMEIMBERA-CTOF-F\r\n";
 uint8_t timeTxTBLE			= 0;	//
 uint16_t timeoutTBLE = 0;
 
@@ -1227,19 +1227,20 @@ uint8_t timePreDh_h = 0;
 uint8_t timePreDh_l = 0;
 
 // Bloque de evento WiFi EX
-uint16_t comandoWF = 0;	//
-uint8_t softVersion1WF = 0;	// versión del software
-uint8_t softVersion2WF = 0;	// versión del software
-// Bloque de evento WiFi
-uint16_t WF_timeInit_HW		= 0;	//
-uint16_t WF_timeInit_LW		= 0;	// tiempo de inicio del evento
-uint16_t WF_timeEnd_HW		= 0;	//
-uint16_t WF_timeEnd_LW		= 0;	// tiempo final del evento
-uint8_t WF_eventType			= 0;	// tipo de evento
-uint16_t WF_tempAmbInit		= 0;	// Copia de temperatura ambiente
-uint16_t WF_tempEvaEnd		= 0;	// Copia de temperatura evaporador
-uint8_t WF_voltInit				= 0;	// voltaje de AC
-// Fin del bloque de evento WiFi
+uint8_t BloqEventWiFiEx [18] = {0};
+//uint16_t comandoWF = 0;	//
+//uint8_t softVersion1WF = 0;	// versión del software
+//uint8_t softVersion2WF = 0;	// versión del software
+//// Bloque de evento WiFi
+//uint16_t WF_timeInit_HW		= 0;	//
+//uint16_t WF_timeInit_LW		= 0;	// tiempo de inicio del evento
+//uint16_t WF_timeEnd_HW		= 0;	//
+//uint16_t WF_timeEnd_LW		= 0;	// tiempo final del evento
+//uint8_t WF_eventType			= 0;	// tipo de evento
+//uint16_t WF_tempAmbInit		= 0;	// Copia de temperatura ambiente
+//uint16_t WF_tempEvaEnd		= 0;	// Copia de temperatura evaporador
+//uint8_t WF_voltInit				= 0;	// voltaje de AC
+//// Fin del bloque de evento WiFi
 
 
 
@@ -2402,6 +2403,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+
 	initEEPROMEmulated(); // Init EEPROM Emulated
 	timeRstBLE = 1;
 	inicio ();

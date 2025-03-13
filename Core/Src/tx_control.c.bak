@@ -993,7 +993,7 @@ write_param:
 			// Carga datos de bloque de handshake para transmitir la respuesta
 			Bloque_handshake[comando1] =	0xF1;	//mov		comando1,#$F1
 			Bloque_handshake[comando2] =	0x3D;	//mov		comando2,#$3D;				/ indica que la grabación fue exitosa
-			flagsTX[5]=1;						// bset 	flagsTX,#5;						/ inidca que hay que reiniciar el control.
+			flagsTX[5]=0;						// bset 	flagsTX,#5;						/ inidca que hay que reiniciar el control.
 
 			goto	ok_writeParam;				//jp		ok_writeParam
 
@@ -2150,7 +2150,7 @@ tx_wifi_eventlogger:
 
 
 end_tx_control:
-		if (keyTx)	{						//tnz		keyTx;									/ no entres al loop hasta terminar transmisión de respuesta
+		if (!keyTx)	{						//tnz		keyTx;									/ no entres al loop hasta terminar transmisión de respuesta
 			goto	no_resetLoopTx;			//	jrne	no_resetLoopTx
 		}
 		if(!flagsRxFirm[4]){ //btjf	flagsRxFirm,#4,ask_resetLoopTx

@@ -279,17 +279,22 @@ wifi_event:
 			goto ask_wfE_end;
 ask_wfE_start:
 		if(!flagsTxControl[f_statWIFI])// btjf	flagsTxControl,#f_statWIFI,wifi_event_start; Hubo desconexión con servidor Wifi ? Si, inicia evento falla wifi
-			goto alarm_event;			// jra		alarm_event;						/ No, continúa sin revisar evento wifi
+			goto wifi_event_start;
+		goto alarm_event;			// jra		alarm_event;						/ No, continúa sin revisar evento wifi
 
 wifi_event_start:
 		//ldw		X,timeSeconds_HW
-		WF_timeInit_HW = timeSeconds_HW;	//ldw		WF_timeInit_HW,X
+		BloqEventWiFiEx[WF_timeInit_4] = highByte(timeSeconds_HW);	//ldw		WF_timeInit_HW,X
+		BloqEventWiFiEx[WF_timeInit_3] = lowByte(timeSeconds_HW);
 		//ldw		X,timeSeconds_LW
-		WF_timeInit_LW = timeSeconds_LW;//ldw		WF_timeInit_LW,X;				/ guarda el tiempo de inicio
-		WF_eventType = 5;//mov		WF_eventType,#5;				/ carga el tipo de evento (5 para wifi)
+		BloqEventWiFiEx[WF_timeInit_2] = highByte(timeSeconds_LW);//ldw		WF_timeInit_LW,X;				/ guarda el tiempo de inicio
+		BloqEventWiFiEx[WF_timeInit_1] = lowByte(timeSeconds_LW);
+
+		BloqEventWiFiEx[WF_eventType] = 5;//mov		WF_eventType,#5;				/ carga el tipo de evento (5 para wifi)
 		//ldw		X,tdevl
-		WF_tempAmbInit = tdevl;		//ldw		WF_tempAmbInit,x;				/ carga temperatura ambiente
-		WF_voltInit = voltl;		//mov		WF_voltInit,voltl; /carga voltaje
+		BloqEventWiFiEx[WF_tempAmbInit_H] = tdevl;		//ldw		WF_tempAmbInit,x;				/ carga temperatura ambiente
+		BloqEventWiFiEx[WF_tempAmbInit_L] = tdevf;
+		BloqEventWiFiEx[WF_voltInit] = voltl;		//mov		WF_voltInit,voltl; /carga voltaje
 		flagsEvent[4] = 1;			//bset	flagsEvent,#4;					/ indica que el evento wifi ya inició
 		goto alarm_event;			//jp		alarm_event;						/ continúa
 ask_wfE_end:
@@ -298,14 +303,16 @@ ask_wfE_end:
 		goto alarm_event;				//jra	alarm_event;						/ Sí, continúa sin terminar evento
 wifi_event_end:
 		//ldw		X,timeSeconds_HW
-		WF_timeEnd_HW = timeSeconds_HW;	//ldw		WF_timeEnd_HW,X
+		BloqEventWiFiEx[WF_timeEnd_4] = highByte(timeSeconds_HW);	//ldw		WF_timeEnd_HW,X
+		BloqEventWiFiEx[WF_timeEnd_3] = lowByte(timeSeconds_HW);
 		//ldw		X,timeSeconds_LW
-		WF_timeEnd_LW = timeSeconds_LW;//ldw		WF_timeEnd_LW,X;				/ guarda el tiempo final
+		BloqEventWiFiEx[WF_timeEnd_2] = highByte(timeSeconds_LW);//ldw		WF_timeEnd_LW,X;				/ guarda el tiempo final
+		BloqEventWiFiEx[WF_timeEnd_1] = lowByte(timeSeconds_LW);
 		//ldw		X,teval
-		WF_tempEvaEnd = teval;//ldw		WF_tempEvaEnd,x;				/ copia el dato de temperatura evaporador
-
+		BloqEventWiFiEx[WF_tempEvaEnd_H] = teval;//ldw		WF_tempEvaEnd,x;				/ copia el dato de temperatura evaporador
+		BloqEventWiFiEx[WF_tempEvaEnd_L] = tevaf;
 		//ldw		X,#WF_timeInit_HW
-		dirDataLoad = &WF_timeInit_HW;//ldw		dirDataLoad,X;					/ indica el inicio del bloque de datos a cargar (evento wifi)
+		dirDataLoad = &BloqEventWiFiEx[0];//ldw		dirDataLoad,X;					/ indica el inicio del bloque de datos a cargar (evento wifi)
 		load_event();//call	load_event
 
 		flagsEvent[4] = 0;//bres	flagsEvent,#4;

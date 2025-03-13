@@ -580,7 +580,7 @@ enum parametrosPlantilla  {
 		maxwork,					//uint8_t		maxwork = 0;				//08/FEB/2022		DS.B 1	;	equ	$0166	;	358 d	;F4 - Tiempo máximo de compresor encendido
 		exhausted,					//uint8_t		exhausted = 0;			//08/FEB/2022		DS.B 1	;	equ	$0167	;	359 d	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON
 		cicloFd,					//uint8_t		cicloFd = 0;				//08/FEB/2022		DS.B 1	;	equ	$0168	;	360 d	;F6 - Cicleo para ventilador en modo diurno
-		cicloFn,					//uint8_t		cicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
+		timeBreakDh,					//uint8_t		cicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
 		timedoor,					//uint8_t		timedoor = 0;				//08/FEB/2022		DS.B 1	;	equ	$016A	;	362 d	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno
 		paramSr,					//uint8_t		paramSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
 		margdes,					//uint8_t		margdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
@@ -727,7 +727,7 @@ enum parametrosCPlantilla  {
 		cmaxwork,					//uint8_t		cmaxwork = 0;				//08/FEB/2022		DS.B 1	;	equ	$0166	;	358 d	;F4 - Tiempo máximo de compresor encendido
 		cexhausted,					//uint8_t		cexhausted = 0;			//08/FEB/2022		DS.B 1	;	equ	$0167	;	359 d	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON
 		ccicloFd,					//uint8_t		ccicloFd = 0;				//08/FEB/2022		DS.B 1	;	equ	$0168	;	360 d	;F6 - Cicleo para ventilador en modo diurno
-		ccicloFn,					//uint8_t		ccicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
+		ctimeBreakDh,					//uint8_t		ccicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
 		ctimedoor,					//uint8_t		ctimedoor = 0;				//08/FEB/2022		DS.B 1	;	equ	$016A	;	362 d	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno
 		cparamSr,					//uint8_t		cparamSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
 		cmargdes,					//uint8_t		cmargdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
@@ -869,7 +869,7 @@ enum parametrosEEplantilla  {
 	eemaxwork,				//09/FEB/2022			 	DC.B	00	;	16486 d	4066 h	;F4 - Tiempo máximo de compresor encendido	Indefinido
 	eeexhausted,			//09/FEB/2022		  	DC.B	250	;	16487 d	4067 h	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON	25 horas
 	eecicloFd,				//09/FEB/2022				DC.B	33	;	16488 d	4068 h	;F6 - Cicleo para ventilador en modo diurno	3 minutos ON. 3 minutos OFF
-	eecicloFn,				//09/FEB/2022			 	DC.B	33	;	16489 d	4069 h	;F7 - Cicleo para ventilador en modo nocturno	3 minutos ON. 3 minutos OFF
+	eetimeBreakDh,				//09/FEB/2022			 	DC.B	33	;	16489 d	4069 h	;F7 - Cicleo para ventilador en modo nocturno	3 minutos ON. 3 minutos OFF
 	eetimedoor,				//09/FEB/2022				DC.B	20	;	16490 d	406A h	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno	2 horas
 	eeparamSr,				//09/FEB/2022			 	DC.B	20	;	16491 d	406B h	;F9 - Pre-salida del modo Nocturno	2 horas
 	eemargdes,				//09/FEB/2022			 	DC.B	35	;	16492 d	406C h	;FA - Margen de descarte 	3.5 horas
@@ -1306,27 +1306,14 @@ extern uint8_t 	fCOM;
 extern uint16_t timeClearComst;
 extern uint16_t timeClearComst1;     		//RM_20240425 Segundo timer para estado de comunicación MODBUS
 
+
+extern _Bool flagsTxControl[8];
+
 //;Definición de bits banderas de control para transmision con modulo wifi BLE
 #define	f_select 		0//;			Bandera para seleccionar BLE = 0 o WiFi = 1
 #define	f_statBLE		1//;			BLE status
 #define	f_statWIFI		2//;
 
-// Bloque de evento WiFi EX
-extern uint16_t comandoWF;	//
-extern uint8_t softVersion1WF;	// versión del software
-extern uint8_t softVersion2WF;	// versión del software
-// Bloque de evento WiFi
-extern uint16_t WF_timeInit_HW;	//
-extern uint16_t WF_timeInit_LW;	// tiempo de inicio del evento
-extern uint16_t WF_timeEnd_HW;	//
-extern uint16_t WF_timeEnd_LW;	// tiempo final del evento
-extern uint8_t WF_eventType	;	// tipo de evento
-extern uint16_t WF_tempAmbInit;	// Copia de temperatura ambiente
-extern uint16_t WF_tempEvaEnd;	// Copia de temperatura evaporador
-extern uint8_t WF_voltInit		;	// voltaje de AC
-// Fin del bloque de evento WiFi
-
-extern _Bool flagsTxControl[8];
 extern uint8_t delayComStat;
 extern uint8_t DevLock;
 extern uint8_t statComFlag;
@@ -1340,19 +1327,35 @@ extern uint8_t timePreDh_h;
 extern uint8_t timePreDh_l;
 
 // Bloque de evento WiFi EX
-extern uint16_t comandoWF;	//
-extern uint8_t softVersion1WF;	// versión del software
-extern uint8_t softVersion2WF;	// versión del software
-// Bloque de evento WiFi
-extern uint16_t WF_timeInit_HW;	//
-extern uint16_t WF_timeInit_LW;	// tiempo de inicio del evento
-extern uint16_t WF_timeEnd_HW;	//
-extern uint16_t WF_timeEnd_LW;	// tiempo final del evento
-extern uint8_t WF_eventType;	// tipo de evento
-extern uint16_t WF_tempAmbInit;	// Copia de temperatura ambiente
-extern uint16_t WF_tempEvaEnd;	// Copia de temperatura evaporador
-extern uint8_t WF_voltInit;	// voltaje de AC
+extern uint8_t BloqEventWiFiEx [18];
+enum parametros_Bloque_Ev_Wifi_Ex  {
+	comandoWF_2,comandoWF_1,			//
+	softVersion1WF,						// versión del software
+	softVersion2WF,						// versión del software
+	WF_timeInit_4,WF_timeInit_3,		// tiempo de inicio del evento
+	WF_timeInit_2,WF_timeInit_1,		//
+	WF_timeEnd_4,WF_timeEnd_3,			// tiempo final del evento
+	WF_timeEnd_2,WF_timeEnd_1,			//
+	WF_eventType,						// tipo de evento
+	WF_tempAmbInit_H,WF_tempAmbInit_L,	// Copia de temperatura ambiente
+	WF_tempEvaEnd_H,WF_tempEvaEnd_L,	// Copia de temperatura evaporador
+	WF_voltInit							// voltaje de AC
 // Fin del bloque de evento WiFi
+};
+
+//extern uint16_t comandoWF;	//
+//extern uint8_t softVersion1WF;	// versión del software
+//extern uint8_t softVersion2WF;	// versión del software
+//// Bloque de evento WiFi
+//extern uint16_t WF_timeInit_HW;	//
+//extern uint16_t WF_timeInit_LW;	// tiempo de inicio del evento
+//extern uint16_t WF_timeEnd_HW;	//
+//extern uint16_t WF_timeEnd_LW;	// tiempo final del evento
+//extern uint8_t WF_eventType;	// tipo de evento
+//extern uint16_t WF_tempAmbInit;	// Copia de temperatura ambiente
+//extern uint16_t WF_tempEvaEnd;	// Copia de temperatura evaporador
+//extern uint8_t WF_voltInit;	// voltaje de AC
+
 
 
 extern uint8_t timeBCD_sec_ANT;

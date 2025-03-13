@@ -75,7 +75,7 @@ dec_retcz_comp:
 			goto	revisa_ret_deshielo;		//	jra     revisa_ret_deshielo
 
 revisa_ret_comp_00:
-			cruze_por_cero[0] = 1;			//	;bres    cruze_por_cero,#1                        ;//Limpia bandera
+			cruze_por_cero[1] = 0;			//	;bres    cruze_por_cero,#1                        ;//Limpia bandera
 
 //------------------------------------------------------------------------------------------
 revisa_ret_deshielo:			//Revisa el retardo para encender DESHILEO por cruece por cero

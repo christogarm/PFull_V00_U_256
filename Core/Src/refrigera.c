@@ -100,7 +100,8 @@ refrigera_j04:
 				offdpy();		//call offdpy			/// Apaga el display
 				//datled &=  0x80;	//ld A,datled//and A,#$80;	// Apaga los led´s
 				for(uint8_t k=0; k<7;k++){
-					datled[k] = 0;
+					if(k!=4)
+						datled[k] = 0;
 				}
 				if(GetRegFlagState(edorefri,0)){ //btjt	edorefri,#0,refrigera_j05;
 					goto refrigera_j05;
@@ -124,6 +125,8 @@ func_lock:
         	//; indica que hay que mostrar un mensaje
             cntMsgCmd = 250;
             numMsg = 3;
+            //BitComplement(estado1,est1LockDr);		 //	||||||||||   bcpl estado1,#est1LockDr; //	/ cambia estado de rele cerradura
+            estado1[est1LockDr] ^= 0x1;
             //waux = eeEstado1;
             waux = findLastValue((uint32_t)&eeEstado1);;
             BitClear(waux, est1LockDr);//bres waux,#est1LockDr

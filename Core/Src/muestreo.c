@@ -27,7 +27,11 @@ void muestreo(void){
 
 //batOFF_OK:
 	    flagsLogger2 [0] = 1; //bset flagsLogger2,#0
-
+	    /*
+	     * PRUEBAS DEBUGGER, Eliminar cuando sea necesario CGM 12/03/2025
+	     *
+	     */
+	    goto fin_voltrms;
 
 grabadoEmergencia:
 
