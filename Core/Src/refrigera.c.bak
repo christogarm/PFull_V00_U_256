@@ -841,7 +841,7 @@ ctl15:			//	ld			A,tminstopl;
 				goto on_comp;						// Enciende el compresor
 
 ctl20:         	//ldw			X,liminf_w  ;// manuel_math_change//	liminfl;
-				if((int16_t)liminf_w < (int16_t)tdev_to_Word()){		/// liminf - tdev  ;	/ tdev < ó = liminf?
+				if((int16_t)(liminf_w) < (int16_t)tdev_to_Word()){		/// liminf - tdev  ;	/ tdev < ó = liminf?
 					goto equal;
          	 	}
 

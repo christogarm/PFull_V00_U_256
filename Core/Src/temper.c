@@ -663,7 +663,7 @@ temper_j02:
 		Y = Y - tDisplay_w;    // w = TdeVdpy - TdeV
 		if (Y == 0)
 			goto tempe40;
-		else if (!(GetRegFlagState(Y, 15)))//else if ((GetRegFlagState(Y, 15)) == 0)                               //nota3 checar combinacion con JRSGT
+		else if ((GetRegFlagState(Y, 15)) == 0)                               //nota3 checar combinacion con JRSGT
 			goto tempe39;      // La diferencia es positiva?
 
 		A =  Plantilla [filtro];

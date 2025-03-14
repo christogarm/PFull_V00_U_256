@@ -258,7 +258,7 @@ detecta_j04:
 det_j04:
 	load_timeNoct();
 	durdhh=0;
-	durdhl=0;
+	//durdhl=0;
 	flagsa[3] = 1;// BitSet(flagsa,3); // Revisa esta linea
 	datled[4] = 1;// BitSet(datled,4);
 	goto disp_new;

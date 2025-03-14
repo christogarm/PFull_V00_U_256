@@ -270,10 +270,10 @@ uint16_t	tdevdpy_w = 0;			//08/FEB/2022		DS.W 1         ;ch_man 0x00;
 
 //uint8_t		interdhh = 0;				//08/FEB/2022		DS.B 1         ;ch_man 0x00;
 //uint8_t		interdhl = 0;				//08/FEB/2022		DS.B 1         ;ch_man 0x00;	Tiempo de interdeshielo
-uint16_t		interdhh = 0;				//08/FEB/2022		DS.B 1         ;ch_man 0x00;
+uint8_t		interdhh = 0;				//08/FEB/2022		DS.B 1         ;ch_man 0x00;
 //uint8_t		durdhh = 0;					//08/FEB/2022		DS.B 1         ;ch_man 0x00;
-//uint8_t			durdhl = 0;						//08/FEB/2022		DS.B 1         ;ch_man 0x00;	Tiempo de deshielo
-uint16_t		durdhh = 0;					//08/FEB/2022		DS.B 1         ;ch_man 0x00;
+uint8_t			durdhl = 0;						//08/FEB/2022		DS.B 1         ;ch_man 0x00;	Tiempo de deshielo
+uint8_t		durdhh = 0;					//08/FEB/2022		DS.B 1         ;ch_man 0x00;
 
 //uint8_t		latchtimel = 0;			//08/FEB/2022		DS.B 1         ;0x00;	Retención de tiempo de operación del estado actual
 //uint8_t		latchtimeh = 0;			//08/FEB/2022		DS.B 1         ;0x00;
@@ -849,9 +849,9 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 
 
 //		[128]=56, 										//uint8_t		eedato_string [512] = {0};		//RM_20220707 Espacio para que no se declaren juntas las variables de calibración
-__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_div = 1; //64; 		//1;
-__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_mul = 1; //100;	    // 1;
-__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eef_voltaje = 0;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_div = 0x4C; //64; 		//1;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_mul = 0x64; //100;	    // 1;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eef_voltaje = 0x3C;
 
 __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t eeEstado1 = 0x05;	//	uint8_t		eeEstado1 = 0x05;	// inicia con refrigerador encendido y lámpara encedida y cerradura en off
 //		[133]=56, 										//uint8_t		eeEstado2 = 0;

@@ -299,9 +299,9 @@ extern uint8_t		tevaf;					//08/FEB/2022		DS.B 1         ;ch_man 0x00;	Dato de t
 extern uint16_t		tdevdpy_w;			//08/FEB/2022		DS.W 1         ;ch_man 0x00;
 
 
-extern uint8_t		interdhh;				//08/FEB/2022		DS.B 1         ;ch_man 0x00;
-extern uint8_t		durdhl;						//08/FEB/2022		DS.B 1         ;ch_man 0x00;	Tiempo de deshielo
-extern uint8_t		durdhh;					//08/FEB/2022		DS.B 1         ;ch_man 0x00;
+extern uint16_t		interdhh;				//08/FEB/2022		DS.B 1         ;ch_man 0x00;
+//extern uint8_t		durdhl;						//08/FEB/2022		DS.B 1         ;ch_man 0x00;	Tiempo de deshielo
+extern uint16_t		durdhh;					//08/FEB/2022		DS.B 1         ;ch_man 0x00;
 
 extern uint16_t		latchtimeh;			//08/FEB/2022		DS.B 1         ;0x00;
 
