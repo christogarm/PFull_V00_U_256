@@ -5,12 +5,32 @@
 #include "bluetooth.h"
 //#include "math.h"
 
+/*
+ * Parámetros del puente de Wheastone
+ */
+#define VSEN			319		// Voltaje VSEN
+#define R157			1000		// Resistencia 157 de 1000 [Ohms]
+#define R169			37400000		// Resistencia 169 de 37400	[Ohms]
+#define R170			12000		// Resistencia 170 de 12000 [Ohms]
+#define pendienteRTP	256			// Pendiente de la Recta Caracteristica del RTP (multiplicada por 1000)
+#define ordenadaRTP		-256		// Ordenanda de la Recta Caracteristica del RTP
+
 //uint16_t    tsac_w = 0;
 //tret_w
 //teval
 //tevaf
 //tdevl
 //tdevf
+
+/*
+ * Temperatura del Termopar RTP1000
+ */
+uint16_t	tRTP1000 [8] = {8};
+uint16_t	tRTP1000_p = 0;
+uint16_t	vRTP1000_p = 0;
+uint16_t	constantRTP = 0;
+uint16_t	RTP1000 = 0;
+uint16_t	temperatureRTP = 0;
 
 
 uint16_t	tsacram [8] = {0};
@@ -68,7 +88,28 @@ tempe05:
 //temper_j00:
 		cnttemp = 0;   	   // Inicia el contador de 100 ms
 
+		/*
+		 * PRUEBAS DEBUGGER // Comentar de ser necesario
+		 */
 
+		ADC1->CHSELR = 0;
+		ADC1->CHSELR |= ADC_CHSELR_CHSEL15;
+		capturaAD ();
+		tRTP1000[cntmues] = adcramh;
+		if(cntmues == 7){
+			tRTP1000_p = 0;
+			for(uint8_t i = 0; i<8; i++){
+				tRTP1000_p += tRTP1000[i];
+			}
+
+			tRTP1000_p = tRTP1000_p/8;
+			vRTP1000_p = 330*tRTP1000_p/1024;
+			uint32_t mul1 = vRTP1000_p+(R169/1000)*VSEN/R170;
+			uint32_t mul2 = ((2*R169/R170+1000)*VSEN)/1000;
+			constantRTP = 1000*mul1/mul2;
+			RTP1000 = constantRTP*R157/(1000-constantRTP);
+			temperatureRTP = pendienteRTP*RTP1000/100 + (ordenadaRTP*10) ;
+		}
 //-------------------------------------------------------------------------------------------------
 		//-------------Cuarto sensor de temperatura--------------------------------------------------------
 		//ADC Temperatura Ambiental o Condensador (temperaturas hasta 50ºC)
@@ -96,6 +137,7 @@ tempe05:
 				        ADC1->CHSELR |= ADC_CHSELR_CHSEL0;  // Canal 0
 
 				        capturaAD ();
+
 //lookshort_S4:
 		Y_A();
 		//Y = adcramh;

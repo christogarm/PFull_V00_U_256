@@ -8,7 +8,7 @@
 
 uint16_t TwoByteInArrayToWord (uint8_t  *PointArray);
 _Bool cambio_rutina;
-
+extern uint16_t temperatureRTP;
 
 //;LN 5910 ------------------------- Rutina que promedia 8 muestras de 1 byte
 uint16_t prom8m1b (uint8_t *array , uint8_t prom){
@@ -1052,6 +1052,10 @@ void	desptdv_math (){
 			uint16_t  foo = 0;
 
 			foo = tdevdpy_w;
+			/*
+			 * Prueba de Debuggger TEMPERATURA CON RTP
+			 */
+			foo = temperatureRTP;
 
 offsetdpy:
 
