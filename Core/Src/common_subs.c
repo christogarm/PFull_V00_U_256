@@ -1055,7 +1055,7 @@ void	desptdv_math (){
 			/*
 			 * Prueba de Debuggger TEMPERATURA CON RTP
 			 */
-			foo = temperatureRTP;
+			//foo = temperatureRTP;
 
 offsetdpy:
 

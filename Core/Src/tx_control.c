@@ -72,7 +72,7 @@ statDef_clr:
 statDef_clrBLE:
 
 	//btjf	flagsTxControl,#f_statBLE,noCancelTx ;// sólo si viene de una desconexión cancela la transmisión que estuviera en progreso
-	if(flagsTxControl[f_statBLE])
+	if(!flagsTxControl[f_statBLE])
 		goto noCancelTx;
 
 	keyTx = 0;				//clr		keyTx  ;// en caso de desconexion cancela toda transmisión

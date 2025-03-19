@@ -80,7 +80,7 @@ toggleCOM:
 				//tnz		keyTx
 				if(keyTx)//jrne	no_toggleCOM
 					goto no_toggleCOM;
-				flagsTxControl[f_select] ^= 0x1;// bcpl		flagsTxControl,#f_select
+				flagsTxControl[f_select] = !(flagsTxControl[f_select]);// bcpl		flagsTxControl,#f_select
 				delayComStat = 10;//mov			delayComStat,#10
 no_toggleCOM:
 
