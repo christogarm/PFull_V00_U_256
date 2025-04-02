@@ -9,8 +9,19 @@
 #include "customMain.h"
 #include <stdlib.h>
 
+
 /**
-  * @brief  Get Page
+  * @brief  Get Number Page
+  * @param  Adrress_: 	any Address in the Flash memory
+  * @retval Address the Page
+  */
+uint8_t getNumberPage(uint32_t Address_){
+	uint8_t number_ = (uint8_t)((Address_ & 0x3F800)>>11);
+	return number_;
+}
+
+/**
+  * @brief  Get Address Page
   * @param  Adrress_: 	any Address in the Flash memory
   * @retval Address the Page
   */
@@ -80,7 +91,7 @@ initEEPROM_P:
 initEEPROM_V:
 	Flag_EEPROM = ((uint32_t *) Page_127)+1 ;
 	if(*Flag_EEPROM == (uint32_t) Page_127){ // Verify Format Flash is correct
-		return;
+		goto saveDataEEPROM_RAM;
 	}
 	varInit = (uint8_t *) Page_127;
 	uint64_t arrayDataV[sizeEEPROM_V] = {0};
@@ -105,6 +116,32 @@ newFormatFlash:
 		flagVar_ = 1;
 		goto initEEPROM_V;
 	}
+
+	// Save the Data in RAM
+saveDataEEPROM_RAM:
+
+	for (uint8_t i = 0; i<128; i++)
+		reePlantilla[i] = (uint8_t) findLastValue((uint32_t) &eePlantilla[i]);
+
+	reevolt_div 	= 	(uint8_t) findLastValue((uint32_t) &eevolt_div);
+	reevolt_mul 	= 	(uint8_t) findLastValue((uint32_t) &eevolt_mul);
+	reef_voltaje 	= 	(uint8_t) findLastValue((uint32_t) &eef_voltaje);
+	reeEstado1 		= 	(uint8_t) findLastValue((uint32_t) &eeEstado1);
+	reeTimeUnix1 	= 	(uint8_t) findLastValue((uint32_t) &eeTimeUnix1);
+	reeTimeUnix2 	= 	(uint8_t) findLastValue((uint32_t) &eeTimeUnix2);
+	reeTimeUnix3 	= 	(uint8_t) findLastValue((uint32_t) &eeTimeUnix3);
+	reeTimeUnix4 	= 	(uint8_t) findLastValue((uint32_t) &eeTimeUnix4);
+	reeLat1 		= 	(uint8_t) findLastValue((uint32_t) &eeLat1);
+	reeLat2 		= 	(uint8_t) findLastValue((uint32_t) &eeLat2);
+	reeLat3 		= 	(uint8_t) findLastValue((uint32_t) &eeLat3);
+	reeLat4 		= 	(uint8_t) findLastValue((uint32_t) &eeLat4);
+	reeLong1 		= 	(uint8_t) findLastValue((uint32_t) &eeLong1);
+	reeLong2 		=	(uint8_t) findLastValue((uint32_t) &eeLong2);
+	reeLong3 		= 	(uint8_t) findLastValue((uint32_t) &eeLong3);
+	reeLong4 		= 	(uint8_t) findLastValue((uint32_t) &eeLong4);
+	reeCntRegDATA 	=	(uint16_t) findLastValue((uint32_t) &eeCntRegDATA);
+	reeCntRegEVENT 	=	(uint16_t) findLastValue((uint32_t) &eeCntRegEVENT);
+
 }
 
 /**
@@ -140,6 +177,7 @@ void restartFlashMemory(void){
 	erasePage(127);
 	writeFLASH((uint64_t *) (Page_126),&arrayDataP_[0],sizeEEPROM_P);
 	writeFLASH((uint64_t *) (Page_127),&arrayDataV_[0],sizeEEPROM_V);
+	initEEPROMEmulated();
 }
 
 /**
@@ -224,8 +262,8 @@ void FlashManager(uint32_t AddressValue_, uint32_t Value_){
 			}
 		}
 		// Erase the Page
-		uint32_t VarAux_= (((uint32_t) AddressPage_) - 0x8000000);
-		uint32_t numberPage = VarAux_/2048; 		// Number the Page
+		//uint32_t VarAux_= (((uint32_t) ) - 0x8000000);
+		uint8_t numberPage = getNumberPage((uint32_t)AddressPage_); 		// Number the Page
 
 		erasePage(numberPage);
 

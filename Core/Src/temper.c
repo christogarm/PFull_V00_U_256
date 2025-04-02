@@ -989,7 +989,7 @@ void capturaAD (void)
 	}
 	ADC1->CR &= ~(ADC_IER_EOCIE | ADC_IER_EOSIE);
 
-	for(uint8_t i=0; i < 250; i++)
+	for(uint8_t i=0; i < 10; i++);
 
 	adcramh = ADC1->DR;
 }

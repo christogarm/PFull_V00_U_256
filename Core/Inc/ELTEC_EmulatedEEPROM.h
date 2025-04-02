@@ -19,7 +19,7 @@
 #define Page_126			0x803F000						// Address of the Page 126; It's a eePlantilla
 #define Page_127			0x803F800						// Address of the Page 127; They're difference eeVariables
 
-
+uint8_t getNumberPage(uint32_t Address_);												// Get Number Page
 uint64_t getAddressPage(uint32_t Address_);												// Get Address Page
 void erasePage(uint32_t numberPage_);													// Erase a Page
 void writeFLASH(uint64_t * Adrress_, uint64_t * arrayData_,uint8_t size_);				// Write N  DoubleWords (64 bits) in memory Flash

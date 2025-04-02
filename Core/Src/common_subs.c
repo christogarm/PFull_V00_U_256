@@ -37,16 +37,20 @@ void  prog_param (void){
 		}
 		//ldw X,#eedato_seg1
 		//ldw Y,#cdato_seg1 ************** ?
-		uint8_t *X = &eePlantilla[eedato_seg1];					// manuel_ apuntador para la eeprom
+		//uint8_t *X = &eePlantilla[eedato_seg1];					// manuel_ apuntador para la eeprom
+		uint8_t *X = &eePlantilla[eedato_seg1];
 		uint8_t *Y = &copiaPlantilla[cdato_seg1];								// manuel_ apuntador ram para la compia de parametros
-
+		uint8_t *Z = &reePlantilla[eedato_seg1];
 		// manuel_ copia los parametros de eeprom a una ram copia para modificarlos
 copy_eeprom: //********************************?
 		//call rdeeprom
 		//ld A,waux
 		*Y = (uint8_t) findLastValue((uint32_t)X);	//ld (Y), A
+		*Z = *Y;
+		//*Y = *X;
 		X++;//incw X
 		Y++;//incw Y
+		Z++;
 		if(Y <= &copiaPlantilla[cdato_seg3]){//cpw Y,#cdato_seg3
 			goto copy_eeprom;//jrule copy_eeprom
 		}
@@ -455,7 +459,7 @@ opc06m01nv2:
 			//;mov			datdig1,#$0F;	"F"
 			//;mov			datdig2,#$27;	"U"
 			//op_menu (eePlantilla[eeversion1], eePlantilla[eeversion2] / 10);
-			op_menu  (findLastValue((uint32_t) &eePlantilla[eeversion1]) , findLastValue((uint32_t) &eePlantilla[eeversion2])/10);
+			op_menu  (reePlantilla[eeversion1], reePlantilla[eeversion2]/10);
 //			datdig1 = eePlantilla[eeversion1];//mov datdig1,eeversion1
 			//ldw X,eeversion2
 			//ld A,#10
@@ -662,12 +666,13 @@ noOffManto:
 noFahrenheitFlagDpy:
 		//	ld			A,cescala;
 		//if(copiaPlantilla [cescala] == eePlantilla [eeescala] ){//	cp A,eeescala
-		if(copiaPlantilla [cescala] == findLastValue((uint32_t) &eePlantilla[eeescala])){
+		if(copiaPlantilla [cescala] == reePlantilla[eeescala]){
 			goto noCambiaEscala;//	jreq noCambiaEscala
 		}
 		waux = copiaPlantilla [cescala];//	mov			waux,cescala;
 		//	ldw			X,#eeescala;
 		wreeprom(waux, &eePlantilla[eeescala]);//	call		wreeprom;
+		reePlantilla[eeescala] = waux;
 noCambiaEscala:
 
 		 goto cancel_prog; //jp cancel_prog
@@ -1579,7 +1584,7 @@ GRABA_FLASH:
 
 			uint32_t VarAux_= (((uint32_t) dirPointer) - 0x8000000);
 			if(VarAux_ % 2048 == 0){
-				uint32_t numberPage = VarAux_/2048; 		// Number the Page
+				uint32_t numberPage = getNumberPage(VarAux_); 		// Number the Page
 				uint32_t Error_ = 0;
 				FLASH_EraseInitTypeDef pEraseInit = {0};
 				pEraseInit.NbPages = 1;
@@ -1681,6 +1686,7 @@ GRABA_SIG:
 			HAL_IWDG_Refresh( &hiwdg );
 			for(uint8_t i = 0; i < 128 ; i++){
 				FlashManager((uint32_t)dirPointer, (uint32_t)*dataPointer);
+				reePlantilla[i] = *dataPointer;		// Guardando el respaldo en RAM
 				dataPointer++;
 				dirPointer++;
 				HAL_IWDG_Refresh( &hiwdg );
@@ -1724,7 +1730,7 @@ noOvfTIM4:
 //;  ----- _Rev STM32	CUBE IDE
 void load_tiempoAhorro1(){
 	uint16_t	foo = 0;
-	foo= findLastValue((uint32_t) &eePlantilla[eetiempoAhorro1])*360;
+	foo= reePlantilla[eetiempoAhorro1]*360;
 	//foo = eePlantilla[eetiempoAhorro1]*360;		//	mov			wreg,eetiempoAhorro1;	/ Toma el tiempo para entrar a Ahorro1
 													//	ldw			Y,#360;		/ Número de segundos por hora (entre 10)
 													//	;ldw			Y,#30;#60;		/ Número de segundos por minuto (para prueba solamente)
@@ -1737,7 +1743,7 @@ void load_tiempoAhorro1(){
 //;  ----- _Rev STM32	CUBE IDE
 void load_tiempoAhorro2(){
 		uint16_t	foo = 0;
-		foo= findLastValue((uint32_t) &eePlantilla[eetiempoAhorro2])*360;
+		foo= reePlantilla[eetiempoAhorro2]*360;
 		//foo = eePlantilla[eetiempoAhorro2]*360;		//	mov			wreg,eetiempoAhorro2;	/ Toma el tiempo para entrar a Ahorro2
 														//	ldw			Y,#360;		/ Número de segundos por hora  (entre 10)
 														//	;ldw			Y,#30;#60;		/ Número de segundos por minuto (para prueba solamente)
@@ -1749,7 +1755,7 @@ void load_tiempoAhorro2(){
 
 void load_timeNoct(){
 	//cntNoct_H = eePlantilla[eetimeNoct] * 60;
-	cntNoct_H = findLastValue((uint32_t) &eePlantilla[eetimeNoct])*60;
+	cntNoct_H = reePlantilla[eetimeNoct]*60;
 }
 
 //;=====================================================================
@@ -1786,17 +1792,24 @@ void	save_cntReg (){
 		//		ldw		X,cntReg
 		//		ldw		resulh,X
 
-		uint32_t *point_X;
-		point_X = (uint32_t *) (cntRegPNT);
+//		uint32_t *point_X;
+//		point_X = (uint32_t *) (cntRegPNT);
 
-		waux = highByte(cntReg);			//		mov		waux,resulh;
+		//waux = highByte(cntReg);			//		mov		waux,resulh;
 		//		ldw		X,cntRegPNT;
-		wreeprom (waux, point_X);		//wreeprom (waux, cntRegPNT);			//		call	wreeprom;						/ ejecuta el grabado
-		HAL_IWDG_Refresh( &hiwdg );			//  	MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+		//wreeprom (waux, point_X);		//wreeprom (waux, cntRegPNT);			//		call	wreeprom;						/ ejecuta el grabado
+
+
+
+		//HAL_IWDG_Refresh( &hiwdg );			//  	MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 		//
-		waux = lowByte(cntReg);		// 		mov		waux,resull;
-		point_X++;  // cntRegPNT++;						//		incw	X
-		wreeprom (waux, point_X);		//wreeprom (waux, cntRegPNT);			//		call	wreeprom;						/ ejecuta el grabado
+		//waux = lowByte(cntReg);		// 		mov		waux,resull;
+		//point_X++;  // cntRegPNT++;						//		incw	X
+		//wreeprom (waux, point_X);		//wreeprom (waux, cntRegPNT);			//		call	wreeprom;						/ ejecuta el grabado
+
+		FlashManager(cntRegPNT, cntReg);
+
+
 		HAL_IWDG_Refresh( &hiwdg );			//		MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 		//
 //		ret
@@ -1814,11 +1827,13 @@ void save_timeUNIX (){
 	waux = highByte(timeSeconds_HW);	//	mov		waux,resulh;
 	//  ldw		X,#eeTimeUnix1;
 	wreeprom (waux, &eeTimeUnix1);		//  call	wreeprom;				/ ejecuta el grabado
+	reeTimeUnix1 = waux;
 	HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 	waux = lowByte(timeSeconds_HW);		// mov		waux,resull;
 	//	ldw		X,#eeTimeUnix2;
 	wreeprom (waux, &eeTimeUnix2);		//  call	wreeprom;				/ ejecuta el grabado
+	reeTimeUnix2 = waux;
 	HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 
@@ -1828,11 +1843,13 @@ void save_timeUNIX (){
 	waux = highByte(timeSeconds_LW);	//	mov		waux,resulh;
 	//	ldw		X,#eeTimeUnix3;
 	wreeprom (waux, &eeTimeUnix3);		// call	wreeprom;					/ ejecuta el grabado
+	reeTimeUnix3 = waux;
 	HAL_IWDG_Refresh( &hiwdg );			// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 	waux = lowByte(timeSeconds_LW);		// mov		waux,resull;
 	// ldw		X,#eeTimeUnix4;
 	wreeprom (waux, &eeTimeUnix4);   	// call	wreeprom;					/ ejecuta el grabado
+	reeTimeUnix4 = waux;
 	HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 }
@@ -2000,12 +2017,13 @@ grabmemo:
 				goto nextdat;
 			}
 			wreeprom(copiaPlantilla[cntmemo],&eePlantilla[cntmemo]);
+			reePlantilla[cntmemo] = copiaPlantilla[cntmemo];
 			goto nextdat;
 
 loaddat:
 			//call		rdeeprom;								// Toma el dato de la EEPROM
 			//point_Y[cntmemo] = point_X[cntmemo]; 				// y cargalo a la RAM
-			point_Y[cntmemo] = findLastValue((uint32_t)&eePlantilla[cntmemo]);
+			point_Y[cntmemo] = reePlantilla[cntmemo];
 nextdat:	cntmemo++;							// Para apuntar al siguiente dato
 			if(cntmemo < Fam_ID){
 				goto finmemodr;

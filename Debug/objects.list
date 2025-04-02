@@ -2,6 +2,7 @@
 "./Core/Src/ModbusMap.o"
 "./Core/Src/ModbusRTU.o"
 "./Core/Src/bluetooth.o"
+"./Core/Src/bootloader.o"
 "./Core/Src/commonMainAsm.o"
 "./Core/Src/common_subs.o"
 "./Core/Src/comunicacion.o"

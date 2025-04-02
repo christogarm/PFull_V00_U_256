@@ -148,7 +148,7 @@ void ModbusMap(void){
 
 
     //DatosFirmware[0] =(uint16_t) ((eePlantilla[eeversion1]*256) + eePlantilla[eeversion2]);
-	DatosFirmware[0] = findLastValue((uint32_t) &eePlantilla[eeversion1])*256 + findLastValue((uint32_t) &eePlantilla[eeversion2]);
+	DatosFirmware[0] = reePlantilla[eeversion1]*256 + reePlantilla[eeversion2];
 
     //*********************************************************************************************
     //****************  Registros OXXO Control demo RW
@@ -174,18 +174,18 @@ void ModbusMap(void){
 
 					PNU_0x3002 = 0;
 					//if (eePlantilla[eeescala] == 32)									//Manuel 23-Mar-2023
-					if(findLastValue((uint32_t) &eePlantilla[eeescala]) == 32)
+					if(reePlantilla[eeescala] == 32)
 					PNU_0x3002 = 1;
 
 					//PNU_0x3004 = eePlantilla[eespdiur_H] * 256 + eePlantilla[eespdiur_L];    // eespdiur_w;       //Manuel 22-Mar-2022
 					PNU_0x3004 = findLastValue((uint32_t) &eePlantilla[eespdiur_H]) * 256 + findLastValue((uint32_t) &eePlantilla[eespdiur_L]);
 
 					//PNU_0x3006 = eePlantilla[eedifdiur_H] * 256 + eePlantilla[eedifdiur_L];	//eedifdiur_w;       //Manuel 23-Mar-2022
-					PNU_0x3006 = findLastValue((uint32_t) &eePlantilla[eedifdiur_H]) * 256 + findLastValue((uint32_t) &eePlantilla[eedifdiur_L]);
+					PNU_0x3006 = reePlantilla[eedifdiur_H] * 256 + reePlantilla[eedifdiur_L];
 					//PNU_0x301E  = (uint16_t) eePlantilla[eeAddModBus];       //Manuel 23-MAR-2022
-					PNU_0x301E  = (uint16_t) findLastValue((uint32_t) &eePlantilla[eeAddModBus]);
+					PNU_0x301E  = reePlantilla[eeAddModBus];
 				  //PNU_0x3104 = (uint16_t) eePlantilla[eetimepa];     // Manuel 23/MAR/2022
-					PNU_0x3104 = (uint16_t) findLastValue((uint32_t) &eePlantilla[eetimepa]);
+					PNU_0x3104 = reePlantilla[eetimepa];
 
 				//---------------      Imbera Control solo de Lectura  --------------------------------------------
 				//---------------      Imbera Control solo de Lectura  --------------------------------------------
@@ -323,7 +323,7 @@ void ModbusMap(void){
 					PNU_0x3002 = lowByte(_u16WriteVal);
 					if (PNU_0x3002 == 1){
 						//if((uint16_t) (eePlantilla[eeescala] == 32)){
-						if(findLastValue((uint32_t) &eePlantilla[eeescala]) == 32){
+						if(reePlantilla[eeescala] == 32){
 							asm ("nop");
 						}
 						else{
@@ -331,16 +331,18 @@ void ModbusMap(void){
 							waux = 32;	// mov			waux,#32;	/ Carga
 							// ldw			X,#eeescala; / Escribe en EEPROM
 							wreeprom(waux , &eePlantilla[eeescala]);// call
+							reePlantilla[eeescala] = waux;
 			//reset_escala1:
 							while(1);//goto reset_escala1;// jra    reset_escala1
 						}
 					}
 					if (PNU_0x3002 == 0){
 						//if((uint16_t) (eePlantilla[eeescala] == 32)){
-						if(findLastValue((uint32_t) &eePlantilla[eeescala]== 32)){
+						if(reePlantilla[eeescala]== 32){
 							waux = 0;//mov			waux,#0;	/ Carga
 							// ldw			X,#eeescala; / Escribe en EEPROM
 							wreeprom(waux , &eePlantilla[eeescala]);// call		wreeprom
+							reePlantilla[eeescala] = waux;
 			//reset_escala:
 							while(1);//goto reset_escala; //jra    reset_escala
 						}
@@ -367,6 +369,9 @@ void ModbusMap(void){
 					wreeprom(waux,&eePlantilla[eespdiur_H]);
 					wreeprom(wreg,&eePlantilla[eespdiur_L]);
 
+					reePlantilla[eespdiur_H] = waux;
+					reePlantilla[eespdiur_L] = wreg;
+
 			//reset_escala_0x3004:
 					while(1);//jra    reset_escala_0x3004 Descomentar cuando ya se tenga el watchDog
 
@@ -386,6 +391,10 @@ void ModbusMap(void){
 					//call		wreeprom
 					wreeprom(waux,&eePlantilla[eedifdiur_H]);
 					wreeprom(wreg,&eePlantilla[eedifdiur_L]);
+
+					reePlantilla[eedifdiur_H] = waux;
+					reePlantilla[eedifdiur_L] = wreg;
+
 			//reset_escala_0x3006:
 					while(1);//jra    reset_escala_0x3006
 
@@ -467,6 +476,7 @@ void ModbusMap(void){
 
 					//ldw			X,#eeAddModBus; / Escribe en EEPROM
 					wreeprom(waux,&eePlantilla[eeAddModBus]);//call		wreeprom
+					reePlantilla[eeAddModBus] = waux;
 
 			//reset_escala_0x301E:
 					while(1);//jra    reset_escala_0x301E
@@ -484,7 +494,7 @@ void ModbusMap(void){
 
 					//ldw			X,#eetimepa; / Escribe en EEPROM
 					wreeprom(waux,&eePlantilla[eetimepa]);//call		wreeprom
-
+					reePlantilla[eetimepa] = waux;
 			//reset_escala_0x3104:
 					while(1);// jra    reset_escala_0x3104
 

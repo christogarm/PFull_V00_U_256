@@ -6,32 +6,15 @@
 #include "commonMainAsm.h"
 #include "customMain.h"
 #include "ELTEC_EmulatedEEPROM.h"
-#include "stm32u0xx_hal_pwr_ex.h"
 
-uint32_t cnt_veces_muestreo_2 = 0;
 //*************************************************************************************************
-
 void muestreo(void){
-
-
-
 	     //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_10);  PIn TEST
 
-
 		cnt_veces_muestreo++; //inc cnt_veces_muestreo/// A,cnt_veces_muestreo
-
-
-		if(cnt_veces_muestreo <= 200){ // 200){ //cp  A,#200
-			goto detecta_flanco;//jrule detecta_flanco
-		}
-
-//		if(cnt_veces_muestreo < 3)
-//			cnt_veces_muestreo_2++;
-//		else
-//			cnt_veces_muestreo_2 = 0;
-//
-//		if(cnt_veces_muestreo_2 < 200)
-//			goto detecta_flanco;
+	    if(cnt_veces_muestreo <= 200){ //cp  A,#200
+	       	goto detecta_flanco;//jrule detecta_flanco
+	    }
 
 	    cnt_veces_muestreo = 0;  //clr cnt_veces_muestreo
 	    cruze_por_cero[0] = 1;		//bset    cruze_por_cero,#0
@@ -44,7 +27,11 @@ void muestreo(void){
 
 //batOFF_OK:
 	    flagsLogger2 [0] = 1; //bset flagsLogger2,#0
-
+	    /*
+	     * PRUEBAS DEBUGGER, Eliminar cuando sea necesario CGM 12/03/2025
+	     *
+	     */
+	   // goto fin_voltrms;
 
 grabadoEmergencia:
 
@@ -130,49 +117,48 @@ grabadoEmergencia:
 	    //call	save_timeUNIX
 
 grabadoEmergenciaFin:
-	save_timeUNIX();
-	GPIOA->MODER |= 0x3FFFFFFF;
-	GPIOB->MODER |= 0xFFFFFFFF;
-	GPIOC->MODER |= 0xFFFDFFFF;
-	GPIOD->MODER |= 0xFFFFFFFF;
-	GPIOE->MODER |= 0xFFFFFFFF;
-	GPIOF->MODER |= 0xFFFFFFFF;
-
-	__HAL_RCC_GPIOB_CLK_DISABLE();
-	__HAL_RCC_GPIOD_CLK_DISABLE();
-	__HAL_RCC_GPIOE_CLK_DISABLE();
-	__HAL_RCC_GPIOF_CLK_DISABLE();
-
-	while(HAL_I2C_DeInit(&hi2c1) != HAL_OK);
-	while(HAL_UART_DeInit(&huart2) != HAL_OK);
-	while(HAL_UART_DeInit(&huart4) != HAL_OK);
-	//ADC_Deinit_Func();
-	while(HAL_ADC_DeInit(&hadc1) != HAL_OK);
-	__HAL_RCC_DMA1_CLK_DISABLE();
-
-	__HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
-	if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0x2000, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0) != HAL_OK)
-	{
-		Error_Handler();
-	}
-
-	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
-	HAL_NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
-	HAL_NVIC_DisableIRQ(DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQn);
-
-//	IWDG->KR   = 0x00005555;
-//	IWDG->PR   = 0X6;
-//	IWDG->RLR  = 0X2D3;
-//	while((IWDG->SR & IWDG_SR_RVU) != 0x00u)
-//	HAL_IWDG_Refresh(&hiwdg);
 
 
+//		save_timeUNIX();
+		HAL_IWDG_Refresh(&hiwdg);
+
+//		GPIOH->MODER |= 0xFFFFFFFF;
+		GPIOB->MODER |= 0xFFFFFFFF;
+		GPIOC->MODER |= 0xFFFDFFFF;
+//		GPIOC->MODER |= 0xFFFFFFFF;
+//		GPIOA->MODER |= 0x3FFFFFFF;
+		__HAL_RCC_GPIOB_CLK_DISABLE();
+//		__HAL_RCC_GPIOH_CLK_DISABLE();
+
+
+//		while(HAL_ADC_DeInit(&hadc) != HAL_OK);
+		while(HAL_I2C_DeInit(&hi2c1) != HAL_OK);
+		while(HAL_UART_DeInit(&huart2) != HAL_OK);
+		while(HAL_UART_DeInit(&huart4) != HAL_OK);
+		__HAL_RCC_DMA1_CLK_DISABLE();
+
+		__HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
+//		if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0x2000, RTC_WAKEUPCLOCK_RTCCLK_DIV16) != HAL_OK)
+//		{
+//			Error_Handler();
+//	  	}
+//		RTC->ISR = (~((RTC_ISR_WUTF) | RTC_ISR_INIT)|(RTC->ISR & RTC_ISR_INIT));
+//		activa_wakeup_interrupt();
+
+		HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+		HAL_NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
+//		HAL_NVIC_DisableIRQ(DMA1_Channel4_5_6_7_IRQn);
+
+		IWDG->KR   = 0x00005555;
+		IWDG->PR   = 0X7;
+		IWDG->RLR  = 0X2D3;
+		while(IWDG->SR)
+
+		HAL_IWDG_Refresh(&hiwdg);
 
 sleep_rt:
-
-	HAL_SuspendTick();
-
-	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
+		HAL_SuspendTick();
+		HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON,PWR_STOPENTRY_WFI);
 
 	HAL_ResumeTick();
 	if(bandera_RTC)
@@ -180,8 +166,6 @@ sleep_rt:
 		bandera_RTC = 0;
 		goto sleep_rt;
 	}
-
-	HAL_IWDG_Refresh(&hiwdg);
 	reconfigura_perif();
 
 	//for (int i = 0; i < 10; i++)
@@ -209,6 +193,8 @@ ibus_ocupado_halt:
 
 
 DoSleep:
+
+
 goto error_muestreo;//jp error_muestreo
 
 //;=========================================  Rutina DETECCIÓN DE FLANCO DE SUBIDA
@@ -802,67 +788,42 @@ fin_voltrms:
 
 }
 
-void ADC_Deinit_Func()
-{
- 	const uint32_t tmp_adc_is_disable_on_going = ((ADC1->CR & ADC_CR_ADDIS) != 0) ? 1UL : 0UL;
-
-
-	if (((ADC1->CR & ADC_CR_ADEN) != 0) && (tmp_adc_is_disable_on_going == 0UL))
-	{
-		if ((ADC1->CR & (ADC_CR_ADSTART | ADC_CR_ADEN)) == ADC_CR_ADEN)
-		{
-			ADC1->CR = (ADC1->CR & ~ADC_CR_BITS_PROPERTY_RS) | ADC_CR_ADDIS;
-			ADC1->ISR = (ADC_FLAG_EOSMP | ADC_FLAG_RDY);
-		}
-
-		CLEAR_BIT(ADC1->CR, (ADC_CR_ADVREGEN | ADC_CR_BITS_PROPERTY_RS));
-
-		ADC1->IER &= ~(ADC_IT_AWD3 | ADC_IT_AWD2 | ADC_IT_AWD1 | ADC_IT_OVR |
-	               ADC_IT_EOS | ADC_IT_EOC | ADC_IT_EOCAL | ADC_IT_EOSMP | ADC_IT_RDY);
-
-		ADC1->ISR = (ADC_FLAG_AWD3 | ADC_FLAG_AWD2 | ADC_FLAG_AWD1 | ADC_FLAG_OVR |
-	             ADC_FLAG_EOS | ADC_FLAG_EOC | ADC_FLAG_EOCAL | ADC_FLAG_EOSMP | ADC_FLAG_RDY);
-
-		ADC1->CFGR1 &= ~(ADC_CFGR1_AWD1CH   | ADC_CFGR1_AWD1EN  | ADC_CFGR1_AWD1SGL | ADC_CFGR1_DISCEN |
-	                 ADC_CFGR1_CHSELRMOD | ADC_CFGR1_AUTOFF |
-	                 ADC_CFGR1_WAIT | ADC_CFGR1_CONT | ADC_CFGR1_OVRMOD |
-	                 ADC_CFGR1_EXTEN   | ADC_CFGR1_EXTSEL | ADC_CFGR1_ALIGN  | ADC_CFGR1_RES    |
-	                 ADC_CFGR1_SCANDIR | ADC_CFGR1_DMACFG | ADC_CFGR1_DMAEN);
-
-		ADC1->SMPR &= ~ADC_SMPR_SMP1;
-		ADC1->CHSELR &= ~(ADC_CHSELR_SQ_ALL);
-
-	  	ADC1->AWD1TR &= ~(ADC_AWD1TR_HT1 | ADC_AWD1TR_LT1);
-		ADC1->AWD2TR &= ~(ADC_AWD2TR_HT2 | ADC_AWD2TR_LT2);
-	  	ADC1->AWD3TR &= ~(ADC_AWD3TR_HT3 | ADC_AWD3TR_LT3);
-
-		ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE;
-
-		ADC1_COMMON->CCR &= ~(ADC_CCR_VBATEN | ADC_CCR_TSEN | ADC_CCR_VREFEN | ADC_CCR_PRESC);
-
-		__HAL_RCC_ADC_CLK_DISABLE();
-
-	    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4);
-	    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7);
-	    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_1);
-
-		//ADC1-> ADCGroupRegularSequencerRanks = 0x00000000UL;
-
-		ADC1 -> ISR 	= 0x00000000;
-		ADC1 -> IER 	= 0x00000000;
-		ADC1 -> CR  	= 0x00000000;
-		ADC1 -> CFGR1 	= 0x00000000;
-		ADC1 -> CFGR2   = 0x00000000;
-		ADC1 -> SMPR    = 0x00000000;
-		ADC1 -> AWD1TR  = 0x0FFF0000;
-		ADC1 -> CHSELR  = 0x00000000;
-		ADC1 -> AWD3TR  = 0x0FFF0000;
-		ADC1 -> DR      = 0x00000000;
-		ADC1 -> AWD2CR  = 0x00000000;
-		ADC1 -> AWD3CR  = 0x00000000;
-		ADC1 -> CALFACT = 0x00000000;
-		//ADC1 -> CCR     = 0x00000000;
-	}
-
-}
-
+//void activa_wakeup_interrupt (void)
+//{
+//	  RTC->WPR = 0xCA;  // Primer valor de desbloqueo
+//	  RTC->WPR = 0x53;  // Segundo valor de desbloqueo
+//
+//	  // Verificar si el WakeUp Timer está habilitado
+//	  if (RTC->CR & RTC_CR_WUTE)
+//	  {
+//	      // Esperar hasta que el flag WUTWF se restablezca
+//	      while (RTC->ISR & RTC_ISR_WUTWF);
+//
+//	      // Habilitar la protección de escritura de los registros RTC
+//	      RTC->WPR = 0xFF;
+//	  }
+//	  RTC->CR &= ~RTC_CR_WUTE;
+//	  RTC->ISR &= ~RTC_ISR_WUTF;  // Limpiar la bandera WUTF en el registro RTC_ISR
+//	  // Esperar hasta que el flag WUTWF se establezca
+//	  while ((RTC->ISR & RTC_ISR_WUTWF) == 0);
+//
+//	  RTC->CR &= ~RTC_CR_WUCKSEL;  // Limpiar el bit WUCKSEL en RTC_CR
+//	  RTC->CR |= RTC_WAKEUPCLOCK_RTCCLK_DIV16;  // Configurar el reloj del WakeUp Timer
+//	  RTC->WUTR = 0x2000;  // Establecer el valor del contador del WakeUp Timer
+//
+//	  // Habilitar la interrupción EXTI para el WakeUp Timer
+//	  EXTI->IMR |= EXTI_IMR_IM20;      // Habilitar la máscara de interrupción para el bit 20
+//	//  EXTI->FTSR |= EXTI_FTSR_TR20;    // Habilitar el flanco de interrupción descendente para el bit 20
+//
+//	  // Habilitar la interrupción EXTI para el WakeUp Timer
+//	//  EXTI->IMR |= EXTI_IMR_MR20;      // Habilitar la máscara de interrupción para el canal 20
+//	  EXTI->RTSR |= EXTI_IMR_IM20;    // Habilitar la interrupción por flanco de subida para el canal 20
+//	  // Habilitar la interrupción del WakeUp Timer en el registro CR
+//	  RTC->CR |= RTC_CR_WUTIE;  // Establecer el bit WUTIE para habilitar la interrupción WUT
+//	  // Habilitar el WakeUp Timer en el registro CR
+//	  RTC->CR |= RTC_CR_WUTE;  // Establecer el bit WUTE para habilitar el WakeUp Timer
+//
+//	  // Habilitar la protección de escritura de los registros RTC
+//	  RTC->WPR = 0xFF;  // Escribir 0xFF en RTC_WPR para habilitar la protección de escritura
+//
+//}

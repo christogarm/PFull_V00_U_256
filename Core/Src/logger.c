@@ -245,10 +245,10 @@ power_event_end:
 //		BloqEventPwrOn[EPo_timeInit_2] = eeTimeUnix3;		//ldw	X,eeTimeUnix3
 //		BloqEventPwrOn[EPo_timeInit_1] = eeTimeUnix4;		//ldw	EPo_timeInit_LW,X;	/ guarda el tiempo de inicio
 
-		BloqEventPwrOn[EPo_timeInit_4] = findLastValue((uint32_t) &eeTimeUnix1);		//ldw	X,eeTimeUnix1
-		BloqEventPwrOn[EPo_timeInit_3] = findLastValue((uint32_t) &eeTimeUnix2);		//ldw	EPo_timeInit_HW,X
-		BloqEventPwrOn[EPo_timeInit_2] = findLastValue((uint32_t) &eeTimeUnix3);		//ldw	X,eeTimeUnix3
-		BloqEventPwrOn[EPo_timeInit_1] = findLastValue((uint32_t) &eeTimeUnix4);		//ldw	EPo_timeInit_LW,X;	/ guarda el tiempo de inicio
+		BloqEventPwrOn[EPo_timeInit_4] = reeTimeUnix1;		//ldw	X,eeTimeUnix1
+		BloqEventPwrOn[EPo_timeInit_3] = reeTimeUnix2;		//ldw	EPo_timeInit_HW,X
+		BloqEventPwrOn[EPo_timeInit_2] = reeTimeUnix3;		//ldw	X,eeTimeUnix3
+		BloqEventPwrOn[EPo_timeInit_1] = reeTimeUnix4;		//ldw	EPo_timeInit_LW,X;	/ guarda el tiempo de inicio
 
 		BloqEventPwrOn[EPo_eventType] = 4;//mov	EPo_eventType,#4;	/ carga el tipo de evento (3 para falla de energía)
 		BloqEventPwrOn[EPo_tempAmbInit_H] = tdevl;	//ldw		X,tdevl
@@ -407,6 +407,7 @@ no_clrREG_01:
          cntReg = cntRegDATA;//ldw cntReg,X
 		 //ldw X,#eeCntRegDATA
  		 cntRegPNT = &eeCntRegDATA;	//ldw cntRegPNT,X
+ 		 reeCntRegDATA = cntReg;
 
  		 load_buffer_logger();		//call	load_buffer_logger
 
@@ -466,6 +467,7 @@ no_clrREG_02:
 		cntReg = cntRegEVENT;			//ldw	cntReg,X
 		//ldw	X,#eeCntRegEVENT
 		cntRegPNT = &eeCntRegEVENT;		//ldw	cntRegPNT,X
+		reeCntRegEVENT = cntReg;
 
 		load_buffer_logger();		//call	load_buffer_logger
 

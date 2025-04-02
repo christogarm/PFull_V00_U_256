@@ -44,7 +44,7 @@ inicializa_comu:
 														//	ldw		X,#eeprotype				;// manuel_ apuntador para la eeprom
 														//	call	rdeeprom
 	//Plantilla[protype] = eePlantilla[eeprotype];		//	mov    	protype,waux
-	Plantilla[protype] = findLastValue((uint32_t) &eePlantilla[eeprotype]);
+	Plantilla[protype] = reePlantilla[eeprotype];
 	voltl = 110;
 	if(Plantilla[protype] != 0x02){					// Protección de voltaje 220v?
 		goto no_ini_210;
@@ -67,7 +67,7 @@ no_ini_210:
 	Plantilla[dato_seg3] = 0xCC;		//mov			dato_seg3,#$CC
 
 	//cnt_pta_fan = eePlantilla[eetimepaf];			//mov			cnt_pta_fan,eetimepaf
-	cnt_pta_fan = findLastValue((uint32_t) &eePlantilla[eetimepaf]);
+	cnt_pta_fan = reePlantilla[eetimepaf];
 
 	load_tiempoAhorro1();		//call	load_tiempoAhorro1;				/ cada que se abre puerta vuelve a cargar tiempos de ahorro
 	load_tiempoAhorro2();		//call	load_tiempoAhorro2;
@@ -171,7 +171,7 @@ lastEventBlockFound:
 
 	//;/ carga estado inicial de la lampara
 		flagsC[f_lampDoor] = 0;			//	bres		flagsC,#f_lampDoor
-		uint8_t estado1_Aux = findLastValue((uint32_t)&eeEstado1); // Agrego para no realizar tantas llamadas; CGM 25/02/2025
+		uint8_t estado1_Aux = reeEstado1; // Agrego para no realizar tantas llamadas; CGM 25/02/2025
 		if(!GetRegFlagState(estado1_Aux, est1Lamp)){
 			goto initLampOFF;
 		}

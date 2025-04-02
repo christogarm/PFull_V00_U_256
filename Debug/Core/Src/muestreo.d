@@ -40,7 +40,8 @@ Core/Src/muestreo.o: ../Core/Src/muestreo.c ../Core/Inc/main.h \
  ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_uart_ex.h \
  ../Core/Inc/board_PFULLDEF.h ../Core/Inc/commonMainAsm.h \
  ../Core/Inc/customMain.h ../Core/Inc/ELTEC_EmulatedEEPROM.h \
- ../Core/Inc/main.h
+ ../Core/Inc/main.h \
+ ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_pwr_ex.h
 ../Core/Inc/main.h:
 ../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal.h:
 ../Core/Inc/stm32u0xx_hal_conf.h:
@@ -86,3 +87,4 @@ Core/Src/muestreo.o: ../Core/Src/muestreo.c ../Core/Inc/main.h \
 ../Core/Inc/customMain.h:
 ../Core/Inc/ELTEC_EmulatedEEPROM.h:
 ../Core/Inc/main.h:
+../Drivers/STM32U0xx_HAL_Driver/Inc/stm32u0xx_hal_pwr_ex.h:

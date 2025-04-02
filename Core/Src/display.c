@@ -21,7 +21,7 @@ uint8_t	dpytab[]  =		{0x81, 0xBD, 0x92, 0x98, 0xAC, 0xC8, 0xC0, 0x9D, 0x80, 0x88
 
 
 void display (void){
-	uint8_t estado1_Aux = findLastValue((uint32_t)&eeEstado1); // Agrego para no realizar tantas llamadas; CGM 25/02/2025
+	uint8_t estado1_Aux = reeEstado1; // Agrego para no realizar tantas llamadas; CGM 25/02/2025
     asm ("nop");
 
 	if(edorefri == 0x00){

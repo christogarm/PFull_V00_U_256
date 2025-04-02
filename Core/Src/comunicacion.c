@@ -278,7 +278,7 @@ noinc:
 	cntHoldP= Plantilla[LD_b]; // Revisar esto el timeHoldP
 	retvent= 0x05;
 	//if(eePlantilla[eetimepaf] != 0){ // // Se cambio a variable EEPROM porque no hay un refresco pronto en la RAM
-	if(findLastValue((uint32_t) &eePlantilla[eetimepaf])!= 0){
+	if(reePlantilla[eetimepaf]!= 0){
 		goto no_ld_timepaf;
 	}
 	//cnt_pta_fan= Plantilla[timepaf];
@@ -650,8 +650,7 @@ det_j18:
 	botonst[b3_f1] = 0;// BitClear(botonst,b3_f1);
 
 det_j19:
-	uint8_t kkkkk;
-	kkkkk++;
+
 }
 
 //--------------------------------

@@ -61,6 +61,7 @@ void   SerializeString2 (uint8_t *tosend, uint8_t tamano)
 	asm ("nop");
 	uint16_t localLength = (uint16_t)tamano;
     memcpy(TxBuffer_Ble, tosend, localLength);
+    while(huart2.gState == HAL_UART_STATE_BUSY_TX);
 	HAL_UART_Transmit_DMA(&huart2, TxBuffer_Ble, localLength);
 }
 /*
@@ -303,6 +304,7 @@ uint8_t RndNumber = 0 ;       // RGM_8-Dic-2023      //RM_20240304 Para agregar 
 void TransmitReceive_Ble(){
     asm ("nop");
 
+    uint8_t i_ = 0;
 	HAL_GPIO_WritePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI, GPIO_PIN_RESET);      //28-May-2024:  Enciende Modulo WIFI
 	//GPIOC->BSRR = GPIO_BSRR_BR_6;
 	serialEvent_Ble ();
@@ -443,6 +445,7 @@ void TransmitReceive_Ble(){
 		if (keyTx == 0x55){
 		    asm ("nop");
 			SerializeString2(ImberaProtocolBuffer, sizeTX);
+			i_++;
 		}
 	}
 

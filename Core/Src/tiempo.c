@@ -201,7 +201,7 @@ tiempo20:		 decword(&durdhh);				// Agota la duración del deshielo
 
 tiempo40:
 				//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-				HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);	 //28-May-2024: Salida IO7 toogle test
+				//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);	 //28-May-2024: Salida IO7 toogle test
 				if(GetRegFlagState(cntseg, 3)){
 					asm ("nop");
 					// GPIOR0[f_comp] = 0;				// Apaga el compresor 	..   Toogle FUNIONA OK
