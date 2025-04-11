@@ -312,7 +312,7 @@ wifi_event_end:
 		BloqEventWiFiEx[WF_tempEvaEnd_H] = teval;//ldw		WF_tempEvaEnd,x;				/ copia el dato de temperatura evaporador
 		BloqEventWiFiEx[WF_tempEvaEnd_L] = tevaf;
 		//ldw		X,#WF_timeInit_HW
-		dirDataLoad = &BloqEventWiFiEx[0];//ldw		dirDataLoad,X;					/ indica el inicio del bloque de datos a cargar (evento wifi)
+		dirDataLoad = &BloqEventWiFiEx[WF_timeInit_4];//ldw		dirDataLoad,X;					/ indica el inicio del bloque de datos a cargar (evento wifi)
 		load_event();//call	load_event
 
 		flagsEvent[4] = 0;//bres	flagsEvent,#4;
@@ -351,7 +351,7 @@ logger_02:
         cntLogger_H = Plantilla[loggerTime] * 60;//mov	cntLogger_H,resulh;		/ Carga el Tiempo total en segundos
 
         //DEBUG***********DEBUG---------DEBUG
-        cntLogger_H = 120;  // valor de prueba a cada 10 segundos tomar muestras
+        //cntLogger_H = 2;  // valor de prueba a cada 10 segundos tomar muestras
         //DEBUG***********DEBUG---------DEBUG
 
 
@@ -393,7 +393,8 @@ logger_02:
          wreg = STM8_A * numByte;
 
          //ldw		X,cntRegDATA
-         cntRegDATA++;	//incw	X
+         if(cntRegDATA>0)
+        	 cntRegDATA++;	//incw	X
 
 		//;Se agrega un limite para el contador de registros de datos (1120 registros en 10k de memoria ) (14 registros por cada 128 bytes)
 		//cpw		X,#1343

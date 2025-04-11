@@ -1329,13 +1329,25 @@ tx_clean_logger_loop:
 			//FLASH_PageErase(dirPointer);
 			//HAL_FLASH_Lock();
 
-			cntBloqFirm++; // inc		cntBloqFirm;					/ incrmenta el contador de datos recibidos
+			/*
+			 * CGM 10/04/2025
+			 * Borrado Total de todo el Logger, es decir de la pagina 110 a la pagina 125 serán borradas.
+			 * Logger de Eventos:			110 - 119 pagina
+			 * Logger de Datos o Tiempo:	120 - 125 pagina
+			 */
+			for(uint32_t i = 110; i<126; i++){
+				erasePage(i);
+			}
+
+			//cntBloqFirm++; // inc		cntBloqFirm;					/ incrmenta el contador de datos recibidos
 
 			// ld		A,cntBloqFirm
 			// cp		A,#0
-			if(cntBloqFirm!= 0){ // jrne	tx_clean_logger_loop
-				goto tx_clean_logger_loop;
-			}
+			// CGM 10/04/2025
+			// Se comenta debido a que ya se realiza rl borrado total, en las anteriores lineas.
+			//if(cntBloqFirm!= 0){ // jrne	tx_clean_logger_loop
+			//	goto tx_clean_logger_loop;
+			//}
 
 			BloqDatalooger[comando1] = 0xF1; // mov		comando1,#$F1
 			BloqDatalooger[comando2] = 0x3D; // mov		comando2,#$3D;				/ indica que la grabación fue exitosa

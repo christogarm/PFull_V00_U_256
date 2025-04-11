@@ -126,8 +126,8 @@ lastDataBlockFound:
 	point_X = (cntBlockDATA * 128) + &dataLogger[0] ;	//;	Carga el tamaño de los bloques (128 bytes) y Multiplicalos
 	point_X += 126; 									//; apunta al penúltimo byte de ese bloque
 
-	cntByteBlockDATA = (*point_X);						//; inicializa el contador de bytes grabados en el bloque
-
+	//cntByteBlockDATA = (*point_X);						//; inicializa el contador de bytes grabados en el bloque
+	cntByteBlockDATA = 0;
 	dirBuffer = &data_buffer[0];
 	dirLogger = &dataLogger[0];
 	cntBlockFlash = cntBlockDATA;
@@ -160,8 +160,8 @@ lastEventBlockFound:
 		point_X = (cntBlockEVENT * 128) + &eventLogger[0];	//;	apunta al inicio de la Flash resevada para Logger de datos + el número de bloques grabados
 		point_X += 126; 									//; apunta al penúltimo byte de ese bloque
 
-		cntByteBlockEVENT = (*point_X);						//; inicializa el contador de bytes grabados en el bloque
-
+		//cntByteBlockEVENT = (*point_X);						//; inicializa el contador de bytes grabados en el bloque
+		cntByteBlockEVENT = 0;
 		dirBuffer = &event_buffer[0];
 		dirLogger = &eventLogger[0];
 		cntBlockFlash = cntBlockEVENT;
