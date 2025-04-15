@@ -155,7 +155,7 @@ tiempo16:		//call		decwreg;
 		    	decwreg(&timeOutRst);
 		    	decwreg(&timeOutRx);
 		    	decwreg(&timeRstBLE);
-		    	decword(&cntLogger_H);			// decrementra contador de logger
+		    	//decword(&cntLogger_H);			// decrementra contador de logger
 		    	decwreg(&cntInitTx);
 		    	decword(&timeDataWF_H);			// decrementra contador de envio de datos por tiempo WIFI
 

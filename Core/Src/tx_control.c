@@ -1017,10 +1017,11 @@ ok_writeParam:
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 tx_control_writeFirm:
+			bandera_act_fw_j = 1;   //Parche para parar loggeo
 
             Bloque_handshake [comando1] = 0xF1;//	mov	comando1,#$F1
-            //Bloque_handshake [comando2] = 0X03;//	mov	comando2,#$03;	/ indica que está listo para la recepción del firmware
-            Bloque_handshake [comando2] = 0X04;//	mov	comando2,#$03;	/ indica que está listo para la recepción del firmware
+            Bloque_handshake [comando2] = 0X03;//	mov	comando2,#$03;	/ indica que está listo para la recepción del firmware
+            //Bloque_handshake [comando2] = 0X04;//	mov	comando2,#$03;	/ indica que está listo para la recepción del firmware
             flagsRxFirm[0] = 1;//	bset flagsRxFirm,#0;	/ indica que se comienza con recepción de fimware
 
 			//	ldw	X,#comando1
@@ -1106,8 +1107,8 @@ rxBloqFirm:
 
 rxBloqFirm_01:
 
-			GPIOR1[f_fan] = 0;
-			GPIOR0[f_comp] = 0;  //Parche, desactivacion de relevadores
+			//GPIOR1[f_fan] = 0;
+			//GPIOR0[f_comp] = 0;  //Parche, desactivacion de relevadores
 
 
 			flagsRxFirm[2]=0; // bres	flagsRxFirm,#2;				/ borra bandera de paquete recibido
@@ -1171,6 +1172,10 @@ load_bloqFirm:
 			// addw	Y,chksum_HW
 			//  ldw		chksumFirm_HW,Y
 			chksumFirm_HW_LW += chksum_32_HW_LW; // 							ldw		chksumFirm_LW,X;			/ fuarda el checksum general calculado hasta ahora
+
+			if(direccion_fw >= 0x803F000)
+				NVIC_SystemReset();
+
 			if(contador_bloques_fw == 16)
 			{
 				borra_pagina_logger(pagina_borrado);
@@ -1198,6 +1203,8 @@ load_bloqFirm:
 			flagsRxFirm[3]=1;// bset 	flagsRxFirm,#3;				/ indica que ya se recibieron todos los paquetes
 			direccion_fw = 0x8020000;
 			pagina_borrado = 64;
+			contador_bloques_fw = 16;
+
 
 rxFirm_noComplete:
 // Carga datos de bloque de handshake para transmitir la respuesta
@@ -1213,6 +1220,11 @@ no_writeBloqFirm:
 			for(int i=0; i<8; i++)				// clr		flagsRxFirm;					/ borra banderas de Rx de firmware para cancelar proceso
 				flagsRxFirm[i]=0;
 			codeTX = 0;						// clr		codeTX;								/ ignora comandos si es que se producieron
+
+			bandera_act_fw_j = 0;
+			direccion_fw = 0x8020000;
+			pagina_borrado = 64;
+			contador_bloques_fw = 16;
 
 ok_writeBloqFirm:
 			// ldw		X,#comando1
@@ -1285,7 +1297,10 @@ rxFirmErr:
 			for (int i = 0; i<8; i++)// clr		flagsRxFirm;					/ borra banderas de Rx de firmware para cancelar proceso
 				flagsRxFirm[i]=0;
 			codeTX = 0;// clr		codeTX;								/ ignora comandos si es que se producieron
-
+			bandera_act_fw_j = 0;
+			direccion_fw = 0x8020000;
+			pagina_borrado = 64;
+			contador_bloques_fw = 16;
 rxFirmOK:
 			// ldw		X,#comando1
 			pointTx =  &BloqDatalooger[comando1]; 	// ldw		pointTx,X

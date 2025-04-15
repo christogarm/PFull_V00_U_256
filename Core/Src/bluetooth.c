@@ -150,7 +150,7 @@ void SetUpBluetooth_Ble(){
 	//}
 	//else{
 	//	if (tick_1s == 1){
-			BluetoothState = 2;
+			//BluetoothState = 2;
 			HAL_GPIO_WritePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI, GPIO_PIN_RESET);      //28-May-2024:  Enciende Modulo WIFI
 			//GPIOC->BSRR = GPIO_BSRR_BR_6;
 	//	}

@@ -45,11 +45,11 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 32K
-  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 122K
+  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 124K
   
-  BOOTLOADER  (rx)    : ORIGIN = 0x801E800,   LENGTH = 8K
+  BOOTLOADER  (rx)    : ORIGIN = 0x801F000,   LENGTH = 4K
   EEPROM      (xrw)   : ORIGIN = 0x803F000,	  LENGTH = 4K
-  FLASH2      (r)     : ORIGIN = 0x801E7F0,   LENGTH = 16
+  FLASH2      (r)     : ORIGIN = 0x801EFF0,   LENGTH = 16
   FLASH3      (xrw)   : ORIGIN = 0x8037000,   LENGTH = 20K
   FLASH4      (xrw)   : ORIGIN = 0x803C000 ,  LENGTH = 12K
 }
@@ -70,7 +70,7 @@ SECTIONS
   } >FLASH3
   
   /* The startup FLASH2 */
-  .varFlash 0x801E7F0:
+  .varFlash 0x801EFF0:
   {
   	KEEP(*(.varFlash))
   } >FLASH2
@@ -86,7 +86,7 @@ SECTIONS
   	KEEP(*(.myBufSectionEEPROM_V))
   } >EEPROM
   
-  .BOOTLOADER 0x801E800:
+  .BOOTLOADER 0x801F000:
   {
   	KEEP(*(.BOOTLOADER))
   } >BOOTLOADER

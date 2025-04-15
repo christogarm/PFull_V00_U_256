@@ -518,7 +518,8 @@ load_buffer:
 		point_X = &dirBuffer[127];	//addw	X,#127;	/ Apunta al último byte del buffer
 		STM8_A = *point_X;			//ld A,(X)
 		STM8_A++;   //inc	A;	/ incrementa el byte
-		*point_X = STM8_A;	 //ld	(X),A;	/ devuelve el dato incrementado al buffer
+		//*point_X = STM8_A;	 //ld	(X),A;	/ devuelve el dato incrementado al buffer
+		*point_X = 1;
 		//;---- Borra penúltimo byte de buffer
 		point_X--;//decw	X
 		*point_X = 0;//clr	(X)

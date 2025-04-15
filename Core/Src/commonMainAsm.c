@@ -41,11 +41,17 @@ void main10(void){
 		  //GPIOA->BSRR = GPIO_BSRR_BR_8;
 		//;(4)Operacion exlusiva para Deshielo
 		cntproc++;
-		if(portX[rel_fn] && (cntproc & 0x01))
-		  HAL_GPIO_WritePin(PFULLDEF_rel_dh, GPIO_PIN_SET);        //28-May-2024:  Enciende  Deshielo
+		//if(portX[rel_fn] && (cntproc & 0x01))
+		//	HAL_TIM_PWM_Start (&htim1,TIM_CHANNEL_3);
+		if(portX[rel_fn]){
+			HAL_TIM_PWM_Start (&htim1,TIM_CHANNEL_3);
+		}
+			//HAL_GPIO_WritePin(PFULLDEF_rel_dh, GPIO_PIN_SET);        //28-May-2024:  Enciende  Deshielo
 		  //GPIOA->BSRR = GPIO_BSRR_BS_10;
-		else
-		  HAL_GPIO_WritePin(PFULLDEF_rel_dh, GPIO_PIN_RESET);      //28-May-2024:  Apaga  Deshielo
+		else{
+			HAL_TIM_PWM_Stop (&htim1,TIM_CHANNEL_3);
+		}
+			//HAL_GPIO_WritePin(PFULLDEF_rel_dh, GPIO_PIN_RESET);      //28-May-2024:  Apaga  Deshielo
 		  //GPIOA->BSRR = GPIO_BSRR_BR_10;
 	//;----------------------------
 	cntbase++;			// Incrementa contador base

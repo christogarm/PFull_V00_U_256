@@ -20,7 +20,7 @@ void bootloader (void){
     // Desbloquea el controlador FLASH
 
 	void (*app_reset_handler) (void) = (void*) (*(volatile uint32_t *) (0x0801F000 + 4));
-    //__set_MSP((*(volatile uint32_t *)(0x0801E800)) );
+    //__set_MSP((*(volatile uint32_t *)(0x0801E800)) );0x801E800
 	app_reset_handler();
 }
 
