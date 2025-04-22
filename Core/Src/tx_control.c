@@ -632,6 +632,8 @@ tx_control_dataLogger:
 		//ldw dirLogger,X
 		dirLogger = &dataLogger[0];
 
+		// CGM 16/04/2025;  se agrega la direccion del buffer de la Pagina del logger de Datos.
+		dirBufferPage = &bufferPageDATA[0];
 
 		if(!flagsLogger[1]){//btjf	flagsLogger,#1,noFullFlagTXDATA;	/ se llenó al menos una vez el DATA logger ?
 			goto noFullFlagTXDATA;
@@ -658,9 +660,21 @@ noFullFlagTXDATA:
 		cntRegPNT = &eeCntRegDATA;//ldw	cntRegPNT,X
 		reeCntRegDATA = cntReg;
 
+
+
 		//Prepara datos para Tx (cálcula punteros de Tx)
 		prepTXlogg_2();	//call	prepTXlogg_2;
 
+		/*
+		 * CGM 16/04/2025 (EL SEÑOR DE LA FE)
+		 * cntBlockDATA++;			Se incrimenta para Realizar la escritura en el siguiente bloque de 128 dentro de la FLASH.
+		 * cntByteBlockDATA = 0;	Se iguala a 0, para comenzar a iniciar la escritura al inicio de buffer
+		 * data_buffer[i] = 0xFF;	Se hace un borrado del buffer, y se realiza con 0xFF por hacer un simil con la memoria FLASH, donde es un borrado con 0xFF
+		 */
+		//cntBlockDATA++;
+		//cntByteBlockDATA = 0;
+		//for(uint8_t i=0; i<128; i++)
+		//	data_buffer[i] = 0xFF;
 
 		//Carga datos de Header
 		Bloque_Header [softVersion1] = Plantilla[version1];		// mov		softVersion1,version1
@@ -702,6 +716,9 @@ tx_control_eventLogger:
 		//ldw dirLogger,X
 		dirLogger = &eventLogger[0];
 
+		// CGM 16/04/2025;  se agrega la direccion del buffer de la Pagina del logger de EVENTOS.
+		dirBufferPage = &bufferPageEVENT[0];
+
 		if(!flagsLogger[2]){//btjf	flagsLogger,#2,noFullFlagTXEVENT;	/ se llenó al menos una vez el EVENT logger ?
 			goto noFullFlagTXEVENT;
 		}
@@ -732,6 +749,17 @@ noFullFlagTXEVENT:
 
 		// Prepara datos para Tx (cálcula punteros de Tx)
 		prepTXlogg_2();		//call	prepTXlogg_2;
+
+		/*
+		 * CGM 16/04/2025 (EL SEÑOR DE LA FE)
+		 * cntBlockEVENT++;			Se incrimenta para Realizar la escritura en el siguiente bloque de 128 dentro de la FLASH.
+		 * cntByteBlockDATA = 0;	Se iguala a 0, para comenzar a iniciar la escritura al inicio de buffer
+		 * data_buffer[i] = 0xFF;	Se hace un borrado del buffer, y se realiza con 0xFF por hacer un simil con la memoria FLASH, donde es un borrado con 0xFF
+		*/
+		//cntBlockEVENT++;
+		//cntByteBlockEVENT = 0;
+		//for(uint8_t i=0; i<128; i++)
+		//	event_buffer[i] = 0xFF;
 
 		//Carga datos de Header
 		Bloque_Header [softVersion1] = Plantilla[version1];		// mov		softVersion1,version1
@@ -1046,6 +1074,7 @@ tx_control_writeFirm:
 //;										Rx Firmware(Número de Bloques)
 //;----------------------------------------------------------
 rx_firmware:
+			bandera_act_fw_j = 1;
 			flagsLogger[4]=1;		// bset	flagsLogger,#4;				/ cancela loggeo de eventos
 			flagsLogger[5]=1;		// bset	flagsLogger,#5;				/ cancela loggeo de datos
 			if(!flagsRxFirm[3]){ // btjf	flagsRxFirm,#3,rx_firmware01; Ya se completo la recepción de bloques de firmware ?
@@ -1524,7 +1553,7 @@ deshTypeAct_05:
 			// ldw		X,#eeEstado1;
 			wreeprom(waux,&eeEstado1);	// call	wreeprom;							/ ejecuta el grabado de estado 1
 			reeEstado1 = waux;
-			HAL_IWDG_Refresh( &hiwdg ); 			// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+			//HAL_IWDG_Refresh( &hiwdg ); 			// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 			// Carga datos de bloque para transmitir la respuesta
 			BloqDatalooger[comando1] = 0xF1; 	// mov		comando1,#$F1
@@ -1769,7 +1798,7 @@ tx_write_GEO:
 			// ldw		X,#eeLat1;
 			wreeprom(RxBuffer_Ble[2], &eeLat1);					//call	wreeprom;							/ ejecuta el grabado Latitud 1
 			reeLat1 = RxBuffer_Ble[2];
-			HAL_IWDG_Refresh( &hiwdg );  // MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+			//HAL_IWDG_Refresh( &hiwdg );  // MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 			// incw	Y
 			// ld		A,(Y);								/
@@ -1777,31 +1806,31 @@ tx_write_GEO:
 			// ldw		X,#eeLat2;
 			wreeprom(RxBuffer_Ble[3], &eeLat2);				// call	wreeprom;							/ ejecuta el grabado Latitud 2
 			reeLat2 = RxBuffer_Ble[3];
-			HAL_IWDG_Refresh( &hiwdg );						// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+			//HAL_IWDG_Refresh( &hiwdg );						// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 			wreeprom(RxBuffer_Ble[4], &eeLat3);				// call	wreeprom;							/ ejecuta el grabado Latitud 3
 			reeLat3 = RxBuffer_Ble[4];
-			HAL_IWDG_Refresh( &hiwdg );						// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+			//HAL_IWDG_Refresh( &hiwdg );						// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 			wreeprom(RxBuffer_Ble[5], &eeLat4);				// call	wreeprom;							/ ejecuta el grabado Latitud 4
 			reeLat4 = RxBuffer_Ble[5];
-			HAL_IWDG_Refresh( &hiwdg );						// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+			//HAL_IWDG_Refresh( &hiwdg );						// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 			wreeprom(RxBuffer_Ble[6], &eeLong1);
 			reeLong1 = RxBuffer_Ble[6];
-			HAL_IWDG_Refresh( &hiwdg );
+			//HAL_IWDG_Refresh( &hiwdg );
 
 			wreeprom(RxBuffer_Ble[7], &eeLong2);
 			reeLong2 = RxBuffer_Ble[7];
-			HAL_IWDG_Refresh( &hiwdg );
+			//HAL_IWDG_Refresh( &hiwdg );
 
 			wreeprom(RxBuffer_Ble[8], &eeLong3);
 			reeLong3 = RxBuffer_Ble[8];
-			HAL_IWDG_Refresh( &hiwdg );
+			//HAL_IWDG_Refresh( &hiwdg );
 
 			wreeprom(RxBuffer_Ble[9], &eeLong4);
 			reeLong4 = RxBuffer_Ble[9];
-			HAL_IWDG_Refresh( &hiwdg );
+			//HAL_IWDG_Refresh( &hiwdg );
 
 
 			// Carga datos de bloque para transmitir la respuesta
@@ -3478,6 +3507,12 @@ void prepTXlogg_2(){
 			//ld	A,cntByteBlock
 			point_X[126] = cntByteBlock;		//ld	(X),A
 
+			/*
+			 * CGM 16/04/2025
+			 *
+			 */
+			//point_X[126] = 0;
+			//point_X[127] = 1;
 
 			//;---- Graba buffer en bloque de flash
 			ProgMemCode = 0xAA;//mov		ProgMemCode,#$AA;				/ Indica que se va a grabar bloque de Flash
@@ -3486,6 +3521,13 @@ void prepTXlogg_2(){
 			STM8_16_X = cntBlockFlash *128;//mul		X,A;										/ Multiplicalos
 			//addw	X,dirLogger;						/	apunta al inicio de la Flash resevada para Logger de datos + el número de bloques grabados
 			dirPointer = &dirLogger[STM8_16_X];		//LDW		dirPointer,X
+
+			/*
+			 * CGM 16/04/2025
+			 * Se realiza una copia de la pagina actual en RAM y si existe un grabado de un bloquq de 128 bytes incompletos, se realizará un borrado de pagina y solo se escribiran  los bloques de 128 bytes que estan completos
+			 */
+			grabadoLoggerBloquesCompletos(dirPointer, dirBufferPage);
+
 			//LDW		X,dirBuffer;						/ apunta al buffer de datos en RAM
 			dataPointer = dirBuffer;					//LDW		dataPointer,X
 			GRABA_BLOCK();			//	call	GRABA_BLOCK

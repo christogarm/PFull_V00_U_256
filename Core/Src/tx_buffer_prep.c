@@ -83,8 +83,8 @@ prep_endTx:
 		keyTx = 0;								// termina Tx
 		flagsTX [1] = 0;
 		flagsTX [0] = 0;
-		flagsLogger [4] = 0;				// permite loggeo de eventos
-		flagsLogger [5] = 0;				// permite loggeo de datos
+		flagsLogger[4] = 0;				// permite loggeo de eventos
+		flagsLogger[5] = 0;				// permite loggeo de datos
 		goto  endTx;  //			jra		endTx
 
 load_buffer_tx_prep:

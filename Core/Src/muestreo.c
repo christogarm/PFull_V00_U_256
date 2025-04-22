@@ -49,14 +49,14 @@ void muestreo(void){
 grabadoEmergencia:
 
 		//;primero guarda lo que aun hay en el buffer .
-//		cntBlockFlash = cntBlockDATA;//mov		cntBlockFlash,cntBlockDATA;
-//		cntByteBlock = cntByteBlockDATA; //mov	cntByteBlock,cntByteBlockDATA
+		cntBlockFlash = cntBlockDATA;//mov		cntBlockFlash,cntBlockDATA;
+		cntByteBlock = cntByteBlockDATA; //mov	cntByteBlock,cntByteBlockDATA
 		//ldw		X,#data_buffer
 		//ldw		dirBuffer,X
-//		dirBuffer = &data_buffer; //--------------------
+		dirBuffer = &data_buffer[0]; //--------------------
 		//ldw		X,#dataLogger
 		//ldw		dirLogger,X
-//		dirLogger = &dataLogger;// ------------------------
+		dirLogger = &dataLogger[0];// ------------------------
 
 		//;---- Carga en penúltimo byte del buffer el numero de bytes capturados en el actual buffer
 	    //	LDW		X,dirBuffer
@@ -64,39 +64,40 @@ grabadoEmergencia:
 	    //  resull = 126;//mov resull,#126
 //	    dirBuffer = dirBuffer + 126; //addw	X,resulh
         //ld		A,cntByteBlock
-//	    *dirBuffer = cntByteBlock;	//ld		(X),A ---------?
+	    dirBuffer[126] = cntByteBlock;	//ld		(X),A ---------?
 
 
 		//;---- Graba buffer en bloque de flash
-//	    ProgMemCode = 0xAA; //mov ProgMemCode,#$AA;
+	    ProgMemCode = 0xAA; //mov ProgMemCode,#$AA;
 	                   //ld    A,cntBlockFlash;
 	                   //ldw		X,#128;
 	    			   //mul		X,A; -----------------?
 	    			   //addw	X,dirLogger;--------------?
 //	    dirPointer = dirLogger + (128 * cntBlockFlash);//LDW dirPointer,X
+	    dirPointer = &dirLogger[128*cntBlockFlash];
 	    // cntBlockFlash = dirBuffer;//LDW X,dirBuffer;
-//	    dataPointer = dirBuffer;//LDW dataPointer,X
-	    //GRABA_BLOCK();			//call GRABA_BLOCK
+	    dataPointer = &dirBuffer[0];//LDW dataPointer,X
+	    GRABA_BLOCK();			//call GRABA_BLOCK
 
 
 
 	//---------------------------------------------------------------------------------------------
 	    // ldw		X,cntRegDATA
-	    // cntReg = cntRegDATA;//ldw cntReg,X
+	    cntReg = cntRegDATA;//ldw cntReg,X
 	    // ldw X,#eeCntRegDATA
-	    // cntRegPNT = &eeCntRegDATA;//ldw cntRegPNT,X
+	    cntRegPNT = &eeCntRegDATA;//ldw cntRegPNT,X
 	    // call save_cntReg
-
+	    save_cntReg();
 
 	    //;primero guarda lo que aun hay en el buffer .
-//	    cntBlockFlash = cntBlockEVENT;//mov	cntBlockFlash,cntBlockEVENT
-//	    cntByteBlock = cntByteBlockEVENT;//mov cntByteBlock,cntByteBlockEVENT
+	    cntBlockFlash = cntBlockEVENT;//mov	cntBlockFlash,cntBlockEVENT
+	    cntByteBlock = cntByteBlockEVENT;//mov cntByteBlock,cntByteBlockEVENT
 	    //ldw X,#event_buffer
 	    //ldw dirBuffer,X
-//	    dirBuffer = &event_buffer;
+	    dirBuffer = &event_buffer[0];
 	    //ldw X,#eventLogger
 	    //ldw dirLogger,X
-//	    dirLogger = &eventLogger;
+	    dirLogger = &eventLogger[0];
 
 	    // ;---- Carga en penúltimo byte del buffer el numero de bytes capturados en el actual buffer
 //	    uint8_t *point_X;    		//LDW	X,dirBuffer
@@ -105,29 +106,32 @@ grabadoEmergencia:
 //	    point_X = dirBuffer + 126; //addw	X,resulh
 	    //ld		A,cntByteBlock
 //	    *point_X = cntByteBlock;//ld (X),A ----------------?
-
+	    dirBuffer[126] = cntByteBlock;
 
 	    //;---- Graba buffer en bloque de flash
-//	    ProgMemCode = 0xAA; //mov		ProgMemCode,#$AA;
+	    ProgMemCode = 0xAA; //mov		ProgMemCode,#$AA;
 	    //ld    A,cntBlockFlash;
 	    //ldw		X,#128;
 	    //;//mul		X,A;
 	    //addw	X,dirLogger; ------------------?
 	    //LDW		dirPointer,X
 	    //LDW		X,dirBuffer;
-//	    dirPointer = dirLogger + (128 * cntBlockFlash); // -----------------------------------?
+	    dirPointer = &dirLogger[128 * cntBlockFlash]; // -----------------------------------?
 	    //LDW		dataPointer,X
-//	    dataPointer = dirBuffer;//------------------------------------?
-	    //call GRABA_BLOCK
+	    dataPointer = &dirBuffer[0];//------------------------------------?
+	    GRABA_BLOCK();//call GRABA_BLOCK
 
 	    //ldw		X,cntRegEVENT
 	    //ldw		cntReg,X
-	    //cntReg = cntRegEVENT;
+	    cntReg = cntRegEVENT;
 	    //ldw		X,#eeCntRegEVENT
 	    //ldw		cntRegPNT,X
-	    //cntRegPNT = &eeCntRegEVENT;
-	    //call	save_cntReg
-	    //call	save_timeUNIX
+	    cntRegPNT = &eeCntRegEVENT;
+	    save_cntReg();		//call	save_cntReg
+	    save_timeUNIX();	//call	save_timeUNIX
+
+	    for(uint8_t i=0; i<8; i++)
+	    	flagsEvent[i] = 0;
 
 grabadoEmergenciaFin:
 	save_timeUNIX();
@@ -181,7 +185,7 @@ sleep_rt:
 		goto sleep_rt;
 	}
 
-	HAL_IWDG_Refresh(&hiwdg);
+	//HAL_IWDG_Refresh(&hiwdg);
 	reconfigura_perif();
 
 	//for (int i = 0; i < 10; i++)
@@ -190,7 +194,7 @@ sleep_rt:
 	//	HAL_Delay (15);
 	//	HAL_IWDG_Refresh(&hiwdg);
 	//}
-	HAL_IWDG_Refresh(&hiwdg);
+	//HAL_IWDG_Refresh(&hiwdg);
 
 	flagsEvent[3] = 1;
 	retPowerOn = 10;
@@ -753,7 +757,7 @@ eeprom_desbloqueada:
 			reevolt_mul = wreg;
 
 //			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
-			HAL_IWDG_Refresh( &hiwdg );
+			//HAL_IWDG_Refresh( &hiwdg );
 graba_1:
 	         //btjt FLASH_IAPSR,#2,graba_1 ------------------------registro
 
@@ -765,7 +769,7 @@ graba_1:
 			wreeprom(waux,&eevolt_div);
 			reevolt_div = waux;
 //			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
-			HAL_IWDG_Refresh( &hiwdg );
+			//HAL_IWDG_Refresh( &hiwdg );
 graba_2:
 	         //btjt	FLASH_IAPSR,#2,graba_2  ----------------registro
 
@@ -778,7 +782,7 @@ graba_2:
 			wreeprom(0x3C,&eef_voltaje);
 			reef_voltaje = 0x3C;
 
-			HAL_IWDG_Refresh( &hiwdg );
+			//HAL_IWDG_Refresh( &hiwdg );
 
 graba_3: //----------------------------------registro
 	        //btjt FLASH_IAPSR,#2,graba_3

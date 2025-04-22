@@ -377,6 +377,9 @@ logger_02:
          //ldw	X,#dataLogger
          dirLogger = &dataLogger[0];//ldw	dirLogger,X
 
+         // CGM 16/04/2025;  se agrega la direccion del buffer de la Pagina del logger de Datos.
+         dirBufferPage = &bufferPageDATA[0];
+
          numBlock = 96;//mov numBlock,#96
          numByte = 9;//mov	numByte,#9
          cntBlockFlash = cntBlockDATA;//mov	cntBlockFlash,cntBlockDATA
@@ -435,6 +438,10 @@ void load_event(){
 		dirBuffer = &event_buffer[0];//ldw		dirBuffer,X;/ indica la dirección del buffer a cargar
 		//ldw		X,#eventLogger
 		dirLogger = &eventLogger[0]; //ldw		dirLogger,X;	/ indica la dirección del logger a grabar
+
+		// CGM 16/04/2025;  se agrega la direccion del buffer de la Pagina del logger de EVENTOS.
+		dirBufferPage = &bufferPageEVENT[0];
+
 		numBlock = 160;//mov numBlock,#160;	/ número máximo de bloque a guardar del logger de eventos (96 bloques de  128 bytes = 12kb )
 		numByte = 14;//mov	numByte,#14;	/ número de bytes a cargar para logger de eventos = 14
 		cntBlockFlash = cntBlockEVENT;//mov	cntBlockFlash,cntBlockEVENT; / pasa el número de bloques de evento grabados al momento
@@ -534,6 +541,12 @@ load_buffer:
 		//LDW	dataPointer,X
 		dataPointer = dirBuffer;
 		tempo2 = point_Y; // Y Aqui sigue EXISTIENDO, no necesita respaldarse   ------ //LDW	tempo2,Y;	/ almacena temporalmente el apuntador de RAM
+
+		/*
+		 * CGM 16/04/2025
+		 * Se realiza una copia de la pagina actual en RAM y si existe un grabado de un bloquq de 128 bytes incompletos, se realizará un borrado de pagina y solo se escribiran  los bloques de 128 bytes que estan completos
+		 */
+		grabadoLoggerBloquesCompletos(dirPointer, dirBufferPage);
 
 		GRABA_BLOCK();		//call	GRABA_BLOCK
 

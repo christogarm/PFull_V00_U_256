@@ -1578,53 +1578,60 @@ sig_blocking:
 
 GRABA_FLASH:
 
-			HAL_IWDG_Refresh( &hiwdg );				//MOV				IWDG_KR,#$AA
+			//HAL_IWDG_Refresh( &hiwdg );				//MOV				IWDG_KR,#$AA
 			// Para realizar una sobreescritura en la Flash, es necesario borrar la pagina antes
 			// CGM 04/12/2024
 
-			uint32_t VarAux_= (((uint32_t) dirPointer) - 0x8000000);
-			if(VarAux_ % 2048 == 0){
-				uint32_t numberPage = getNumberPage(VarAux_); 		// Number the Page
-				uint32_t Error_ = 0;
-				FLASH_EraseInitTypeDef pEraseInit = {0};
-				pEraseInit.NbPages = 1;
-				pEraseInit.Page = numberPage;
-				pEraseInit.TypeErase = FLASH_TYPEERASE_PAGES;
 
-				while( HAL_FLASH_Unlock() !=  HAL_OK );
-				HAL_FLASHEx_Erase(&pEraseInit,&Error_);		// Erase the Page
-				while( HAL_FLASH_Lock() !=  HAL_OK);
+			/*
+			 * Optimización de código, para que se necesite menos memoria
+			 * CGM 21/04/2024
+			 */
+			//uint32_t VarAux_= (((uint32_t) dirPointer) - 0x8000000);
+			//if(VarAux_ % 2048 == 0){
+			if(( ((uint32_t) dirPointer) & 0x7FF) == 0){
+				// Estamos a inicio de Pagina, es necesario un borrado, debido a que se necesita escribir
+				uint32_t numberPage = getNumberPage((uint32_t) dirPointer); 		// Number the Page
+				erasePage(numberPage);
 			}
-			AddressDestination = (uint64_t *) dirPointer;
-			//while( HAL_FLASH_Unlock() !=  HAL_OK );
-			// Graba 128 Bytes de FLASH
-			for(uint8_t i = 0; i < 16 ; i++ ){
-			   	// Data = (uint32_t)(*dataPointer);
-
-				Data  	 =  (uint64_t)(*dataPointer);						dataPointer++;
-				Data  	+= ((uint64_t)(*dataPointer))	<<8;				dataPointer++;
-				Data  	+= ((uint64_t)(*dataPointer)) 	<<16;				dataPointer++;
-				Data	+= ((uint64_t)(*dataPointer))  	<<24;			   	dataPointer++;
-				Data	+= ((uint64_t)(*dataPointer))  	<<32;			   	dataPointer++;
-				Data	+= ((uint64_t)(*dataPointer))  	<<40;			   	dataPointer++;
-				Data	+= ((uint64_t)(*dataPointer))  	<<48;			   	dataPointer++;
-				Data	+= ((uint64_t)(*dataPointer))  	<<56;			   	dataPointer++;
-
-				while( HAL_FLASH_Unlock() !=  HAL_OK );
-				HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t) AddressDestination, Data);
-				while( HAL_FLASH_Lock() !=  HAL_OK);
-				AddressDestination++;
-				//if(AddressDestination>=0x801d000)
-				//	break;
-//				while( HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, AddressDestination, Data) !=  HAL_OK );		// HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
-			   	//dirPointer +=4;
-				HAL_IWDG_Refresh( &hiwdg );				// evita time out watch
+			/*
+			 * Optimización de código
+			 * CGM 21/04/2025
+			 */
 
 
-				asm ("nop");
+//			AddressDestination = (uint64_t *) dirPointer;
+//			//while( HAL_FLASH_Unlock() !=  HAL_OK );
+//			// Graba 128 Bytes de FLASH
+//			for(uint8_t i = 0; i < 16 ; i++ ){
+//
+//				Data  	 =  (uint64_t)(*dataPointer);						dataPointer++;
+//				Data  	+= ((uint64_t)(*dataPointer))	<<8;				dataPointer++;
+//				Data  	+= ((uint64_t)(*dataPointer)) 	<<16;				dataPointer++;
+//				Data	+= ((uint64_t)(*dataPointer))  	<<24;			   	dataPointer++;
+//				Data	+= ((uint64_t)(*dataPointer))  	<<32;			   	dataPointer++;
+//				Data	+= ((uint64_t)(*dataPointer))  	<<40;			   	dataPointer++;
+//				Data	+= ((uint64_t)(*dataPointer))  	<<48;			   	dataPointer++;
+//				Data	+= ((uint64_t)(*dataPointer))  	<<56;			   	dataPointer++;
+//
+//				while( HAL_FLASH_Unlock() !=  HAL_OK );
+//				HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t) AddressDestination, Data);
+//				while( HAL_FLASH_Lock() !=  HAL_OK);
+//				AddressDestination++;
+//				//if(AddressDestination>=0x801d000)
+//				//	break;
+////				while( HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, AddressDestination, Data) !=  HAL_OK );		// HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
+//			   	//dirPointer +=4;
+//				//HAL_IWDG_Refresh( &hiwdg );				// evita time out watch
+//
+//				//asm ("nop");
+//
+//			}
 
+			// Escritura de la FLASH
+			// CGM 21/04/2025
+			writeFLASH( (uint64_t *) dirPointer, (uint64_t *) dataPointer,16);
 
-			}
 //			LD				A,(Y)																;	Carga el byte a grabar
 //			;LD				(X),A
 //			LDF				($010000,X),A
@@ -1636,7 +1643,7 @@ GRABA_FLASH:
 //			JRULE			GRABA_FLASH
 //			;CP				A,#0															;	Si no entonces ve a cargar el siguiente dato
 //			;JRNE			GRABA_FLASH
-			asm ("nop");
+			//asm ("nop");
 			goto	WAIT_FOR_GRAB_0;							//			JRA				WAIT_FOR_GRAB_0
 
 
@@ -1654,7 +1661,7 @@ PROG_eepr_mode:
 //MEM_UNLOCKED1:
 
 GRABA_SIG:
-			HAL_IWDG_Refresh( &hiwdg );				//MOV				IWDG_KR,#$AA
+			//HAL_IWDG_Refresh( &hiwdg );				//MOV				IWDG_KR,#$AA
 
 //			LD				A,(Y)																;	Carga el byte a grabar
 //			LD				(X),A
@@ -1683,13 +1690,13 @@ GRABA_SIG:
 //				HAL_IWDG_Refresh( &hiwdg );				// evita time out watch
 //				asm ("nop");
 //			}
-			HAL_IWDG_Refresh( &hiwdg );
+			//HAL_IWDG_Refresh( &hiwdg );
 			for(uint8_t i = 0; i < 128 ; i++){
 				FlashManager((uint32_t)dirPointer, (uint32_t)*dataPointer);
 				reePlantilla[i] = *dataPointer;		// Guardando el respaldo en RAM
 				dataPointer++;
 				dirPointer++;
-				HAL_IWDG_Refresh( &hiwdg );
+				//HAL_IWDG_Refresh( &hiwdg );
 			}
 
 
@@ -1697,7 +1704,7 @@ GRABA_SIG:
 WAIT_FOR_GRAB_0:
 
 WAIT_FOR_GRAB:
-			HAL_IWDG_Refresh( &hiwdg );		//MOV				IWDG_KR,#$AA
+			//HAL_IWDG_Refresh( &hiwdg );		//MOV				IWDG_KR,#$AA
 
 //			BTJF	TIM4_SR1,#0,noOvfTIM4;				/ Ya terminó el intervalo
 //			BRES	TIM4_SR1,#0;								/ Apaga la bandera de sobreflujo
@@ -1810,7 +1817,7 @@ void	save_cntReg (){
 		FlashManager(cntRegPNT, cntReg);
 
 
-		HAL_IWDG_Refresh( &hiwdg );			//		MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+		//HAL_IWDG_Refresh( &hiwdg );			//		MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 		//
 //		ret
 }
@@ -1828,13 +1835,13 @@ void save_timeUNIX (){
 	//  ldw		X,#eeTimeUnix1;
 	wreeprom (waux, &eeTimeUnix1);		//  call	wreeprom;				/ ejecuta el grabado
 	reeTimeUnix1 = waux;
-	HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+	//HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 	waux = lowByte(timeSeconds_HW);		// mov		waux,resull;
 	//	ldw		X,#eeTimeUnix2;
 	wreeprom (waux, &eeTimeUnix2);		//  call	wreeprom;				/ ejecuta el grabado
 	reeTimeUnix2 = waux;
-	HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+	//HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 
 	//	ldw		X,timeSeconds_LW
@@ -1844,13 +1851,13 @@ void save_timeUNIX (){
 	//	ldw		X,#eeTimeUnix3;
 	wreeprom (waux, &eeTimeUnix3);		// call	wreeprom;					/ ejecuta el grabado
 	reeTimeUnix3 = waux;
-	HAL_IWDG_Refresh( &hiwdg );			// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+	//HAL_IWDG_Refresh( &hiwdg );			// MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 	waux = lowByte(timeSeconds_LW);		// mov		waux,resull;
 	// ldw		X,#eeTimeUnix4;
 	wreeprom (waux, &eeTimeUnix4);   	// call	wreeprom;					/ ejecuta el grabado
 	reeTimeUnix4 = waux;
-	HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
+	//HAL_IWDG_Refresh( &hiwdg );			//  MOV		IWDG_KR,#$AA;			/ Refresca el watch Dog mientras se efectua la grabacion de la memoria
 
 }
 /*;=====================================================================
@@ -2087,6 +2094,27 @@ void opc_nv (uint16_t p_dato, uint16_t s_dato, uint16_t t_dato, uint8_t c_dato, 
 
 }
 
+void grabadoLoggerBloquesCompletos(uint64_t * pointX_, uint64_t * pointBuffer_){
+
+	uint64_t * pointInitPage_ = getAddressPage((uint32_t) pointX_); 		// Apuntador Inicio de Pagina
+	uint32_t sizeCopy = ( ((uint32_t) cntBlockFlash & 0xF)) << 4;			// Cantidad de Bloques de 128 Bytes Completos
+	uint8_t * pointX_126 = (uint8_t *) pointX_;								// Puntero para dirección 126 del Bloque de 128 Bytes
+
+	if(pointX_126[126] != 0 && pointX_126[126] != 0xFF){// Revisa si existe un Bloque de 128 Bytes esta incompleto
+		// Lectura de la Pagina en FLASH, hasta los bloques que estan completos
+		for(uint32_t i=0; i<sizeCopy; i++){
+			pointBuffer_[i] = pointInitPage_[i];// Copia de los bloques de 128 bytes completos
+		}
+
+		// Realiza El borrado de la Pagina en caso de encontrar un Bloque de 128 Bytes Incompleto
+		uint32_t numberPage_ = getNumberPage((uint32_t) pointX_);
+		erasePage(numberPage_);
+
+		// Grabado de Bloques de 128 Bytes Completos
+		writeFLASH(pointInitPage_, pointBuffer_,sizeCopy);
+	}
+
+}
 
 
 

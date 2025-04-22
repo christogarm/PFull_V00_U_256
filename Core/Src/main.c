@@ -943,6 +943,10 @@ uint8_t  cntByteBlockEVENT	= 0;	// almacena los bytes cargados al bloque de EVEN
 uint8_t  cntBlockEVENT			= 0;	// almacena los bloques de EVENTOS guardados
 
 
+uint64_t bufferPageDATA[256] = {0};		// CGM 16/04/2025;	Buffer para el almacenamiento temporal de una Pagina de Logger Datos
+uint64_t bufferPageEVENT[256] = {0};	// CGM 16/04/2025;	Buffer para el almacenamiento temporal de una Pagina de Logger Eventos
+uint64_t * dirBufferPage = NULL;		// CGM 16/04/2025; 	Apuntador para los buffers bufferPageDATA y/o bufferPageEVENT
+
 uint16_t timeSeconds_HW	= 0;	//
 uint16_t timeSeconds_LW	= 0;	// variable de tiempo UNIX 1970
 
@@ -1228,7 +1232,7 @@ _Bool firstFlagPuerta1 = 1;
 uint8_t countMPx = 0;
 
 _Bool    bandera_RTC = 0;
-uint32_t Count_Test2 = 0;    //JTA eliminar buzzer inicial
+//uint32_t Count_Test2 = 0;    //JTA eliminar buzzer inicial
 _Bool    bandera_act_fw_j = 0;
 uint32_t timeReg;
 uint32_t dateReg;
@@ -1242,7 +1246,8 @@ uint8_t DevLock = 0 ;
 uint8_t statComFlag = 0 ;
 uint8_t statComWIFIFlag = 0 ;
 uint16_t cntSetName = 0 ;
-uint8_t difName[50] = "BLE_AT+NAMEIMBERA-CTOF-F\r\n";
+//uint8_t difName[50] = "BLE_AT+NAMEIMBERA-CTOF-F\r\n";
+uint8_t difName[50] = "BLE_AT+NAMEIMBERA-HEALTH\r\n";
 uint8_t timeTxTBLE			= 0;	//
 uint16_t timeoutTBLE = 0;
 
@@ -2474,25 +2479,25 @@ int main(void)
   HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
   //HAL_TIM_PWM_Start (&htim3,TIM_CHANNEL_2);			// Enciende PWM   JTA eliminar buzer inicial
-  while(Count_Test2 < 130000)
-  {
-		Count_Test2++;//  eliminar JTA buzzer
-		if(Count_Test2 == 129999 ) //eliminar JTA buzzer
-		{
-			HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2); //eliminar JTA buzzer
-			//Count_Test2 = 255;//eliminar JTA buzzer
-		}
-		HAL_IWDG_Refresh(&hiwdg); // Se agrega porque el Wathcdog provoca un reinicio
-  }
-  Count_Test2 = 0;
-
-  asm ("nop");
-
-  for (int i = 0; i < 1000; i++)
-  {
-	  HAL_Delay (1);
-	  HAL_IWDG_Refresh(&hiwdg);
-  }
+//  while(Count_Test2 < 130000)
+//  {
+//		Count_Test2++;//  eliminar JTA buzzer
+//		if(Count_Test2 == 129999 ) //eliminar JTA buzzer
+//		{
+//			HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2); //eliminar JTA buzzer
+//			//Count_Test2 = 255;//eliminar JTA buzzer
+//		}
+//		HAL_IWDG_Refresh(&hiwdg); // Se agrega porque el Wathcdog provoca un reinicio
+//  }
+//  Count_Test2 = 0;
+//
+//  asm ("nop");
+//
+//  for (int i = 0; i < 1000; i++)
+//  {
+//	  HAL_Delay (1);
+//	  HAL_IWDG_Refresh(&hiwdg);
+//  }
 
 
   while (1)
@@ -2509,7 +2514,7 @@ testTimmingProcess:
 	TIM6->SR &= ~TIM_SR_UIF;
 	HAL_IWDG_Refresh( &hiwdg );
 
-	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);	 //28-May-2024: Salida IO6 toogle test
+	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);	 //28-May-2024: Salida IO6 toogle test
   	RndNumber++;       //RM_20240304 Para agregar PASSWORD de seguridad BLE
       asm ("nop");
 
@@ -2614,36 +2619,37 @@ testTimmingProcess:
   		// prescalaI2c++;
   	}
 
-  		  		HAL_RTC_GetTime (&hrtc, &hRtcTime, RTC_FORMAT_BCD);
-  		  		HAL_RTC_GetDate (&hrtc, &hRtcDate, RTC_FORMAT_BCD);
-  		  		timeBCD_year = hRtcDate.Year;
-  		  		timeBCD_month = hRtcDate.Month;
-  		  		timeBCD_day = hRtcDate.Date;
-  		  		timeBCD_hour = hRtcTime.Hours;
-    	  		timeBCD_min = hRtcTime.Minutes;
-  		  		timeBCD_sec = hRtcTime.Seconds;
+  	HAL_RTC_GetTime (&hrtc, &hRtcTime, RTC_FORMAT_BCD);
+  	HAL_RTC_GetDate (&hrtc, &hRtcDate, RTC_FORMAT_BCD);
+  	timeBCD_year = hRtcDate.Year;
+  	timeBCD_month = hRtcDate.Month;
+  	timeBCD_day = hRtcDate.Date;
+  	timeBCD_hour = hRtcTime.Hours;
+  	timeBCD_min = hRtcTime.Minutes;
+  	timeBCD_sec = hRtcTime.Seconds;
 
 
-  		  		timeBCD_to_UNIX();
-  		  		//------------------------------------------------------------------------------------------
-  		  		calculando_tiempo_UNIX ();
-//------------------------------------------------------------------------------------------
-  		  		if(!flagsTime[f_timeConfigRTC]){
-  		  			goto noActTime;
-  		  		}
+  	timeBCD_to_UNIX();
+  	//------------------------------------------------------------------------------------------
+  	calculando_tiempo_UNIX ();
+  	//------------------------------------------------------------------------------------------
+  	//if(!flagsTime[f_timeConfigRTC]){
+  	//	goto noActTime;
+  	//}
 
-  		  		timeSeconds_HW = (uint16_t) ((timeUNIX)>>16);
-  		  		timeSeconds_LW = (uint16_t) (timeUNIX&0xFFFF);
+  	timeSeconds_HW = (uint16_t) ((timeUNIX)>>16);
+  	timeSeconds_LW = (uint16_t) (timeUNIX&0xFFFF);
 
-  		  		if(timeBCD_sec_ANT == timeBCD_sec){
-  		  			goto no_inc_cnt_sec;
-  		  		}
-  		  		timeBCD_sec_ANT = timeBCD_sec;
-  		  		// Se comenta el decremento en tiempo de logger y se coloca aqui por cuestiones de presición de Reloj
-  		  		// CGM 14/04/2025
-  		  		decword(&cntLogger_H);
-  		  no_inc_cnt_sec:
-  		  noActTime:
+  	if(timeBCD_sec_ANT == timeBCD_sec){
+  		goto no_inc_cnt_sec;
+  	}
+  	timeBCD_sec_ANT = timeBCD_sec;
+  	// Se comenta el decremento en tiempo de logger y se coloca aqui por cuestiones de presición de Reloj
+  	// CGM 14/04/2025
+  	decword(&cntLogger_H);
+
+no_inc_cnt_sec:
+noActTime:
 		  asm ("nop");
 
   	  	switch(ProcesosC)
@@ -2676,10 +2682,8 @@ testTimmingProcess:
   	  			break;		// ASM: Pendiente a traducir
   	  		case 6:
   	  			tiempo ();				// ASM: <<<-- TRADUCCION COMPLETA -->>> 15-Jul-2024
-  	  			//if(bandera_act_fw_j == 0)    //Parche
-  	  			//{
+  	  			if(bandera_act_fw_j == 0)    //Parche
   	  				logger ();				// ASM: Pendiente a traducir
-  	  			//}
  	  			tx_control ();			// ASM: "Faltan Comandos a Traducir"
 //
   	  			if ( keyWrFirm == 0xAA){
@@ -2990,9 +2994,9 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
-  hiwdg.Init.Window = 800;
-  hiwdg.Init.Reload = 800;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_1024;
+  hiwdg.Init.Window = 4000;
+  hiwdg.Init.Reload = 4000;
   hiwdg.Init.EWI = 0;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {

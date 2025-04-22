@@ -999,6 +999,9 @@ extern uint8_t cntBlockEVENT;	// almacena los bloques de EVENTOS guardados
 extern uint16_t timeSeconds_HW;	//
 extern uint16_t timeSeconds_LW;	// variable de tiempo UNIX 1970
 
+extern uint64_t bufferPageDATA[256];		// CGM 16/04/2025;	Buffer para el almacenamiento temporal de una Pagina de Logger Datos
+extern uint64_t bufferPageEVENT[256];		// CGM 16/04/2025;	Buffer para el almacenamiento temporal de una Pagina de Logger Eventos
+extern uint64_t * dirBufferPage;			// CGM 16/04/2025; 	Apuntador para los buffers bufferPageDATA y/o bufferPageEVENT
 
 
 // Bloque de data logger

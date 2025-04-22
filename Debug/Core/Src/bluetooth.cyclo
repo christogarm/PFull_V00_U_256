@@ -5,10 +5,10 @@
 ../Core/Src/bluetooth.c:114:14:SendATreply_Ble	3
 ../Core/Src/bluetooth.c:147:6:SetUpBluetooth_Ble	1
 ../Core/Src/bluetooth.c:160:6:ConfigBLE_Ble	6
-../Core/Src/bluetooth.c:269:6:ChangeBaud_Ble	1
-../Core/Src/bluetooth.c:277:6:GetParamBluetooth_Ble	5
-../Core/Src/bluetooth.c:304:6:TransmitReceive_Ble	40
-../Core/Src/bluetooth.c:457:6:Read_Inpunts_ble	7
-../Core/Src/bluetooth.c:491:6:WaitSerAnsw_Ble_func	1
-../Core/Src/bluetooth.c:497:6:grabacion_exitosa_handshake	1
-../Core/Src/bluetooth.c:503:6:manda_transmision	1
+../Core/Src/bluetooth.c:270:6:ChangeBaud_Ble	1
+../Core/Src/bluetooth.c:278:6:GetParamBluetooth_Ble	5
+../Core/Src/bluetooth.c:305:6:TransmitReceive_Ble	40
+../Core/Src/bluetooth.c:458:6:Read_Inpunts_ble	7
+../Core/Src/bluetooth.c:492:6:WaitSerAnsw_Ble_func	1
+../Core/Src/bluetooth.c:498:6:grabacion_exitosa_handshake	1
+../Core/Src/bluetooth.c:504:6:manda_transmision	1

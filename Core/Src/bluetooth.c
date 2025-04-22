@@ -232,7 +232,8 @@ void	ConfigBLE_Ble (){
 			break;
 */
 	  case 5:			//  Manuel,   Cambia el nombre de difusion
-			if (SendATreply_Ble("BLE_AT+NAMEIMBERA-CTOF-F\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
+		  	//if (SendATreply_Ble("BLE_AT+NAMEIMBERA-CTOF-F\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
+			if (SendATreply_Ble("BLE_AT+NAMEIMBERA-HEALTH\r\n\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
 				WaitSerAnsw_Ble_func(6);
 //				WaitSerAnsw_Ble = 0;
 //				ParamItem = 6;
