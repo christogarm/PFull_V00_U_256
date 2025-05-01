@@ -102,69 +102,96 @@ no_ini_210:
 //	;---  Obteniendo dirección de la última muestra tomada en el logger de datos
 
 
-	point_X = &dataLogger[127];			// ; carga inicio de logger de datos
-	STM8_A = *point_X;						// ; toma el último byte del primer bloque de Flash
-	wreg = STM8_A;						//
-	waux = 0;
+	/*
+	 * Codigo comentado para Optimización
+	 * CGM 23/04/2025
+	 */
+	findPointLogger(&dataLogger[0], &dataLoggerFin); // Obtenemos el Bloque que estamos y el Byte de tal bloque
 
-checkNextDataBlock:
-	if(point_X != &dataLoggerFin){	//; se llegó al fin del logger (sin encontrar datos diferentes) ?
-		goto checkNextDataBlock_01;		//; No, continúa la busqueda
-	}
-	waux = 0;							//; si todos son iguales considera que el bloque final fue el último en ser grabado
-	goto  lastDataBlockFound;
-checkNextDataBlock_01:
-	waux++;								//; incrementa contador de bloques revisados
-	point_X += 128;
-	STM8_A = (*point_X);				//; toma el último byte del siguiente bloque de Flash
-	if(STM8_A == wreg){
-		goto checkNextDataBlock;		//; sí, continua buscando hasta encontrar diferencia
-	}
-lastDataBlockFound:
-	cntBlockDATA = waux;				//; inicializa contador con el bloque encontrado.
+	// Valores obtenidos de la funcion "findPointLogger"
+	cntBlockDATA = cntBlockFlash;
+	cntByteBlockDATA = cntByteBlock;
 
-	point_X = (cntBlockDATA * 128) + &dataLogger[0] ;	//;	Carga el tamaño de los bloques (128 bytes) y Multiplicalos
-	point_X += 126; 									//; apunta al penúltimo byte de ese bloque
+//	point_X = &dataLogger[127];			// ; carga inicio de logger de datos
+//	STM8_A = *point_X;						// ; toma el último byte del primer bloque de Flash
+//	wreg = STM8_A;						//
+//	waux = 0;
+//
+//checkNextDataBlock:
+//	if(point_X != &dataLoggerFin){	//; se llegó al fin del logger (sin encontrar datos diferentes) ?
+//		goto checkNextDataBlock_01;		//; No, continúa la busqueda
+//	}
+//	waux = 0;							//; si todos son iguales considera que el bloque final fue el último en ser grabado
+//	goto  lastDataBlockFound;
+//checkNextDataBlock_01:
+//	point_X += 128;								//; incrementa contador de bloques revisados
+//	//point_X += 128;
+//	STM8_A = (*point_X);				//; toma el último byte del siguiente bloque de Flash
+//	if(STM8_A == wreg){
+//		waux++;
+//		goto checkNextDataBlock;		//; sí, continua buscando hasta encontrar diferencia
+//	}
+//lastDataBlockFound:
+//	cntBlockDATA = waux;				//; inicializa contador con el bloque encontrado.
+//
+//	point_X = (cntBlockDATA * 128) + &dataLogger[0] ;	//;	Carga el tamaño de los bloques (128 bytes) y Multiplicalos
+//	point_X += 126; 									//; apunta al penúltimo byte de ese bloque
+//
+//	cntByteBlockDATA = (*point_X);						//; inicializa el contador de bytes grabados en el bloque
+//	//cntByteBlockDATA = 0;
 
-	cntByteBlockDATA = (*point_X);						//; inicializa el contador de bytes grabados en el bloque
-	//cntByteBlockDATA = 0;
+
 	dirBuffer = &data_buffer[0];
 	dirLogger = &dataLogger[0];
-	cntBlockFlash = cntBlockDATA;
+	//cntBlockFlash = cntBlockDATA;			// Con la optimización anterior, no es necesario esta instrucción CGM 23/04/2025
 	load_next_buffer();						//call	load_next_buffer	; carga buffer de RAM con el bloque de datos
 
 
 //	;---  Obteniendo dirección de la última muestra tomada en el logger de eventos
 
-	point_X = &eventLogger[127];			// ; carga inicio de logger de eventos
-	STM8_A = *point_X;						// ; toma el último byte del primer bloque de Flash
-	wreg = STM8_A;					//
-	waux = 0;
+	/*
+	 * Codigo comentado para Optimización
+	 * CGM 23/04/2025
+	 */
+	findPointLogger(&eventLogger[0], &eventLoggerFin); // Obtenemos el Bloque que estamos y el Byte de tal bloque
 
-checkNextEventBlock:
-		if(point_X != &eventLoggerFin){	//; se llegó al fin del logger (sin encontrar datos diferentes) ?
-			goto checkNextEventBlock_01;		//; No, continúa la busqueda
-		}
-		waux = 0;							//; si todos son iguales considera que el bloque final fue el último en ser grabado
-		goto  lastEventBlockFound;
-checkNextEventBlock_01:
-		waux++;								//; incrementa contador de bloques revisados
-		point_X += 128;
-		STM8_A = (*point_X);				//; toma el último byte del siguiente bloque de Flash
-		if(STM8_A == wreg){					// ;	son iguales ?
-			goto checkNextEventBlock;		//; sí, continua buscando hasta encontrar diferencia
-		}
-lastEventBlockFound:
-		cntBlockEVENT = waux;				//; inicializa contador con el bloque encontrado.
+	// Valores obtenidos de la funcion "findPointLogger"
+	cntBlockEVENT= cntBlockFlash;
+	cntByteBlockEVENT = cntByteBlock;
 
-		point_X = (cntBlockEVENT * 128) + &eventLogger[0];	//;	apunta al inicio de la Flash resevada para Logger de datos + el número de bloques grabados
-		point_X += 126; 									//; apunta al penúltimo byte de ese bloque
 
-		cntByteBlockEVENT = (*point_X);						//; inicializa el contador de bytes grabados en el bloque
-		//cntByteBlockEVENT = 0;
+//	point_X = &eventLogger[127];			// ; carga inicio de logger de eventos
+//	STM8_A = *point_X;						// ; toma el último byte del primer bloque de Flash
+//	wreg = STM8_A;					//
+//	waux = 0;
+//
+//checkNextEventBlock:
+//		if(point_X != &eventLoggerFin){	//; se llegó al fin del logger (sin encontrar datos diferentes) ?
+//			goto checkNextEventBlock_01;		//; No, continúa la busqueda
+//		}
+//		waux = 0;							//; si todos son iguales considera que el bloque final fue el último en ser grabado
+//		goto  lastEventBlockFound;
+//checkNextEventBlock_01:
+//		point_X += 128;								//; incrementa contador de bloques revisados
+//		//point_X += 128;
+//		STM8_A = (*point_X);				//; toma el último byte del siguiente bloque de Flash
+//
+//
+//		if(STM8_A == wreg){					// ;	son iguales ?
+//			waux++;
+//			goto checkNextEventBlock;		//; sí, continua buscando hasta encontrar diferencia
+//		}
+//lastEventBlockFound:
+//		cntBlockEVENT = waux;				//; inicializa contador con el bloque encontrado.
+//
+//		point_X = (cntBlockEVENT * 128) + &eventLogger[0];	//;	apunta al inicio de la Flash resevada para Logger de datos + el número de bloques grabados
+//		point_X += 126; 									//; apunta al penúltimo byte de ese bloque
+//
+//		cntByteBlockEVENT = (*point_X);						//; inicializa el contador de bytes grabados en el bloque
+//		//cntByteBlockEVENT = 0;
 		dirBuffer = &event_buffer[0];
 		dirLogger = &eventLogger[0];
-		cntBlockFlash = cntBlockEVENT;
+		//cntBlockFlash = cntBlockEVENT;			// Con la optimización anterior, no es necesario esta instrucción CGM 23/04/2025
 		load_next_buffer();						//; carga buffer de RAM con el bloque de datos
 
 		flagsC[f_spReached]=0;			// bres	flagsC,#f_spReached
@@ -255,19 +282,46 @@ uint8_t BCDtoByte(uint8_t wreg_){
 
 }
 
+/*
+ * Funcion para encontrar en donde se debe comenzar a escribir el logger en la FLASH, tanto para el Logger de Tiempos (Datos) y el Logger de Eventos
+ * CGM 23/04/2025
+ */
+void findPointLogger(uint8_t * pointLogger_, uint8_t * pointLoggerFin_){
+	uint16_t * pointFirstProgram =(uint16_t *) &pointLogger_[126]; // Apuntador utilizado para comenzar a llenar el logger apartir del inicio; Este apuntador abacar tanto el elemento 126 como el 127
+	uint8_t * pointLoggerX_ = pointLogger_;							// Apuntador que recorre todo el Logger almacenado en FLASH
+	uint8_t	cntBloques128 = 0;										// Contador de Bloques de 128 bytes;
 
+	// El logger se llena desde el inicio
+	if(*pointFirstProgram == 0){		// Verifica si el elemento 126 (posición del elemento del bloque de 128) es igual a 0 y
+		cntBlockFlash = 0; 	// Inicia en el Bloque 0 de 128 bytes (FLASH)
+		cntByteBlock = 0;	// Inicia en la posición 0 del Buffer de 128 Bytes (RAM)
+		return ;
+	}
 
+	// Se busca a partir de donde se comenzara la escritura del Logger
+	while(pointLoggerX_[126] == 0){ 			// Se revisa elemento 126, ya que este almacena la posición de cual fue la ultima escritura del bloque de 128 bytes.
+		if(pointLoggerX_[127] != pointLogger_[127]){ // Revisamos que estemos en el mismo ciclo del grabado de FLASH, esto representa el byte no. 127
+			break;
+		}
+		pointLoggerX_ += 128;		// Apunta al siguiente bloque 128 bytes de su elemento 126
+		cntBloques128++;
+		if(pointLoggerX_ > pointLoggerFin_){
+			// El llenado comenzará desde el inicio del Logger, es decir desde el primer bloque.
+			pointLoggerX_ = pointLogger_;
+			cntBloques128 = 0;
+			break;
+		}
+	}
 
+	// Determinación de la posición de buffer, en caso de que tengamos todos los bloques completos
+	if(pointLoggerX_[126] == 0xFF)
+		cntByteBlock = 0;						// Posición del Buffer de 128 Bytes que estamos ubicados
+	else
+		cntByteBlock = pointLoggerX_[126];		// Posición del Buffer de 128 Bytes que estamos ubicados
 
+	cntBlockFlash = cntBloques128;				// Bloque en el que estamos ubicados dentro de la memoria Flash
 
-
-
-
-
-
-
-
-
+}
 
 
 

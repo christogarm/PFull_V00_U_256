@@ -66,6 +66,7 @@ extern DMA_HandleTypeDef hdma_usart4_tx;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart4;
 /* USER CODE BEGIN EV */
+extern _Bool bandera_RTC;
 
 /* USER CODE END EV */
 
@@ -159,7 +160,8 @@ void RTC_TAMP_IRQHandler(void)
   /* USER CODE END RTC_TAMP_IRQn 0 */
   HAL_RTCEx_WakeUpTimerIRQHandler(&hrtc);
   /* USER CODE BEGIN RTC_TAMP_IRQn 1 */
-
+  //HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);    //Pin de prueba bajo consumo
+  bandera_RTC = 1;
   /* USER CODE END RTC_TAMP_IRQn 1 */
 }
 

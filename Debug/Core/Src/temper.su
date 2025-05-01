@@ -1,8 +1,8 @@
 ../Core/Src/temper.c:73:6:temper	24	static,ignoring_inline_asm
-../Core/Src/temper.c:838:6:linealiza	8	static
-../Core/Src/temper.c:956:6:mult1x2	8	static
-../Core/Src/temper.c:981:6:capturaAD	16	static
-../Core/Src/temper.c:997:6:wise_hot_rep	16	static
-../Core/Src/temper.c:1009:6:Y_A	8	static
-../Core/Src/temper.c:1015:6:Bset_Clear_trfst	24	static
-../Core/Src/temper.c:1022:6:Bclear_Clear_trfst	24	static
+../Core/Src/temper.c:826:6:linealiza	8	static
+../Core/Src/temper.c:944:6:mult1x2	8	static
+../Core/Src/temper.c:969:6:capturaAD	16	static
+../Core/Src/temper.c:985:6:wise_hot_rep	16	static
+../Core/Src/temper.c:997:6:Y_A	8	static
+../Core/Src/temper.c:1003:6:Bset_Clear_trfst	24	static
+../Core/Src/temper.c:1010:6:Bclear_Clear_trfst	24	static

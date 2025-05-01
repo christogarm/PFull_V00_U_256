@@ -45,6 +45,7 @@ void erasePage(uint32_t numberPage_){
 
 	uint32_t Error_=0;
 	HAL_FLASHEx_Erase(&pEraseInit,&Error_);		// Erase the Page
+	HAL_IWDG_Refresh( &hiwdg );
 
 	while( HAL_FLASH_Lock() !=  HAL_OK);
 }
@@ -59,8 +60,9 @@ void erasePage(uint32_t numberPage_){
 void writeFLASH(uint64_t * Address_, uint64_t * arrayData_,uint8_t size_){
 	while( HAL_FLASH_Unlock() !=  HAL_OK );
 	for(uint8_t i =0; i<size_; i++){
-		HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t) Address_, arrayData_[i]);
-		Address_++;
+		//HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t) Address_, arrayData_[i]);
+		HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (uint32_t) &Address_[i], arrayData_[i]);
+		//Address_++;
 	}
 	while( HAL_FLASH_Lock() !=  HAL_OK);
 }

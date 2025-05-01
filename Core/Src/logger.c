@@ -351,7 +351,7 @@ logger_02:
         cntLogger_H = Plantilla[loggerTime] * 60;//mov	cntLogger_H,resulh;		/ Carga el Tiempo total en segundos
 
         //DEBUG***********DEBUG---------DEBUG
-        //cntLogger_H = 2;  // valor de prueba a cada 10 segundos tomar muestras
+        //cntLogger_H = 30;  // valor de prueba a cada 10 segundos tomar muestras
         //DEBUG***********DEBUG---------DEBUG
 
 
@@ -524,9 +524,20 @@ load_buffer:
 									//LDW	X,dirBuffer; / Apunta al buffer de datos en RAM
 		point_X = &dirBuffer[127];	//addw	X,#127;	/ Apunta al último byte del buffer
 		STM8_A = *point_X;			//ld A,(X)
-		STM8_A++;   //inc	A;	/ incrementa el byte
-		//*point_X = STM8_A;	 //ld	(X),A;	/ devuelve el dato incrementado al buffer
-		*point_X = 1;
+		   //inc	A;	/ incrementa el byte
+		// Parche CGM 29/04/2025
+		// Se realiza este cambio para saber el ciclo del grabado del logger, este ciclo va de un valor de 0x1 a 0xFF y se graba en el byte 127  de cada bloque
+		if(cntBlockFlash == 0){
+			STM8_A++;
+			if(STM8_A == 0){
+				STM8_A = 1;
+			}
+			*point_X = STM8_A;	 //ld	(X),A;	/ devuelve el dato incrementado al buffer
+		}
+		else{
+			*point_X = dirLogger[127];
+		}
+		//*point_X = 1;
 		//;---- Borra penúltimo byte de buffer
 		point_X--;//decw	X
 		*point_X = 0;//clr	(X)

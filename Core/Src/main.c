@@ -831,7 +831,7 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		//uint8_t	 eemodelo	        =	0x4B	; // cambia de 0x50 a 0x51 por cambio de modulo BLE a WiFi+BLE
 		[eecliente]=0, 										//uint8_t		eecliente 			= 0;						//09/FEB/2022			      	DC.B	0	;	16501 d	4075 h	;D3 -	     0 = GENERICO
 		[eeclienteELTEC]=02, 										//uint8_t		eeclienteELTEC 	= 02;						//09/FEB/2022			      	DC.B	0	;	16502 d	4076 h	;D4 -	     2 = IMBERA
-		[eehardware]=01, 										//uint8_t		eehardware			= 11;						//09/FEB/2022			      	DC.B	0	;	16503 d	4077 h	;D5 -	    1.0
+		[eehardware]=02, 										//uint8_t		eehardware			= 11;						//09/FEB/2022			      	DC.B	0	;	16503 d	4077 h	;D5 -	    1.0
 		[eemodelo0]='F', 										//uint8_t		eemodelo0				= 69;						//09/FEB/2022			      	DC.B	0	;	16504 d	4078 h	;D6 -	    'E'
 		[eemodelo]='7', 										//uint8_t	 	eemodelo	      =	56;           //
 
@@ -839,7 +839,7 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		//;------------------  Identificador y bytes disponibles  -----------------------
 		[eeparam_ID]=0, 										//uint8_t		eeparam_ID = 0;				//09/FEB/2022	    DC.B	0	;	16506 d	407A h	;B0 – Identificador de parámetros programados	00: fábrica, 01: teclado, XX: llave fija
 		[eeversion1]=00, 										//uint8_t	 eeversion1				=	00		;// versión 0.03
-		[eeversion2]=06, 										//uint8_t	 eeversion2	      =	20		;
+		[eeversion2]=01, 										//uint8_t	 eeversion2	      =	20		;
 		//uint8_t	 eeversion2	      =	02		;//RM_20230908 VFW 0.002 Ajuste en calibración y envio de MAC a llave
 		[eeplantilla1]=0, 										//uint8_t	 eeplantilla1     =	0			;
 		[eeplantilla2]=01, 										//uint8_t	 eeplantilla2	    =	10		;
@@ -1232,7 +1232,7 @@ _Bool firstFlagPuerta1 = 1;
 uint8_t countMPx = 0;
 
 _Bool    bandera_RTC = 0;
-//uint32_t Count_Test2 = 0;    //JTA eliminar buzzer inicial
+uint32_t Count_Test2 = 0;    //JTA eliminar buzzer inicial
 _Bool    bandera_act_fw_j = 0;
 uint32_t timeReg;
 uint32_t dateReg;
@@ -1286,7 +1286,7 @@ __attribute__((section(".dataLogger"))) uint8_t dataLoggerFin = 0;
 // #pragma section @near {varFlash}
 // Nota: Esta seccion debe ir en Flash
 __attribute__((section(".varFlash"))) uint8_t  versionFirm1 = 0;
-__attribute__((section(".varFlash"))) uint8_t  versionFirm2 = 0;
+__attribute__((section(".varFlash"))) uint8_t  versionFirm2 = 01;
 //@near uint8_t versionFirm2 = 02;  //RM_20230908 VFW 0.002 Ajuste en calibración y envio de MAC a llave
 __attribute__((section(".varFlash"))) uint8_t  fm_hardware = 02;
 __attribute__((section(".varFlash"))) uint8_t  fm_modelo0 = 'F';  //'E'
@@ -2372,6 +2372,7 @@ void configura_perif_2(void)
 	  MX_I2C1_Init();
 	  MX_IWDG_Init();
 	  MX_TIM3_Init();
+	  MX_TIM1_Init();
 	  MX_TIM6_Init();
 	  MX_USART2_UART_Init();
 	  MX_USART4_UART_Init();
@@ -2423,7 +2424,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-	initEEPROMEmulated(); // Init EEPROM Emulated
+	//initEEPROMEmulated(); // Init EEPROM Emulated
 	timeRstBLE = 1;
 	inicio ();
 
@@ -2461,255 +2462,268 @@ int main(void)
   MX_USART4_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+
+  initEEPROMEmulated(); // Init EEPROM Emulated
+
   Modbus_ModbusSalave ();
-  //ModbusMaster_begin(eePlantilla[eeAddModBus]);		// Manuel 23-MAR-2022	ModbusMaster_begin(222);
+   //ModbusMaster_begin(eePlantilla[eeAddModBus]);		// Manuel 23-MAR-2022	ModbusMaster_begin(222);
   ModbusMaster_begin(reePlantilla[eeAddModBus]);
-  TR485_Trasnmiting = 0;					//17-DIC-2021		El dispositivo inicialmente escucha
+  TR485_Trasnmiting = 0;														//17-DIC-2021		El dispositivo inicialmente escucha
   HAL_GPIO_WritePin(GPIOC, PFULLDEF_MAX485_DE_AND_RE_NEG, GPIO_PIN_RESET);      //17-DIC-2021 El Driver inicalmente Escucha
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  BluetoothState = 3;			// Maquina de estados Bluetooth 1:Configuracion 2:Obtencion parametros 3:Tx/RX
-  timeRstBLE = 8;
-  BluetoothState = 1;
-  HAL_GPIO_WritePin(PFULLDEF_VSEN, GPIO_PIN_SET);      //02-Jul-2024:  Habilita VSEN
+   BluetoothState = 3;			// Maquina de estados Bluetooth 1:Configuracion 2:Obtencion parametros 3:Tx/RX
+     timeRstBLE = 8;
+     BluetoothState = 1;
+     HAL_GPIO_WritePin(PFULLDEF_VSEN, GPIO_PIN_SET);      //02-Jul-2024:  Habilita VSEN
 
-  HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
-  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+     HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
+     HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
-  //HAL_TIM_PWM_Start (&htim3,TIM_CHANNEL_2);			// Enciende PWM   JTA eliminar buzer inicial
-//  while(Count_Test2 < 130000)
-//  {
-//		Count_Test2++;//  eliminar JTA buzzer
-//		if(Count_Test2 == 129999 ) //eliminar JTA buzzer
-//		{
-//			HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2); //eliminar JTA buzzer
-//			//Count_Test2 = 255;//eliminar JTA buzzer
-//		}
-//		HAL_IWDG_Refresh(&hiwdg); // Se agrega porque el Wathcdog provoca un reinicio
-//  }
-//  Count_Test2 = 0;
-//
-//  asm ("nop");
-//
-//  for (int i = 0; i < 1000; i++)
-//  {
-//	  HAL_Delay (1);
-//	  HAL_IWDG_Refresh(&hiwdg);
-//  }
+     HAL_TIM_PWM_Start (&htim3,TIM_CHANNEL_2);			// Enciende PWM   JTA eliminar buzer inicial
+     while(Count_Test2 < 260000)
+     {
+    	 HAL_IWDG_Refresh(&hiwdg);
+   		Count_Test2++;//  eliminar JTA buzzer
+   		if(Count_Test2 == 259999 ) //eliminar JTA buzzer
+   		{
+   			HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2); //eliminar JTA buzzer
+   			//Count_Test2 = 255;//eliminar JTA buzzer
+   		}
+     }
+     Count_Test2 = 0;
 
+     asm ("nop");
 
-  while (1)
-  {
-
-testTimmingProcess:
-	ProcesosC++;
-    while ( !(TIM6->SR & 0x0001) ){
-		// Espera hasta que se cumpla el overflow del timer 6
-		// 125 us
-		asm ("nop");
-	}
-	// Borra bandera de overflow
-	TIM6->SR &= ~TIM_SR_UIF;
-	HAL_IWDG_Refresh( &hiwdg );
-
-	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);	 //28-May-2024: Salida IO6 toogle test
-  	RndNumber++;       //RM_20240304 Para agregar PASSWORD de seguridad BLE
-      asm ("nop");
+     for (int i = 0; i < 1000; i++)
+     {
+   	  HAL_Delay (1);
+   	  HAL_IWDG_Refresh(&hiwdg);
+     }
 
 
-    main10();					// ASM: <<<-- TRADUCCION COMPLETA -->>>
+while (1)
+{
 
-    muestreo();
+   testTimmingProcess:
+   	ProcesosC++;
+       while ( !(TIM6->SR & 0x0001) ){
+   		// Espera hasta que se cumpla el overflow del timer 6
+   		// 125 us
+   		asm ("nop");
+   	}
+   	// Borra bandera de overflow
+   	TIM6->SR &= ~TIM_SR_UIF;
+   	HAL_IWDG_Refresh( &hiwdg );
 
-  	if(StateSleep == 0x55){
-  		// C: Pendiente a Adaptar
-  		//;Restablece el Tiempo RTC
-  		asm ("nop");
-  		asm ("nop");
-  	}
-
-  	retardoDeActuadores();		// ASM: <<<-- TRADUCCION COMPLETA -->>>
-
-  	asm ("nop");
-  	// procesa la base de tiempo para C y modbus
-  	check_Tick_1ms();
-
-  	/*
-  	Falta parte por insertar
-  	 */
-  	if(timeRstBLE){
-  		/* USART Disable */
-  		// USART_Cmd(USART2, DISABLE);
-        HAL_GPIO_WritePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI, GPIO_PIN_SET);      //28-May-2024:  Enciende Modulo WIFI
-        //GPIOC->BSRR = GPIO_BSRR_BS_6;
-  		BluetoothState = 1;
-  	}
-  	else{
-  		/* USART Enable */
-  		// USART_Cmd(USART2, ENABLE);
-  		HAL_GPIO_WritePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI, GPIO_PIN_RESET);      //28-May-2024:  Apaga Modulo WIFI
-  		//GPIOC->BSRR = GPIO_BSRR_BR_6;
-
-  		// State Machine Bluetooth    10-MAR-2022
-  		switch(BluetoothState){
-  			case 1:
-  				SetUpBluetooth_Ble();		break;		// 1:Configuracion  .... (( Adaptando ))
-  			case 2:
-  				GetParamBluetooth_Ble();	break;		// 2:Obtencion parametros
-  			case 3:
-  				TransmitReceive_Ble();		break;		// 3:transmision-recepcion
-  		}
-  	}
-
-  	Read_Inpunts_ble();				// 14-Mar-2022
-
-//  	if (device_conected){
-//  		//ContadorDebugger++;
-//  		// #pragma asm
-//  		if(!flagsTX [7])
-//  			timeOutRst = 241;				// carga time out de resetcon 60 segundos
-//  		flagsTX [7] = 1;							// levanta bandera de dispositivo conectado
-//
-//  		if(flagsLogger2 [2])
-//  			flagsTX [7] = 0;
-//  	}
-//  	else{
-//  		if(flagsTX [7]){				// sólo si viene de una desconexión cancela la transmisión que estuviera en progreso
-//  			keyTx = 0;// en caso de desconexion cancela toda transmisión
-//  			//flagsTX = 0;
-//  			for(uint8_t i = 0; i < 8 ; i++ )
-//  				flagsTX [i] = 0;
-//  			// flagsRxFirm = 0;
-//  			for(uint8_t i = 0; i < 8 ; i++ )
-//  				flagsRxFirm [i] = 0;
-//  			flagsLogger [4] = 0;				// permite loggeo de eventos
-//  			flagsLogger [5] = 0;				// permite loggeo de datos
-//  		}
-//  		flagsTX [7] = 0;				// borra bandera de dispositivo conectado
-//  	}
-
-  	if(tick_1s){
-  	  asm ("nop");
-  	  Count_Test++;
-  	  // HAL_GPIO_TogglePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI);	//28-May-2024: Modulo WIFI toogle test
-  	  // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);      //28-May-2024:  Enciende Modulo WIFI
-
-  	  // HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);	//PA7
-  	  // HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);	//PB0
-
-  //	  uint8_t tx_buffWifiBle [] = "Cominicacion mandada desde DMA-UART2 \n";
-  //	  HAL_UART_Transmit_DMA(&huart2, tx_buffWifiBle, strlen((char*)tx_buffWifiBle) );
-
-        /*   Prueba de trasnmision por modbus
-  	  HAL_GPIO_WritePin(GPIOC, PFULLDEF_MAX485_DE_AND_RE_NEG, GPIO_PIN_SET);      //28-May-2024:  Habilita trasnmision por modbus
-  	  uint8_t tx_buffModbus [] = "Test de comunicacion por modbus \n";
-  	  HAL_UART_Transmit_DMA(&huart4, tx_buffModbus, strlen((char*)tx_buffModbus) );
-  	  */
-  	    //  *** Prueba de activacion de rele compresor
-  	    //portX[rel_co] =  portX[rel_co] 1;
-  	    //  *** Prueba de activacion de rele compresor
-  	}
-
-  	if(tick_1ms == 1){
-  		// tiempo para rutina buzzer
-  		// #pragma asm
-  		cnt_gen_ms++;//Incrementa el contador general de ms cada 1ms
-  		// prescalaI2c++;
-  	}
-
-  	HAL_RTC_GetTime (&hrtc, &hRtcTime, RTC_FORMAT_BCD);
-  	HAL_RTC_GetDate (&hrtc, &hRtcDate, RTC_FORMAT_BCD);
-  	timeBCD_year = hRtcDate.Year;
-  	timeBCD_month = hRtcDate.Month;
-  	timeBCD_day = hRtcDate.Date;
-  	timeBCD_hour = hRtcTime.Hours;
-  	timeBCD_min = hRtcTime.Minutes;
-  	timeBCD_sec = hRtcTime.Seconds;
+   	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);	 //28-May-2024: Salida IO6 toogle test
+     	RndNumber++;       //RM_20240304 Para agregar PASSWORD de seguridad BLE
+         asm ("nop");
 
 
-  	timeBCD_to_UNIX();
-  	//------------------------------------------------------------------------------------------
-  	calculando_tiempo_UNIX ();
-  	//------------------------------------------------------------------------------------------
-  	//if(!flagsTime[f_timeConfigRTC]){
-  	//	goto noActTime;
-  	//}
+       main10();					// ASM: <<<-- TRADUCCION COMPLETA -->>>
 
-  	timeSeconds_HW = (uint16_t) ((timeUNIX)>>16);
-  	timeSeconds_LW = (uint16_t) (timeUNIX&0xFFFF);
+       muestreo();
 
-  	if(timeBCD_sec_ANT == timeBCD_sec){
-  		goto no_inc_cnt_sec;
-  	}
-  	timeBCD_sec_ANT = timeBCD_sec;
-  	// Se comenta el decremento en tiempo de logger y se coloca aqui por cuestiones de presición de Reloj
-  	// CGM 14/04/2025
-  	decword(&cntLogger_H);
+     	if(StateSleep == 0x55){
+     		// C: Pendiente a Adaptar
+     		//;Restablece el Tiempo RTC
+     		asm ("nop");
+     		asm ("nop");
+     	}
 
-no_inc_cnt_sec:
-noActTime:
-		  asm ("nop");
+     	retardoDeActuadores();		// ASM: <<<-- TRADUCCION COMPLETA -->>>
 
-  	  	switch(ProcesosC)
-  	  	{
-  	  		case 0:
-  	  			comunicacion();
-  	  			break;		// ASM: Pendiente a traducir
-  	  		case 1:
-  	  			voltmetro();
-  	  			break;		// ASM: Pendiente a traducir
-  	  		case 2:
-  	  			temper();
-  	  			break;		// ASM: Pendiente a traducir ..... Julio Torres
-  	  		case 3:
-  	  //			if(__HAL_UART_GET_FLAG(&huart4,UART_FLAG_TC)){
-  	  //				 asm ("nop");
-  	  //			}
-  	  			if(USART4->ISR & USART_ISR_TC){
-  	  			      HAL_GPIO_WritePin(GPIOC, PFULLDEF_MAX485_DE_AND_RE_NEG, GPIO_PIN_RESET);      //17-DIC-2021 El Driver inicalmente Escucha
-  	  				 //GPIOC->BSRR = GPIO_BSRR_BR_2;
-  	  			}
-  	  			ModbusMap ();
-  	  			noctar ();
-  	  			break;		// ASM: Pendiente a traducir
-  	  		case 4:
-  	  			refrigera();
-  	  			break;		// ASM: Pendiente a traducir
-  	  		case 5:
-  	  			display();
-  	  			break;		// ASM: Pendiente a traducir
-  	  		case 6:
-  	  			tiempo ();				// ASM: <<<-- TRADUCCION COMPLETA -->>> 15-Jul-2024
-  	  			if(bandera_act_fw_j == 0)    //Parche
-  	  				logger ();				// ASM: Pendiente a traducir
- 	  			tx_control ();			// ASM: "Faltan Comandos a Traducir"
-//
-  	  			if ( keyWrFirm == 0xAA){
-  	  			    asm ("nop");
-  	  				if	( keyTx == 00 )	{
-  	  				    asm ("nop");
- 	  					bootloader();
-  	  				}
-  	  			}
-  	  			break;		// ASM: Pendiente a traducir
-  	  		case 7:
-  	  			watch();
-  	  			ProcesosC = 255;
-  	  			break;		// ASM: Pendiente a traducir
-  	  		default:
-  	  		    asm ("nop");
-  	  			for (;;)      ;// Watch dog Reset
-  	  		break;
+     	asm ("nop");
+     	// procesa la base de tiempo para C y modbus
+     	check_Tick_1ms();
 
-  	  	}
+     	/*
+     	Falta parte por insertar
+     	 */
+     	if(timeRstBLE){
+     		/* USART Disable */
+     		// USART_Cmd(USART2, DISABLE);
+           HAL_GPIO_WritePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI, GPIO_PIN_SET);      //28-May-2024:  Enciende Modulo WIFI
+           //GPIOC->BSRR = GPIO_BSRR_BS_6;
+     		BluetoothState = 1;
+     	}
+     	else{
+     		/* USART Enable */
+     		// USART_Cmd(USART2, ENABLE);
+     		HAL_GPIO_WritePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI, GPIO_PIN_RESET);      //28-May-2024:  Apaga Modulo WIFI
+     		//GPIOC->BSRR = GPIO_BSRR_BR_6;
 
-	  	// clear time flags
-	  	tick_1ms = 0;						// flag base de tiempo 1ms
-	  	tick_10ms = 0;					// flag base de tiempo 10ms
-	  	tick_100ms = 0;					// flag base de tiempo 100ms
-	  	tick_1s = 0;						// flag base de tiempo 1s
+     		// State Machine Bluetooth    10-MAR-2022
+     		switch(BluetoothState){
+     			case 1:
+     				SetUpBluetooth_Ble();		break;		// 1:Configuracion  .... (( Adaptando ))
+     			case 2:
+     				GetParamBluetooth_Ble();	break;		// 2:Obtencion parametros
+     			case 3:
+     				TransmitReceive_Ble();		break;		// 3:transmision-recepcion
+     		}
+     	}
+
+     	Read_Inpunts_ble();				// 14-Mar-2022
+
+   //  	if (device_conected){
+   //  		//ContadorDebugger++;
+   //  		// #pragma asm
+   //  		if(!flagsTX [7])
+   //  			timeOutRst = 241;				// carga time out de resetcon 60 segundos
+   //  		flagsTX [7] = 1;							// levanta bandera de dispositivo conectado
+   //
+   //  		if(flagsLogger2 [2])
+   //  			flagsTX [7] = 0;
+   //  	}
+   //  	else{
+   //  		if(flagsTX [7]){				// sólo si viene de una desconexión cancela la transmisión que estuviera en progreso
+   //  			keyTx = 0;// en caso de desconexion cancela toda transmisión
+   //  			//flagsTX = 0;
+   //  			for(uint8_t i = 0; i < 8 ; i++ )
+   //  				flagsTX [i] = 0;
+   //  			// flagsRxFirm = 0;
+   //  			for(uint8_t i = 0; i < 8 ; i++ )
+   //  				flagsRxFirm [i] = 0;
+   //  			flagsLogger [4] = 0;				// permite loggeo de eventos
+   //  			flagsLogger [5] = 0;				// permite loggeo de datos
+   //  		}
+   //  		flagsTX [7] = 0;				// borra bandera de dispositivo conectado
+   //  	}
+
+     	if(tick_1s){
+     	  asm ("nop");
+     	  Count_Test++;
+     	  // HAL_GPIO_TogglePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI);	//28-May-2024: Modulo WIFI toogle test
+     	  // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);      //28-May-2024:  Enciende Modulo WIFI
+
+     	  // HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);	//PA7
+     	  // HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);	//PB0
+
+     //	  uint8_t tx_buffWifiBle [] = "Cominicacion mandada desde DMA-UART2 \n";
+     //	  HAL_UART_Transmit_DMA(&huart2, tx_buffWifiBle, strlen((char*)tx_buffWifiBle) );
+
+           /*   Prueba de trasnmision por modbus
+     	  HAL_GPIO_WritePin(GPIOC, PFULLDEF_MAX485_DE_AND_RE_NEG, GPIO_PIN_SET);      //28-May-2024:  Habilita trasnmision por modbus
+     	  uint8_t tx_buffModbus [] = "Test de comunicacion por modbus \n";
+     	  HAL_UART_Transmit_DMA(&huart4, tx_buffModbus, strlen((char*)tx_buffModbus) );
+     	  */
+     	    //  *** Prueba de activacion de rele compresor
+     	    //portX[rel_co] =  portX[rel_co] 1;
+     	    //  *** Prueba de activacion de rele compresor
+     	}
+
+     	if(tick_1ms == 1){
+     		// tiempo para rutina buzzer
+     		// #pragma asm
+     		cnt_gen_ms++;//Incrementa el contador general de ms cada 1ms
+     		// prescalaI2c++;
+     	}
+//   			    HAL_RTC_GetTime (&hrtc, &hRtcTime, RTC_FORMAT_BCD);
+//   			    HAL_RTC_GetDate (&hrtc, &hRtcDate, RTC_FORMAT_BCD);
+//   			    timeBCD_year = hRtcDate.Year;
+//   		 	    timeBCD_month = hRtcDate.Month;
+//   			    timeBCD_day = hRtcDate.Date;
+//   			    timeBCD_hour = hRtcTime.Hours;
+//   			    timeBCD_min = hRtcTime.Minutes;
+//   			    timeBCD_sec = hRtcTime.Seconds;
+
+   				uint32_t tmpreg1 = (uint32_t)(READ_REG(RTC->TR) & RTC_TR_RESERVED_MASK);
+     			uint32_t datetmpreg1 = (uint32_t)(READ_REG(RTC->DR) & RTC_DR_RESERVED_MASK);
+
+     		  	timeBCD_year = (uint8_t)((datetmpreg1 & (RTC_DR_YT | RTC_DR_YU)) >> RTC_DR_YU_Pos);
+     		  	timeBCD_month = (uint8_t)((datetmpreg1 & (RTC_DR_MT | RTC_DR_MU)) >> RTC_DR_MU_Pos);
+     		  	timeBCD_day = (uint8_t)((datetmpreg1 & (RTC_DR_DT | RTC_DR_DU)) >> RTC_DR_DU_Pos);
+     		  	timeBCD_hour = (uint8_t)((tmpreg1 & (RTC_TR_HT | RTC_TR_HU)) >> RTC_TR_HU_Pos);
+       	  		timeBCD_min = (uint8_t)((tmpreg1 & (RTC_TR_MNT | RTC_TR_MNU)) >> RTC_TR_MNU_Pos);
+     		  	timeBCD_sec = (uint8_t)((tmpreg1 & (RTC_TR_ST | RTC_TR_SU)) >> RTC_TR_SU_Pos);
+
+     		  	timeBCD_to_UNIX();
+     		  	//------------------------------------------------------------------------------------------
+     		  	calculando_tiempo_UNIX ();
+   //------------------------------------------------------------------------------------------
+//     		  		if(!flagsTime[f_timeConfigRTC]){
+//     		  			goto noActTime;
+//     		  		}
+
+     		  		timeSeconds_HW = (uint16_t) ((timeUNIX)>>16);
+     		  		timeSeconds_LW = (uint16_t) (timeUNIX&0xFFFF);
+
+     		  		if(timeBCD_sec_ANT == timeBCD_sec){
+     		  			goto no_inc_cnt_sec;
+     		  		}
+     		  		timeBCD_sec_ANT = timeBCD_sec;
+     		  		decword(&cntLogger_H);
+     		  no_inc_cnt_sec:
+     		  noActTime:
+   		  asm ("nop");
+
+     	  	switch(ProcesosC)
+     	  	{
+     	  		case 0:
+     	  			comunicacion();
+     	  			break;		// ASM: Pendiente a traducir
+     	  		case 1:
+     	  			voltmetro();
+     	  			break;		// ASM: Pendiente a traducir
+     	  		case 2:
+     	  			temper();
+     	  			break;		// ASM: Pendiente a traducir ..... Julio Torres
+     	  		case 3:
+     	  //			if(__HAL_UART_GET_FLAG(&huart4,UART_FLAG_TC)){
+     	  //				 asm ("nop");
+     	  //			}
+     	  			if(USART4->ISR & USART_ISR_TC){
+     	  			      HAL_GPIO_WritePin(GPIOC, PFULLDEF_MAX485_DE_AND_RE_NEG, GPIO_PIN_RESET);      //17-DIC-2021 El Driver inicalmente Escucha
+     	  				 //GPIOC->BSRR = GPIO_BSRR_BR_2;
+     	  			}
+     	  			ModbusMap ();
+     	  			noctar ();
+     	  			break;		// ASM: Pendiente a traducir
+     	  		case 4:
+     	  			if(bandera_act_fw_j == 0)    //Parche
+     	  			{
+     	  				refrigera();
+     	  			}
+     	  			break;		// ASM: Pendiente a traducir
+     	  		case 5:
+     	  			display();
+     	  			break;		// ASM: Pendiente a traducir
+     	  		case 6:
+     	  			tiempo ();				// ASM: <<<-- TRADUCCION COMPLETA -->>> 15-Jul-2024
+     	  			if(bandera_act_fw_j == 0)    //Parche
+     	  			{
+     	  				logger ();				// ASM: Pendiente a traducir
+     	  			}
+    	  			tx_control ();			// ASM: "Faltan Comandos a Traducir"
+   //
+     	  			if ( keyWrFirm == 0xAA){
+     	  			    asm ("nop");
+     	  				if	( keyTx == 00 )	{
+     	  				    asm ("nop");
+   	  					bootloader();
+     	  				}
+     	  			}
+     	  			break;		// ASM: Pendiente a traducir
+     	  		case 7:
+     	  			watch();
+     	  			ProcesosC = 255;
+     	  			break;		// ASM: Pendiente a traducir
+     	  		default:
+     	  		    asm ("nop");
+     	  			for (;;)      ;// Watch dog Reset
+     	  		break;
+
+     	  	}
+
+   	  	// clear time flags
+   	  	tick_1ms = 0;						// flag base de tiempo 1ms
+   	  	tick_10ms = 0;					// flag base de tiempo 10ms
+   	  	tick_100ms = 0;					// flag base de tiempo 100ms
+   	  	tick_1s = 0;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -2777,49 +2791,138 @@ static void MX_ADC1_Init(void)
 {
 
   /* USER CODE BEGIN ADC1_Init 0 */
-	  /* Deshabilita watch dogs */
-//	  ADC1->TR = 0xFFF0000;
-	  ADC1 -> AWD1TR = 0xFFF0000;
-      ADC1 -> AWD2TR = 0xFFF0000;
+	uint8_t val_analog = 0x03;
+	uint32_t wait_loop_index = 0;
+	uint32_t tmp_cfgr1 = 0;
+	uint32_t tmp_cfgr2 = 0;
+	uint32_t AWDThresholdHighValue = 0;
+	uint32_t AWDThresholdLowValue = 0;
 
-	  /* Habilitar el reloj para ADC1 */
-	  RCC->APBENR2 |= RCC_APBENR2_ADCEN;
-//	  RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
+	//ACTIVACION DE RELOJ
+	MODIFY_REG(RCC->CCIPR, RCC_CCIPR_ADCSEL, (uint32_t)(RCC_ADCCLKSOURCE_SYSCLK));
+	__HAL_RCC_ADC_CLK_ENABLE();
 
-	  /* Habilitar el reloj para GPIOC */
-	  RCC->IOPENR |= RCC_IOPENR_GPIOCEN;
+	//PINES ANALOGICOS PARA CANALES DE MUESTRA
 
-	  /* Habilitar el reloj para GPIOA */
-	  RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
 
-	  /* Habilitar el reloj para GPIOB */
-	  RCC->IOPENR |= RCC_IOPENR_GPIOEEN;
+	// ---------------------- GPIOC ----------------------
+	// PC0
+	MODIFY_REG(GPIOC->MODER, GPIO_MODER_MODE0_Msk, val_analog);
+	// PC1
+	MODIFY_REG(GPIOC->MODER, GPIO_MODER_MODE1_Msk, val_analog);
+	// PC4
+	MODIFY_REG(GPIOC->MODER, GPIO_MODER_MODE4_Msk, val_analog);
 
-	  /* Configurar PC0 y PC1 en modo analógico */
-	  GPIOC->MODER |= (GPIO_MODER_MODE0 | GPIO_MODER_MODE1);  // 11: Modo analógico
-	  GPIOC->PUPDR &= ~(GPIO_PUPDR_PUPD0 | GPIO_PUPDR_PUPD1); // 00: Sin pull-up/pull-down
+	// Sin pull-up/pull-down para PC0, PC1, PC4
+	CLEAR_BIT(GPIOC->PUPDR, GPIO_PUPDR_PUPD0_Msk | GPIO_PUPDR_PUPD1_Msk | GPIO_PUPDR_PUPD4_Msk);
 
-	  /* Configurar PA5, PA6 y PA7 en modo analógico */
-	  GPIOA->MODER |= (GPIO_MODER_MODE5 | GPIO_MODER_MODE6 | GPIO_MODER_MODE7);
-	  GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPD5 | GPIO_PUPDR_PUPD6 | GPIO_PUPDR_PUPD7);
+	// ---------------------- GPIOA ----------------------
+	MODIFY_REG(GPIOA->MODER, GPIO_MODER_MODE5_Msk, val_analog);
+	MODIFY_REG(GPIOA->MODER, GPIO_MODER_MODE6_Msk, val_analog);
+	MODIFY_REG(GPIOA->MODER, GPIO_MODER_MODE7_Msk, val_analog);
 
-	  /* Configurar PB1 en modo analógico */
-	  GPIOB->MODER |= GPIO_MODER_MODE1;
-	  GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD1;
+	CLEAR_BIT(GPIOA->PUPDR, GPIO_PUPDR_PUPD5_Msk | GPIO_PUPDR_PUPD6_Msk | GPIO_PUPDR_PUPD7_Msk);
 
-	  ADC1->CFGR2 = 0xC0000000;
+	// ---------------------- GPIOB ----------------------
+	MODIFY_REG(GPIOB->MODER, GPIO_MODER_MODE1_Msk, val_analog);
+	CLEAR_BIT(GPIOB->PUPDR, GPIO_PUPDR_PUPD1_Msk);
 
-	  ADC1->CFGR1 = 0x8;
+	//Activar el regulador del ADC
+	MODIFY_REG(ADC1->CR, ADC_CR_BITS_PROPERTY_RS, ADC_CR_ADVREGEN);
 
-	  ADC1->CR = 0x10000000;
+	wait_loop_index = ((LL_ADC_DELAY_INTERNAL_REGUL_STAB_US / 10UL) * ((SystemCoreClock / (100000UL * 2UL)) + 1UL));
+	while (wait_loop_index != 0UL)
+	{
+		wait_loop_index--;
+	}
 
-	  ADC1->CHSELR = ADC_CHSELR_CHSEL9 | ADC_CHSELR_CHSEL10 | ADC_CHSELR_CHSEL14 |
-	                 ADC_CHSELR_CHSEL18 | ADC_CHSELR_CHSEL0 | ADC_CHSELR_CHSEL1;
+	//Llenar el registro ADC_CFGR1
+
+	tmp_cfgr1 |= 	   (ADC_RESOLUTION_10B                         |
+	                    ADC_CFGR1_AUTOWAIT((uint32_t)DISABLE)      |
+	                    ADC_CFGR1_AUTOOFF((uint32_t)DISABLE)       |
+	                    ADC_CFGR1_CONTINUOUS((uint32_t)DISABLE)    |
+	                    ADC_CFGR1_OVERRUN(ADC_OVR_DATA_PRESERVED)  |
+	                    ADC_DATAALIGN_RIGHT                        |
+	                    ADC_SCAN_SEQ_MODE(ADC_SCAN_SEQ_FIXED)      |
+	                    ADC_CFGR1_DMACONTREQ((uint32_t)DISABLE));
+	MODIFY_REG(ADC1->CFGR1,
+	                 ADC_CFGR1_RES       |
+	                 ADC_CFGR1_DISCEN    |
+	                 ADC_CFGR1_CHSELRMOD |
+	                 ADC_CFGR1_AUTOFF    |
+	                 ADC_CFGR1_WAIT      |
+	                 ADC_CFGR1_CONT      |
+	                 ADC_CFGR1_OVRMOD    |
+	                 ADC_CFGR1_EXTSEL    |
+	                 ADC_CFGR1_EXTEN     |
+	                 ADC_CFGR1_ALIGN     |
+	                 ADC_CFGR1_SCANDIR   |
+	                 ADC_CFGR1_DMACFG,
+	                 tmp_cfgr1);
+
+	//Llenar el registro ADC_CFGR2
+
+	tmp_cfgr2 |= ((ADC_CLOCK_SYNC_PCLK_DIV1 & ADC_CFGR2_CKMODE) |
+	                    	ADC_TRIGGER_FREQ_LOW);
+
+	MODIFY_REG(ADC1->CFGR2,
+	                 ADC_CFGR2_CKMODE |
+	                 ADC_CFGR2_LFTRIG |
+	                 ADC_CFGR2_OVSE   |
+	                 ADC_CFGR2_OVSR   |
+	                 ADC_CFGR2_OVSS   |
+	                 ADC_CFGR2_TOVS,
+	                 tmp_cfgr2);
+	//Configuracion de canales
+
+	SET_BIT(ADC1->CHSELR, (ADC_CHANNEL_0 & ADC_CHANNEL_ID_BITFIELD_MASK));
+	SET_BIT(ADC1->CHSELR, (ADC_CHANNEL_1 & ADC_CHANNEL_ID_BITFIELD_MASK));
+	SET_BIT(ADC1->CHSELR, (ADC_CHANNEL_9 & ADC_CHANNEL_ID_BITFIELD_MASK));
+	SET_BIT(ADC1->CHSELR, (ADC_CHANNEL_10 & ADC_CHANNEL_ID_BITFIELD_MASK));
+	SET_BIT(ADC1->CHSELR, (ADC_CHANNEL_14 & ADC_CHANNEL_ID_BITFIELD_MASK));
+	SET_BIT(ADC1->CHSELR, (ADC_CHANNEL_15 & ADC_CHANNEL_ID_BITFIELD_MASK));
+	SET_BIT(ADC1->CHSELR, (ADC_CHANNEL_18 & ADC_CHANNEL_ID_BITFIELD_MASK));
+
+	//Watch_Dogs
+
+	SET_BIT(ADC1 -> AWD2CR, (1UL << __LL_ADC_CHANNEL_TO_DECIMAL_NB(ADC_ANALOGWATCHDOG_2)));
+	WRITE_REG(ADC1->ISR, LL_ADC_FLAG_AWD2);
+	CLEAR_BIT(ADC1->IER, LL_ADC_IT_AWD2);
+
+	__IO uint32_t *preg = __ADC_PTR_REG_OFFSET(ADC1->AWD1TR,
+	                                             (((ADC_ANALOGWATCHDOG_2 & ADC_AWD_TRX_REGOFFSET_MASK))
+	                                              >> (ADC_AWD_TRX_REGOFFSET_BITOFFSET_POS))
+	                                             + ((ADC_AWD_CR3_REGOFFSET & ADC_ANALOGWATCHDOG_2)
+	                                                >> (ADC_AWD_CRX_REGOFFSET_BITOFFSET_POS + 1UL))
+	                                            );
+
+	MODIFY_REG(*preg,
+	             ADC_AWD1TR_HT1 | ADC_AWD1TR_LT1,
+	             (AWDThresholdHighValue << ADC_TR1_HT1_BITOFFSET_POS) | AWDThresholdLowValue);
+
+	SET_BIT(ADC1->AWD3CR, (1UL << __LL_ADC_CHANNEL_TO_DECIMAL_NB(ADC_ANALOGWATCHDOG_3)));
+	WRITE_REG(ADC1->ISR, LL_ADC_FLAG_AWD3);
+	CLEAR_BIT(ADC1->IER, LL_ADC_IT_AWD3);
+
+	__IO uint32_t *preg1 = __ADC_PTR_REG_OFFSET(ADC1->AWD1TR,
+	                                             (((ADC_ANALOGWATCHDOG_3 & ADC_AWD_TRX_REGOFFSET_MASK))
+	                                              >> (ADC_AWD_TRX_REGOFFSET_BITOFFSET_POS))
+	                                             + ((ADC_AWD_CR3_REGOFFSET & ADC_ANALOGWATCHDOG_3)
+	                                                >> (ADC_AWD_CRX_REGOFFSET_BITOFFSET_POS + 1UL))
+	                                            );
+
+	MODIFY_REG(*preg1,
+	             ADC_AWD1TR_HT1 | ADC_AWD1TR_LT1,
+	             (AWDThresholdHighValue << ADC_TR1_HT1_BITOFFSET_POS) | AWDThresholdLowValue);
 
   /* USER CODE END ADC1_Init 0 */
 
-  ADC_ChannelConfTypeDef sConfig = {0};
-  ADC_AnalogWDGConfTypeDef AnalogWDGConfig = {0};
+//  ADC_ChannelConfTypeDef sConfig = {0};
+//  ADC_AnalogWDGConfTypeDef AnalogWDGConfig = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
 
@@ -2827,105 +2930,141 @@ static void MX_ADC1_Init(void)
 
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV1;
-  hadc1.Init.Resolution = ADC_RESOLUTION_10B;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.ScanConvMode = ADC_SCAN_SEQ_FIXED;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  hadc1.Init.LowPowerAutoWait = DISABLE;
-  hadc1.Init.LowPowerAutoPowerOff = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-  hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_1CYCLE_5;
-  hadc1.Init.OversamplingMode = DISABLE;
-  hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_LOW;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_9;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_10;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_14;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_15;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_18;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure the WatchDogs 2
-  */
-  AnalogWDGConfig.WatchdogNumber = ADC_ANALOGWATCHDOG_2;
-  AnalogWDGConfig.WatchdogMode = ADC_ANALOGWATCHDOG_SINGLE_REG;
-  if (HAL_ADC_AnalogWDGConfig(&hadc1, &AnalogWDGConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure the WatchDogs 3
-  */
-  AnalogWDGConfig.WatchdogNumber = ADC_ANALOGWATCHDOG_3;
-  if (HAL_ADC_AnalogWDGConfig(&hadc1, &AnalogWDGConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
+//  hadc1.Instance = ADC1;
+//  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV1;
+//  hadc1.Init.Resolution = ADC_RESOLUTION_10B;
+//  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+//  hadc1.Init.ScanConvMode = ADC_SCAN_SEQ_FIXED;
+//  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+//  hadc1.Init.LowPowerAutoWait = DISABLE;
+//  hadc1.Init.LowPowerAutoPowerOff = DISABLE;
+//  hadc1.Init.ContinuousConvMode = DISABLE;
+//  hadc1.Init.NbrOfConversion = 1;
+//  hadc1.Init.DiscontinuousConvMode = DISABLE;
+//  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+//  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+//  hadc1.Init.DMAContinuousRequests = DISABLE;
+//  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+//  hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_1CYCLE_5;
+//  hadc1.Init.OversamplingMode = DISABLE;
+//  hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_LOW;
+//  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure Regular Channel
+//  */
+//  sConfig.Channel = ADC_CHANNEL_0;
+//  sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure Regular Channel
+//  */
+//  sConfig.Channel = ADC_CHANNEL_1;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure Regular Channel
+//  */
+//  sConfig.Channel = ADC_CHANNEL_9;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure Regular Channel
+//  */
+//  sConfig.Channel = ADC_CHANNEL_10;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure Regular Channel
+//  */
+//  sConfig.Channel = ADC_CHANNEL_14;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure Regular Channel
+//  */
+//  sConfig.Channel = ADC_CHANNEL_15;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure Regular Channel
+//  */
+//  sConfig.Channel = ADC_CHANNEL_18;
+//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure the WatchDogs 2
+//  */
+//  AnalogWDGConfig.WatchdogNumber = ADC_ANALOGWATCHDOG_2;
+//  AnalogWDGConfig.WatchdogMode = ADC_ANALOGWATCHDOG_SINGLE_REG;
+//  if (HAL_ADC_AnalogWDGConfig(&hadc1, &AnalogWDGConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Configure the WatchDogs 3
+//  */
+//  AnalogWDGConfig.WatchdogNumber = ADC_ANALOGWATCHDOG_3;
+//  if (HAL_ADC_AnalogWDGConfig(&hadc1, &AnalogWDGConfig) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
   /* USER CODE BEGIN ADC1_Init 2 */
-  while(HAL_ADCEx_Calibration_Start(&hadc1) != HAL_OK);
 
+	  uint32_t backup_setting_cfgr1;
+	  uint32_t calibration_index;
+	  uint32_t calibration_factor_accumulated = 0;
+	  uint32_t wait_loop_index1 = 0UL;
+
+	  if ((ADC1->CR & ADC_CR_ADEN) == 0UL)
+	  {
+	  	backup_setting_cfgr1 = ADC1->CFGR1 & (ADC_CFGR1_DMAEN | ADC_CFGR1_DMACFG | ADC_CFGR1_AUTOFF);
+	  	ADC1->CFGR1 &= ~(ADC_CFGR1_DMAEN | ADC_CFGR1_DMACFG | ADC_CFGR1_AUTOFF);
+
+	     	for (calibration_index = 0UL; calibration_index < 8UL; calibration_index++)
+	      	{
+	     		ADC1->CR &= ~ADC_CR_BITS_PROPERTY_RS;    // Limpiar los bits de la propiedad rs
+	     		ADC1->CR |= ADC_CR_ADCAL;                // Establecer el bit ADC_CR_ADCAL para iniciar la calibración
+
+	     		while ((ADC1->CR & ADC_CR_ADCAL) == ADC_CR_ADCAL)
+	     		{
+	     			wait_loop_index1++;
+	     		}
+
+	     		calibration_factor_accumulated += ADC1->CALFACT & ADC_CALFACT_CALFACT;
+	      	}
+	  	calibration_factor_accumulated /= calibration_index;
+
+	  	ADC1->CR &= ~ADC_CR_BITS_PROPERTY_RS;    // Limpiar los bits de la propiedad rs
+	  	ADC1->CR |= ADC_CR_ADEN;                  // Establecer el bit ADC_CR_ADEN para habilitar el ADC
+
+
+	  	ADC1->CALFACT &= ~ADC_CALFACT_CALFACT;         // Limpiar los bits de calibración existentes
+	  	ADC1->CALFACT |= calibration_factor_accumulated; // Establecer el nuevo factor de calibración
+
+
+	  	ADC1->CR &= ~ADC_CR_BITS_PROPERTY_RS;     // Limpiar los bits de la propiedad rs
+	  	ADC1->CR |= ADC_CR_ADDIS;                  // Establecer el bit ADC_CR_ADDIS para deshabilitar el ADC
+
+	  	ADC1->CFGR1 |= backup_setting_cfgr1;  // Establecer los bits de CFGR1 según el valor de backup_setting_cfgr1
+	  }
   /* USER CODE END ADC1_Init 2 */
 
 }
@@ -2994,9 +3133,9 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_1024;
-  hiwdg.Init.Window = 4000;
-  hiwdg.Init.Reload = 4000;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
+  hiwdg.Init.Window = 800;
+  hiwdg.Init.Reload = 800;
   hiwdg.Init.EWI = 0;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
@@ -3017,6 +3156,7 @@ static void MX_RTC_Init(void)
 {
 
   /* USER CODE BEGIN RTC_Init 0 */
+
 
   /* USER CODE END RTC_Init 0 */
 
@@ -3071,7 +3211,7 @@ static void MX_RTC_Init(void)
 
   /** Enable the WakeUp
   */
-  if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0x2000, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0) != HAL_OK)
+  /*if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0x2000, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -3440,12 +3580,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  /*HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   HAL_GPIO_WritePin(PFULLDEF_MP1, GPIO_PIN_SET);// Activa la selección de MP1
-  HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_10);
+  HAL_GPIO_WritePin(GPIOC,GPIO_PIN_10,GPIO_PIN_SET);
+  HAL_GPIO_WritePin(PFULLDEF_VSEN, GPIO_PIN_SET);
   /* USER CODE END MX_GPIO_Init_2 */
 }
 

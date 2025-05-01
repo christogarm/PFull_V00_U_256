@@ -15,6 +15,18 @@
 #define pendienteRTP	256			// Pendiente de la Recta Caracteristica del RTP (multiplicada por 1000)
 #define ordenadaRTP		-256		// Ordenanda de la Recta Caracteristica del RTP
 
+/*
+ * CGM 30/04/2025
+ * Calculo de la Temperatura de los OPAMPs
+ */
+
+#define alpha_OP1		23.07		// Valor calculado a partir de los valores de Resistencias colocados en el OPAMP
+#define beta_OP1		9.94		// Valor calculado a partir de los valores de Resistencias colocados en el OPAMP
+
+uint16_t gamma_OP1 = 0;				// Valor calculado a partir de los valores de Resistencias colocados en el OPAMP y del voltaje de Salida
+uint16_t tRTP1000 [8] = {0};		// Muestras
+uint16_t temperatura_OP1 = 0;
+
 //uint16_t    tsac_w = 0;
 //tret_w
 //teval
@@ -25,7 +37,7 @@
 /*
  * Temperatura del Termopar RTP1000
  */
-uint16_t	tRTP1000 [8] = {8};
+uint16_t	tRTP1000 [8] = {0};
 uint16_t	tRTP1000_p = 0;
 uint16_t	vRTP1000_p = 0;
 uint16_t	constantRTP = 0;
@@ -74,9 +86,9 @@ void temper(void){
 
 
 	cnttemp++;
-	A = cnttemp;
+	//A = cnttemp;
 
-	if(A >= 50) 	   //Manuel 07-Mar-2022	$64;		/ cntemp es menor
+	if(cnttemp >= 50) 	   //Manuel 07-Mar-2022	$64;		/ cntemp es menor
 		goto tempe05;  // Sí no tomes muestras
 	goto fintemp;      // No, sincroniza la lectura con el dígito 1
 
@@ -130,10 +142,7 @@ tempe05:
 				HAL_ADC_ConfigChannel(&hadc, &sConfig);
 				adcram = capturaAD();  //Convierte la señal*/
 								        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
-				        ADC1->CHSELR &= ADC_CHSELR_CHSEL14;
-				        ADC1->CHSELR &= ADC_CHSELR_CHSEL10;
-				        ADC1->CHSELR &= ADC_CHSELR_CHSEL18;
-
+						ADC1->CHSELR = 0;
 				        ADC1->CHSELR |= ADC_CHSELR_CHSEL0;  // Canal 0
 
 				        capturaAD ();
@@ -213,10 +222,7 @@ tempeLoad_s04:
 						//(ADC1->CFGR1 & ADC_CFGR1_SCANDIR) == ADC_SCAN_SEQ_FIXED_BACKWARD)
 				//{
 		        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
-			        ADC1->CHSELR &= ADC_CHSELR_CHSEL10;
-			        ADC1->CHSELR &= ADC_CHSELR_CHSEL0;
-			        ADC1->CHSELR &= ADC_CHSELR_CHSEL18;
-
+					ADC1->CHSELR = 0;
 			        ADC1->CHSELR |= ADC_CHSELR_CHSEL18;  // Canal 0
 					capturaAD();
 				//}
@@ -310,10 +316,7 @@ tempeLoad_s03:
 		    //{
 		        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
 
-		        ADC1->CHSELR &= ADC_CHSELR_CHSEL14;
-		        ADC1->CHSELR &= ADC_CHSELR_CHSEL0;
-		        ADC1->CHSELR &= ADC_CHSELR_CHSEL18;
-
+				ADC1->CHSELR = 0;
 		        ADC1->CHSELR |= ADC_CHSELR_CHSEL10;  // Canal 0
 		        capturaAD ();
 		    //}
@@ -409,10 +412,7 @@ tempe13:
 	        //(ADC1->CFGR1 & ADC_CFGR1_SCANDIR) == ADC_SCAN_SEQ_FIXED_BACKWARD)
 	   // {
 	        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
-	        ADC1->CHSELR &= ADC_CHSELR_CHSEL10;
-	        ADC1->CHSELR &= ADC_CHSELR_CHSEL0;
-	        ADC1->CHSELR &= ADC_CHSELR_CHSEL18;
-
+			ADC1->CHSELR = 0;
 	        ADC1->CHSELR |= ADC_CHSELR_CHSEL14;  // Canal 0
 	        capturaAD ();
 	    //}

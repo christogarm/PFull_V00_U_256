@@ -1,3 +1,4 @@
 ../Core/Src/inicio.c:9:6:inicio	16	static
-../Core/Src/inicio.c:196:6:timeBCD_to_UNIX	8	static
-../Core/Src/inicio.c:241:9:BCDtoByte	16	static
+../Core/Src/inicio.c:223:6:timeBCD_to_UNIX	8	static
+../Core/Src/inicio.c:268:9:BCDtoByte	16	static
+../Core/Src/inicio.c:289:6:findPointLogger	32	static

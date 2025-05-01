@@ -1,2 +1,2 @@
 ../Core/Src/muestreo.c:14:6:muestreo	16	static,ignoring_inline_asm
-../Core/Src/muestreo.c:809:6:ADC_Deinit_Func	16	static
+../Core/Src/muestreo.c:825:6:ADC_Deinit_Func	16	static

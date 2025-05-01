@@ -1352,7 +1352,6 @@ end_rx_firmware:
 //			;----------------------------------------------------------
 tx_clean_logger:
 
-
 			clean_buffer();	//	call	clean_buffer
 			cntBloqFirm = 0;//	clr		cntBloqFirm
 
@@ -2151,7 +2150,7 @@ espera_ini_rtc_1:          // Espera 2 RTCCLK (1/38000Hz * 2 = 50 us)
 			//bres    RTC_ISR1,#7   ;Termina modo de inicialización RTC_ISR1[INIT] = 0
 			//mov     RTC_WPR,#$0   ;Bloquea la protección contra escritura con dato erroneo
 			// -------------------------------------------------------------------------------
-			flagsTime[f_timeConfigRTC]=1;// bset	flagsTime,#f_timeConfigRTC; Ididca que el RTC fue configurado con los datos recibidos .
+			flagsTime[f_timeConfigRTC]=0;// bset	flagsTime,#f_timeConfigRTC; Ididca que el RTC fue configurado con los datos recibidos .
 
 			// Carga datos de bloque para transmitir la respuesta
 			BloqDatalooger[comando1] = 0xF1; // mov		comando1,#$F1
@@ -3505,7 +3504,17 @@ void prepTXlogg_2(){
 			//mov	resull,#126
 			//addw	X,resulh
 			//ld	A,cntByteBlock
-			point_X[126] = cntByteBlock;		//ld	(X),A
+
+			// Se agrega este parche debido a la naturaleza de la memoria
+			// CGM 23/04/2025
+			if(cntByteBlock == 0){
+				point_X[126] = 0xFF;	//ld		(X),A ---------?
+			}
+			else{
+				point_X[126] = cntByteBlock;	//ld		(X),A ---------?
+			}
+
+			//point_X[126] = cntByteBlock;		//ld	(X),A
 
 			/*
 			 * CGM 16/04/2025
@@ -3535,7 +3544,6 @@ void prepTXlogg_2(){
 			save_timeUNIX();			//	call	save_timeUNIX
 
 			save_cntReg();				//	call	save_cntReg
-
 
 			STM8_A = cntBlockFlash;		//ld    A,cntBlockFlash;				/ Toma el número de bloques grabados en Flash
 

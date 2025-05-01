@@ -25,6 +25,7 @@ void muestreo(void){
 			goto detecta_flanco;//jrule detecta_flanco
 		}
 
+
 //		if(cnt_veces_muestreo < 3)
 //			cnt_veces_muestreo_2++;
 //		else
@@ -47,8 +48,8 @@ void muestreo(void){
 
 
 grabadoEmergencia:
-
 		//;primero guarda lo que aun hay en el buffer .
+
 		cntBlockFlash = cntBlockDATA;//mov		cntBlockFlash,cntBlockDATA;
 		cntByteBlock = cntByteBlockDATA; //mov	cntByteBlock,cntByteBlockDATA
 		//ldw		X,#data_buffer
@@ -64,7 +65,16 @@ grabadoEmergencia:
 	    //  resull = 126;//mov resull,#126
 //	    dirBuffer = dirBuffer + 126; //addw	X,resulh
         //ld		A,cntByteBlock
-	    dirBuffer[126] = cntByteBlock;	//ld		(X),A ---------?
+
+		// Se agrega este parche debido a la naturaleza de la memoria
+		// CGM 23/04/2025
+		if(cntByteBlock == 0){
+			dirBuffer[126] = 0xFF;	//ld		(X),A ---------?
+		}
+		else{
+			dirBuffer[126] = cntByteBlock;	//ld		(X),A ---------?
+		}
+
 
 
 		//;---- Graba buffer en bloque de flash
@@ -77,6 +87,11 @@ grabadoEmergencia:
 	    dirPointer = &dirLogger[128*cntBlockFlash];
 	    // cntBlockFlash = dirBuffer;//LDW X,dirBuffer;
 	    dataPointer = &dirBuffer[0];//LDW dataPointer,X
+
+	    dirBufferPage = &bufferPageDATA[0];
+
+	    grabadoLoggerBloquesCompletos(dirPointer, dirBufferPage);
+
 	    GRABA_BLOCK();			//call GRABA_BLOCK
 
 
@@ -106,7 +121,14 @@ grabadoEmergencia:
 //	    point_X = dirBuffer + 126; //addw	X,resulh
 	    //ld		A,cntByteBlock
 //	    *point_X = cntByteBlock;//ld (X),A ----------------?
-	    dirBuffer[126] = cntByteBlock;
+	    // Se agrega este parche debido a la naturaleza de la memoria
+	    // CGM 23/04/2025
+	    if(cntByteBlock == 0){
+	    	dirBuffer[126] = 0xFF;	//ld		(X),A ---------?
+	    }
+	    else{
+	    	dirBuffer[126] = cntByteBlock;	//ld		(X),A ---------?
+	    }
 
 	    //;---- Graba buffer en bloque de flash
 	    ProgMemCode = 0xAA; //mov		ProgMemCode,#$AA;
@@ -119,6 +141,11 @@ grabadoEmergencia:
 	    dirPointer = &dirLogger[128 * cntBlockFlash]; // -----------------------------------?
 	    //LDW		dataPointer,X
 	    dataPointer = &dirBuffer[0];//------------------------------------?
+
+	    dirBufferPage = &bufferPageEVENT[0];
+
+	    grabadoLoggerBloquesCompletos(dirPointer, dirBufferPage);
+
 	    GRABA_BLOCK();//call GRABA_BLOCK
 
 	    //ldw		X,cntRegEVENT
@@ -133,8 +160,9 @@ grabadoEmergencia:
 	    for(uint8_t i=0; i<8; i++)
 	    	flagsEvent[i] = 0;
 
+
 grabadoEmergenciaFin:
-	save_timeUNIX();
+
 	GPIOA->MODER |= 0x3FFFFFFF;
 	GPIOB->MODER |= 0xFFFFFFFF;
 	GPIOC->MODER |= 0xFFFDFFFF;
@@ -150,8 +178,8 @@ grabadoEmergenciaFin:
 	while(HAL_I2C_DeInit(&hi2c1) != HAL_OK);
 	while(HAL_UART_DeInit(&huart2) != HAL_OK);
 	while(HAL_UART_DeInit(&huart4) != HAL_OK);
-	//ADC_Deinit_Func();
-	while(HAL_ADC_DeInit(&hadc1) != HAL_OK);
+	ADC_Deinit_Func();
+	//while(HAL_ADC_DeInit(&hadc1) != HAL_OK);
 	__HAL_RCC_DMA1_CLK_DISABLE();
 
 	__HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
@@ -188,13 +216,7 @@ sleep_rt:
 	//HAL_IWDG_Refresh(&hiwdg);
 	reconfigura_perif();
 
-	//for (int i = 0; i < 10; i++)
-	//{
-	//	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_10);
-	//	HAL_Delay (15);
-	//	HAL_IWDG_Refresh(&hiwdg);
-	//}
-	//HAL_IWDG_Refresh(&hiwdg);
+	cnt_veces_muestreo_2 = 0;
 
 	flagsEvent[3] = 1;
 	retPowerOn = 10;
@@ -254,10 +276,7 @@ up_actual:
 //---Toogle  GPIOA->BSRR = GPIO_BSRR_BS_11;
 		//ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
 //		ADC1->CHSELR = ADC_CHSELR_CHSEL5;
-		ADC1->CHSELR &= ADC_CHSELR_CHSEL10;
-		ADC1->CHSELR &= ADC_CHSELR_CHSEL0;
-		ADC1->CHSELR &= ADC_CHSELR_CHSEL18;
-		ADC1->CHSELR &= ADC_CHSELR_CHSEL14;  // Canal 0
+		ADC1->CHSELR = 0;
 
 		ADC1->CHSELR |= ADC_CHSELR_CHSEL9;  // Canal 0
 		//ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
@@ -352,10 +371,7 @@ adq_muesn:
 //---Toogle  GPIOA->BSRR = GPIO_BSRR_BS_11;
 		//ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
 //		ADC1->CHSELR = ADC_CHSELR_CHSEL5;
-		ADC1->CHSELR &= ADC_CHSELR_CHSEL10;
-		ADC1->CHSELR &= ADC_CHSELR_CHSEL0;
-		ADC1->CHSELR &= ADC_CHSELR_CHSEL18;
-		ADC1->CHSELR &= ADC_CHSELR_CHSEL14;  // Canal 0
+		ADC1->CHSELR = 0;
 
 		ADC1->CHSELR |= ADC_CHSELR_CHSEL9;  // Canal 0
 		//ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
