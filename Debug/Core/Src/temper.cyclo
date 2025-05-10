@@ -1,8 +1,8 @@
-../Core/Src/temper.c:73:6:temper	68
-../Core/Src/temper.c:826:6:linealiza	7
-../Core/Src/temper.c:944:6:mult1x2	1
-../Core/Src/temper.c:969:6:capturaAD	3
-../Core/Src/temper.c:985:6:wise_hot_rep	1
-../Core/Src/temper.c:997:6:Y_A	1
-../Core/Src/temper.c:1003:6:Bset_Clear_trfst	1
-../Core/Src/temper.c:1010:6:Bclear_Clear_trfst	1
+../Core/Src/temper.c:84:6:temper	68
+../Core/Src/temper.c:837:6:linealiza	7
+../Core/Src/temper.c:955:6:mult1x2	1
+../Core/Src/temper.c:980:6:capturaAD	3
+../Core/Src/temper.c:996:6:wise_hot_rep	1
+../Core/Src/temper.c:1008:6:Y_A	1
+../Core/Src/temper.c:1014:6:Bset_Clear_trfst	1
+../Core/Src/temper.c:1021:6:Bclear_Clear_trfst	1

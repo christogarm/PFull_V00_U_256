@@ -1,2 +1,2 @@
-../Core/Src/muestreo.c:14:6:muestreo	19
-../Core/Src/muestreo.c:825:6:ADC_Deinit_Func	5
+../Core/Src/muestreo.c:14:6:muestreo	24
+../Core/Src/muestreo.c:821:6:ADC_Deinit_Func	5

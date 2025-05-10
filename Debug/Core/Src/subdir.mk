@@ -32,34 +32,6 @@ C_SRCS += \
 ../Core/Src/voltmetro.c \
 ../Core/Src/watch.c 
 
-OBJS += \
-./Core/Src/ELTEC_EmulatedEEPROM.o \
-./Core/Src/ModbusMap.o \
-./Core/Src/ModbusRTU.o \
-./Core/Src/bluetooth.o \
-./Core/Src/bootloader.o \
-./Core/Src/commonMainAsm.o \
-./Core/Src/common_subs.o \
-./Core/Src/comunicacion.o \
-./Core/Src/display.o \
-./Core/Src/inicio.o \
-./Core/Src/logger.o \
-./Core/Src/main.o \
-./Core/Src/muestreo.o \
-./Core/Src/noctar.o \
-./Core/Src/refrigera.o \
-./Core/Src/stm32u0xx_hal_msp.o \
-./Core/Src/stm32u0xx_it.o \
-./Core/Src/syscalls.o \
-./Core/Src/sysmem.o \
-./Core/Src/system_stm32u0xx.o \
-./Core/Src/temper.o \
-./Core/Src/tiempo.o \
-./Core/Src/tx_buffer_prep.o \
-./Core/Src/tx_control.o \
-./Core/Src/voltmetro.o \
-./Core/Src/watch.o 
-
 C_DEPS += \
 ./Core/Src/ELTEC_EmulatedEEPROM.d \
 ./Core/Src/ModbusMap.d \
@@ -87,6 +59,34 @@ C_DEPS += \
 ./Core/Src/tx_control.d \
 ./Core/Src/voltmetro.d \
 ./Core/Src/watch.d 
+
+OBJS += \
+./Core/Src/ELTEC_EmulatedEEPROM.o \
+./Core/Src/ModbusMap.o \
+./Core/Src/ModbusRTU.o \
+./Core/Src/bluetooth.o \
+./Core/Src/bootloader.o \
+./Core/Src/commonMainAsm.o \
+./Core/Src/common_subs.o \
+./Core/Src/comunicacion.o \
+./Core/Src/display.o \
+./Core/Src/inicio.o \
+./Core/Src/logger.o \
+./Core/Src/main.o \
+./Core/Src/muestreo.o \
+./Core/Src/noctar.o \
+./Core/Src/refrigera.o \
+./Core/Src/stm32u0xx_hal_msp.o \
+./Core/Src/stm32u0xx_it.o \
+./Core/Src/syscalls.o \
+./Core/Src/sysmem.o \
+./Core/Src/system_stm32u0xx.o \
+./Core/Src/temper.o \
+./Core/Src/tiempo.o \
+./Core/Src/tx_buffer_prep.o \
+./Core/Src/tx_control.o \
+./Core/Src/voltmetro.o \
+./Core/Src/watch.o 
 
 
 # Each subdirectory must supply rules for building sources it contributes

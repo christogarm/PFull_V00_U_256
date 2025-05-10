@@ -853,8 +853,8 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
  */
 
 //		[128]=56, 										//uint8_t		eedato_string [512] = {0};		//RM_20220707 Espacio para que no se declaren juntas las variables de calibración
-__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_div = 70; //64; 		//1;
-__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_mul = 100; //100;	    // 1;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_div = 1; //64; 		//1;
+__attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eevolt_mul = 1; //100;	    // 1;
 __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t		eef_voltaje = 0;
 
 __attribute__((section(".myBufSectionEEPROM_V"))) uint8_t eeEstado1 = 0x05;	//	uint8_t		eeEstado1 = 0x05;	// inicia con refrigerador encendido y lámpara encedida y cerradura en off
@@ -1231,7 +1231,7 @@ uint8_t countWaitPuerta = 0;
 _Bool firstFlagPuerta1 = 1;
 uint8_t countMPx = 0;
 
-_Bool    bandera_RTC = 0;
+//_Bool    bandera_RTC = 0;
 uint32_t Count_Test2 = 0;    //JTA eliminar buzzer inicial
 _Bool    bandera_act_fw_j = 0;
 uint32_t timeReg;
@@ -1246,8 +1246,8 @@ uint8_t DevLock = 0 ;
 uint8_t statComFlag = 0 ;
 uint8_t statComWIFIFlag = 0 ;
 uint16_t cntSetName = 0 ;
-//uint8_t difName[50] = "BLE_AT+NAMEIMBERA-CTOF-F\r\n";
-uint8_t difName[50] = "BLE_AT+NAMEIMBERA-HEALTH\r\n";
+uint8_t difName[50] = "BLE_AT+NAMEIMBERA-CTOF-F\r\n";
+//uint8_t difName[50] = "BLE_AT+NAMEIMBERA-HEALTH\r\n";
 uint8_t timeTxTBLE			= 0;	//
 uint16_t timeoutTBLE = 0;
 
@@ -1286,7 +1286,7 @@ __attribute__((section(".dataLogger"))) uint8_t dataLoggerFin = 0;
 // #pragma section @near {varFlash}
 // Nota: Esta seccion debe ir en Flash
 __attribute__((section(".varFlash"))) uint8_t  versionFirm1 = 0;
-__attribute__((section(".varFlash"))) uint8_t  versionFirm2 = 01;
+__attribute__((section(".varFlash"))) uint8_t  versionFirm2 = 02;
 //@near uint8_t versionFirm2 = 02;  //RM_20230908 VFW 0.002 Ajuste en calibración y envio de MAC a llave
 __attribute__((section(".varFlash"))) uint8_t  fm_hardware = 02;
 __attribute__((section(".varFlash"))) uint8_t  fm_modelo0 = 'F';  //'E'
@@ -2351,13 +2351,14 @@ unsigned long millis(){
 
 void reconfigura_perif(void)
 {
-//	HAL_IWDG_Refresh(&hiwdg);
-	initEEPROMEmulated(); // Init EEPROM Emulated
+	//HAL_IWDG_Refresh(&hiwdg);
 
 	HAL_Init();
 	SystemClock_Config();
 
 	configura_perif_2();
+
+	initEEPROMEmulated(); // Init EEPROM Emulated
 
 	HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
 	HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
@@ -2450,17 +2451,17 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_ADC1_Init();
-  MX_I2C1_Init();
-  MX_IWDG_Init();
+//  MX_GPIO_Init();
+//  MX_DMA_Init();
+//  MX_ADC1_Init();
+//  MX_I2C1_Init();
+//  MX_IWDG_Init();
   MX_RTC_Init();
-  MX_TIM3_Init();
-  MX_TIM6_Init();
-  MX_USART2_UART_Init();
-  MX_USART4_UART_Init();
-  MX_TIM1_Init();
+//  MX_TIM3_Init();
+//  MX_TIM6_Init();
+//  MX_USART2_UART_Init();
+//  MX_USART4_UART_Init();
+//  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
   initEEPROMEmulated(); // Init EEPROM Emulated
@@ -2480,7 +2481,7 @@ int main(void)
      HAL_GPIO_WritePin(PFULLDEF_VSEN, GPIO_PIN_SET);      //02-Jul-2024:  Habilita VSEN
 
      HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
-     HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+//     HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
      HAL_TIM_PWM_Start (&htim3,TIM_CHANNEL_2);			// Enciende PWM   JTA eliminar buzer inicial
      while(Count_Test2 < 260000)
@@ -2920,7 +2921,7 @@ static void MX_ADC1_Init(void)
 	             (AWDThresholdHighValue << ADC_TR1_HT1_BITOFFSET_POS) | AWDThresholdLowValue);
 
   /* USER CODE END ADC1_Init 0 */
-
+//
 //  ADC_ChannelConfTypeDef sConfig = {0};
 //  ADC_AnalogWDGConfTypeDef AnalogWDGConfig = {0};
 
@@ -3205,13 +3206,6 @@ static void MX_RTC_Init(void)
   sDate.Year = 0x0;
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Enable the WakeUp
-  */
-  /*if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0x2000, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -3580,8 +3574,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  /*HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+  //HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  //HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   HAL_GPIO_WritePin(PFULLDEF_MP1, GPIO_PIN_SET);// Activa la selección de MP1

@@ -1412,7 +1412,7 @@ tx_clean_logger_loop:
 			dirLogger = & eventLogger[0];// ldw		dirLogger,X
 			cntBlockFlash = cntBlockEVENT;// mov		cntBlockFlash,cntBlockEVENT
 			load_next_buffer(); // call	load_next_buffer	; carga buffer de RAM con el bloque de datos
-			for(int i = 0; i<8; i++)
+			for(uint8_t i = 0; i<8; i++)
 				flagsEvent[i] = 0;// clr		flagsEvent;		Cancela cualquier inicio de eventos
 
 			goto ok_clean_logger; //jp		ok_clean_logger

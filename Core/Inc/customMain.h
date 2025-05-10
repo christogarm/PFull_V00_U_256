@@ -1447,7 +1447,7 @@ extern _Bool firstFlagPuerta1;
 extern void SystemClock_Config(void);
 
 
-extern _Bool bandera_RTC;
+//extern _Bool bandera_RTC;
 extern void  reconfigura_perif(void);
 extern _Bool bandera_act_fw_j;
 extern void  manda_transmision (void);

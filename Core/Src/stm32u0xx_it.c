@@ -58,7 +58,6 @@
 extern DMA_HandleTypeDef hdma_i2c1_rx;
 extern DMA_HandleTypeDef hdma_i2c1_tx;
 extern I2C_HandleTypeDef hi2c1;
-extern RTC_HandleTypeDef hrtc;
 extern DMA_HandleTypeDef hdma_usart2_rx;
 extern DMA_HandleTypeDef hdma_usart2_tx;
 extern DMA_HandleTypeDef hdma_usart4_rx;
@@ -66,7 +65,7 @@ extern DMA_HandleTypeDef hdma_usart4_tx;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart4;
 /* USER CODE BEGIN EV */
-extern _Bool bandera_RTC;
+//extern _Bool bandera_RTC;
 
 /* USER CODE END EV */
 
@@ -149,21 +148,6 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32u0xx.s).                    */
 /******************************************************************************/
-
-/**
-  * @brief This function handles RTC and TAMP interrupts (combined EXTI lines 20 & 21).
-  */
-void RTC_TAMP_IRQHandler(void)
-{
-  /* USER CODE BEGIN RTC_TAMP_IRQn 0 */
-
-  /* USER CODE END RTC_TAMP_IRQn 0 */
-  HAL_RTCEx_WakeUpTimerIRQHandler(&hrtc);
-  /* USER CODE BEGIN RTC_TAMP_IRQn 1 */
-  //HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);    //Pin de prueba bajo consumo
-  bandera_RTC = 1;
-  /* USER CODE END RTC_TAMP_IRQn 1 */
-}
 
 /**
   * @brief This function handles EXTI line 4 to 15 interrupts.

@@ -14,10 +14,6 @@ uint32_t cnt_veces_muestreo_2 = 0;
 void muestreo(void){
 
 
-
-	     //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_10);  PIn TEST
-
-
 		cnt_veces_muestreo++; //inc cnt_veces_muestreo/// A,cnt_veces_muestreo
 
 
@@ -182,11 +178,11 @@ grabadoEmergenciaFin:
 	//while(HAL_ADC_DeInit(&hadc1) != HAL_OK);
 	__HAL_RCC_DMA1_CLK_DISABLE();
 
-	__HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
-	if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0x2000, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0) != HAL_OK)
-	{
-		Error_Handler();
-	}
+//	__HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
+//	if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0x2000, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
 
 	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 	HAL_NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
@@ -200,18 +196,18 @@ grabadoEmergenciaFin:
 
 
 
-sleep_rt:
+//sleep_rt:
 
 	HAL_SuspendTick();
 
 	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 
 	HAL_ResumeTick();
-	if(bandera_RTC)
-	{
-		bandera_RTC = 0;
-		goto sleep_rt;
-	}
+//	if(bandera_RTC)
+//	{
+//		bandera_RTC = 0;
+//		goto sleep_rt;
+//	}
 
 	//HAL_IWDG_Refresh(&hiwdg);
 	reconfigura_perif();
@@ -668,7 +664,7 @@ square_ready:
 					flagsLogger2[2] = 0;//BRES flagsLogger2, #2
 
 					// SAlto por lo mientras
-					goto fin_calibra_voltaje;
+					//goto fin_calibra_voltaje;
 					// SAlto por lo mientras
 
 //;-------------------- Falta programa esta parte ---------------------------------------

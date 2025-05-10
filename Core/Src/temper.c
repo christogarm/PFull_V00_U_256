@@ -37,7 +37,6 @@ uint16_t temperatura_OP1 = 0;
 /*
  * Temperatura del Termopar RTP1000
  */
-uint16_t	tRTP1000 [8] = {0};
 uint16_t	tRTP1000_p = 0;
 uint16_t	vRTP1000_p = 0;
 uint16_t	constantRTP = 0;
@@ -978,7 +977,7 @@ void mult1x2(void)
 	resul = (A << 8) + resul;
 }
 
-void capturaAD (void)
+void capturaAD(void)
 {
 	ADC1->CR |= ADC_CR_ADEN;
 	ADC1->ISR |= (ADC_FLAG_EOC | ADC_FLAG_EOS | ADC_FLAG_OVR);

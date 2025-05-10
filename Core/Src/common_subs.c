@@ -1904,7 +1904,8 @@ void	ld_alarmDelay (){
 */
 void clean_buffer (){
 	for(int i = 0; i<128; i++){
-		data_buffer[i] = 0 ;
+		data_buffer[i] = 0xFF;
+		event_buffer[i] = 0xFF;
 	}
 }
 
