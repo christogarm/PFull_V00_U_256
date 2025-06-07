@@ -6,6 +6,9 @@
 #include "ELTEC_EmulatedEEPROM.h"
 
 
+
+// rutina refrigera Adaptada CTOF Completa ..............
+
 void refrigera (void){
 				uint8_t estado1_Aux;
 
@@ -58,13 +61,13 @@ set_protvolt:
                 GPIOR0[f_volt] = 1;				//;	/ Indica protección de voltaje
 refrige05:
 				GPIOR1[f_led] = 1; //bset	GPIOR1,#f_led;
-				if(GetRegFlagState(Plantilla[logicos2],funReleDesh))	// btjt		logicos2,#funReleDesh,deshTypeAct_01
-					goto deshTypeAct_01;
-				//;*****************************
-				//; Para firmware de equipo medico solo se permite deshielo por ventilador, ya que el relevador de deshielo se usa para cerradura
-				//;	por lo que se fuerza el parámetro de tipo de deshielo (dhmode) a ser igual a cero
-				Plantilla [dhmode] = 0; //clr dhmode
-deshTypeAct_01:
+
+//;			;*****************************
+//;			; Para firmware de camara fria solo se permite deshielo por ventilador, ya que el relevador de deshielo se usa para antivaho
+//;			;	por lo que se fuerza el parámetro de tipo de deshielo (dhmode) a ser igual a cero
+//;			clr			dhmode
+//;			;*****************************
+
               ///ldw X,spdiur_w
               //ldw	Y,difdiur_w;
               // liminf_w = (uint16_t)(Plantilla[spdiur_H] * 256) + (uint16_t)(Plantilla[spdiur_L]);  //ldw liminf_w,X
@@ -100,8 +103,8 @@ no_ahorro1:
 refrigera_j04:
 				offdpy();		//call offdpy			/// Apaga el display
 				//datled &=  0x80;	//ld A,datled//and A,#$80;	// Apaga los led´s
-				for(uint8_t k=0; k<7;k++){
-					if(k!=4)
+				for(uint8_t k=0; k<8;k++){				// RGM: for(uint8_t k=0; k<7;k++){
+					if( k!=7 )							// RGM: if(k!=4)
 						datled[k] = 0;
 				}
 				if(GetRegFlagState(edorefri,0)){ //btjt	edorefri,#0,refrigera_j05;
@@ -117,46 +120,19 @@ refrige10:
 //				BitClear(datled,2);		//datled[2] = 0;			/ Apaga leds de deshielo y compresor
 //				BitClear(datled,3);		//datled[3] = 0;			/ Apaga leds de deshielo y compresor
 //;---------------------------------------------------------------------------------------------------------------------------------
-//;								CONTROL DE RELE CEERRADURA
-//;---------------------------------------------------------------------------------------------------------------------------------
-func_lock:
-            if(!botonst[b3_f1]){ //btjf botonst,#b3_f1,no_Func_Lock;		/ ¿Función primaria del botón lampara?
-            	goto no_Func_Lock;
-            }
-        	//; indica que hay que mostrar un mensaje
-            cntMsgCmd = 250;
-            numMsg = 3;
-            //BitComplement(estado1,est1LockDr);		 //	||||||||||   bcpl estado1,#est1LockDr; //	/ cambia estado de rele cerradura
-            estado1[est1LockDr] ^= 0x1;
-            //waux = eeEstado1;
-            waux = reeEstado1;
-            BitClear(waux, est1LockDr);//bres waux,#est1LockDr
-            if(!estado1[est1LockDr]){//btjf estado1,#est1LockDr,func_lock_01;
-            	goto func_lock_01;
-            }
-            BitSet(waux, est1LockDr); //bset waux,#est1LockDr
-func_lock_01:
-			//; carga waux en eeprom
-            //ldw X,#eeEstado1;
-            //call wreeprom
-			wreeprom ( waux,  &eeEstado1);
-			reeEstado1 = waux;
-            //MOV IWDG_KR,#$AA;
-no_Func_Lock:
-//;---------------------------------------------------------------------------------------------------------------------------------
 //;								CONTROL DE LAMPARA
 //;---------------------------------------------------------------------------------------------------------------------------------
-               if(!botonst[b2_f1]){ //btjf botonst,#b2_f1,refrigera_j06c;   / ¿Función primaria del botón lampara?
+               if(!botonst[b3_f2]){ //btjf botonst,#b2_f1,refrigera_j06c;   / ¿Función primaria del botón lampara?
             	   goto refrigera_j06c;
                }
                //; indica que hay que mostrar un mensaje
                cntMsgCmd = 250; //mov cntMsgCmd,#250
                numMsg = 2; //mov numMsg,#2
-               flagsC[f_lampDoor] ^= 0x1;// BitComplement(flagsC,f_lampDoor);			//	flagsC[f_lampDoor] = 0; //bcpl flagsC,#f_lampDoor
+               flagsb[f_luzb] ^= 0x1;// bcpl		flagsb,#f_luzb
                //waux = eeEstado1;
                waux = reeEstado1;
                BitClear(waux, est1Lamp);//bres waux,#est1Lamp
-               if(!flagsC[f_lampDoor]){ //btjf flagsC,#f_lampDoor,refrigera_j06d;
+               if(!flagsb[f_luzb]){ //btjf	flagsb,#f_luzb,refrigera_j06d;
             	   goto refrigera_j06d;
                }
                BitSet(waux, est1Lamp);//bset waux,#est1Lamp
@@ -168,25 +144,23 @@ refrigera_j06d:
 				//MOV IWDG_KR,#$AA
 refrigera_j06c:
 
-                if(flagsC[f_ahorro2]){//btjt flagsC,#f_ahorro2,refrigera_j06;
+				if( GetRegFlagState(Plantilla[logicos],f_lampAH) ){//btjt		logicos,#f_lampAH,noAskAH2
+					goto noAskAH2;
+				}
+				if(flagsC[f_ahorro2]){//btjt		flagsC,#f_ahorro2,refrigera_j06;/ Estas en modo ahorro 2? no, no hagas caso a botón de lámpara
                 	goto refrigera_j06;
                 }
+
+noAskAH2:
                 if(flagsa[nocturno]){//btjt flagsa,#nocturno,refrigera_j06
                 	goto refrigera_j06;
                 }
+
+
+//refrigera_j06a:
                 if(!flagsb[f_luzb]){ //btjf flagsb,#f_luzb,refrigera_j06
                 	goto refrigera_j06;
                 }
-                if(flagsC[f_lampDoor]){//btjt flagsC,#f_lampDoor,refrigera_j06a
-                	goto refrigera_j06a;
-                }
-                if(retLampOff != 0){ //tnz retLampOff
-                	goto refrigera_j06a; //jrne	refrigera_j06a
-                }
-                if(!flagsC[f_doorOpen]){ //btjf flagsC,#f_doorOpen,refrigera_j06;
-                	goto refrigera_j06;
-                }
-refrigera_j06a:
                  GPIOR0[f_lamp] = 1;// bset		GPIOR0,#f_lamp; 	/ No, enciende bandera de activación de lámpara
 refrigera_j06:
 //;---------------------------------------------------------------------------------------------------------------------------------
@@ -201,10 +175,10 @@ toindi:			flagsa[0] = 1;		 	//bset		flagsa,#0;0x01;	/ Indica período de arranqu
 				edorefri = 0;
 				goto toap10;					// Limpia contador de parpadeos
 
-toap:     		durautop = 17;				//  Carga el tiempo de duracuón de la autoprueba
-          		durautop2 = 8;				//  Carga el tiempo de duracuón de la autoprueba
-          		edorefri = 0x01;				/// Carga el estado de Autoprueba
-          		cntseg = 0;
+//toap:     		durautop = 17;				//  Carga el tiempo de duracuón de la autoprueba
+//          		durautop2 = 8;				//  Carga el tiempo de duracuón de la autoprueba
+//          		edorefri = 0x01;				/// Carga el estado de Autoprueba
+//          		cntseg = 0;
 toap10:   		// cntblkl = 0;
 				cntblkh = 0;					//;		/ Inicia el contador de parpadeos
 				goto finref;
@@ -217,23 +191,58 @@ toctl_0:
 
 				drp_fanh = (uint16_t)(wreg * 60);
 
+//;================= INICIO RM_20231106 Evitar el tiempo mínimo de compresor encendido después de deshielo
+				edorefri = 2;			//mov			edorefri,#$02;	/ Carga el estado de Control
+										//;//manuel reduc...     jp			todh20;
+				goto	todh20;			//jra			todh20;
+//;================= FIN RM_20231106 Evitar el tiempo mínimo de compresor encendido después de deshielo
+
 toctl:
 		 	 	 minbrake_load();				// call minbrake_load
 		 	 	 edorefri = 0x02;				// Carga el estado de Control
 		 	 	 goto todh20;
 
 toctl_inicio:
-				retvent = 20;
-				//tminstopl = 50;
-				//tminstoph = 0;					// Carga el tiempo mínimo de descanso del compresor
-				tminstoph = (0*256) + 50;			//;/ Carga el tiempo mínimo de descanso del compresor
-				edorefri = 0x02;				// Carga el estado de Control
-				goto todh20;
+																		//; Al terminar el proceso de indica carga la hora UNIX guardada
+																		//ldw		X,eeTimeUnix1
+				timeSeconds_HW = (eeTimeUnix1*256) + eeTimeUnix2;		//ldw		timeSeconds_HW,X
+																		//ldw		X,eeTimeUnix3
+				timeSeconds_LW = (eeTimeUnix3*256) + eeTimeUnix4;		//ldw		timeSeconds_LW,X					// Carga el tiempo mínimo de descanso del compresor
 
 
-todh:      		cntdpyev = 0;									// Cancela el desplegado de Tevaporador
+				tminstoph = (0*256) + 22;	//;/ Carga el tiempo mínimo de descanso del compresor
+//				edorefri = 0x02;				// Carga el estado de Control
+//				goto todh20;
+
+
+				//;condicion inicial vaho pagado tiempo off cargado
+				flagsVaho[0] = 1;							//bset		flagsVaho,#0
+															//mov			wreg,tOnVh;					/
+															//ldw			X,#$003C;		/ Número de segundos por minuto
+															//ld      A,wreg
+															//mul			X,A;		/ Multiplicalos
+				timeOnVaho_w = Plantilla[tOnVh] * 60;		//ldw			timeOnVaho_w,X
+
+
+				edorefri = 2;			//mov			edorefri,#$02;	/ Carga el estado de Control
+				goto todh20;			//jra			todh20;
+
+
+todh:
+				timeDpyDf = 2;			//	mov			timeDpyDf,#2
+
+				cntdpyev = 0;									// Cancela el desplegado de Tevaporador
 				ldadaptivo();	//call ldadaptivo				// Carga tiempo total de interdeshielo en segundos
 				wreg = Plantilla [timedh];//ld	A,dhmode;		// Toma el tiempo de duración del deshielo en minutos
+
+				//;/ Ajuste en comportamiento de la Falla del sensor evaporador IJG 22/04/14
+				//;sbrs	trefst,f_sdc;
+				//;sbrc	trefst,f_sda;
+				//;lsr		wreg;			/ Carga solo la mitad
+				//;/ Ajuste en comportamiento de la Falla del sensor evaporador IJG 22/04/14
+
+
+
 				if(Plantilla [dhmode] != 0x01 ){//cp A,#$01;		/// ¿Deshielo por gas caliente?
 					goto todh1;
 				}
@@ -254,34 +263,37 @@ finref:
 
 
 refrigera_j08:
+
+
 //;----------------------------------------------------------------------------------------
 //; En equipo medico falla de voltaje no apaga compresor
-//;finref_1:				btjt		trefst,#f_hv,refrigera_j09;	/ Hay alarma de voltaje?
-//;								btjf		trefst,#f_lv,refrigera_j10;
-//;refrigera_j09:	bres		GPIOR0,#f_comp;	/ Sí, Apaga el compresor
-//;								call		minbrake_load
-//;----------------------------------------------------------------------------------------
-refrigera_j10:
-                if(GPIOR0[f_comp]){
+finref_1:		if(trefst[f_hv]){					//;finref_1:					btjt		trefst,#f_hv,refrigera_j09;	/ Hay alarma de voltaje?
+					goto refrigera_j09;				//;								btjf		trefst,#f_lv,refrigera_j10;
+				}
+				if(!trefst[f_lv]){					//;refrigera_j09:	bres		GPIOR0,#f_comp;	/ Sí, Apaga el compresor
+					goto refrigera_j10;				//;								call		minbrake_load
+				}									//;----------------------------------------------------------------------------------------
+refrigera_j09:	GPIOR0[f_comp] = 0;					//bres		GPIOR0,#f_comp;	/ Sí, Apaga el compresor
+				minbrake_load();					//call		minbrake_load
+
+refrigera_j10:  if(GPIOR0[f_comp]){
                 	goto refrigera_j11;
                 }
 				datled[luzC] = 0; 		// bres		datled,#luzC; / Apaga LED de compresor
-
-
-				//;/ carga estado actual de la cerradura
-				//;bres		GPIOR0,#f_dh
 refrigera_j11:
-				estado1_Aux = reeEstado1;
-                if(!GetRegFlagState(estado1_Aux,est1LockDr)){ //btjf eeEstado1,#est1LockDr,refrigeraLockDrOFF
-                	goto refrigeraLockDrOFF;
-                }
-                GPIOR0[f_dh] = 1; 			//bset		GPIOR0,#f_dh
-refrigeraLockDrOFF:
+
 
 nocturnoFunc:
                if(cntNoct_H == 0){//ld A,cntNoct_H;  or A,cntNoct_L;		/ terminó el tiempo de Nocturno?
             	   goto endNocturno;
                }
+
+               if(!portX[rel_co]){ 	   				//				btjf		puertoa,#rel_co,nocturnoFunc01;	/ viene de compresor encendido?   RM_20231127 Para evitar encendido IMNEDIATO de relevador después de NOCTURNO
+            	   goto	nocturnoFunc01; 	   	   	//				call		minbrake_load;		/ Sí, carga decanso de compresor
+               }   	   	   	   	   	   	   	   	   	//nocturnoFunc01:
+               minbrake_load();						//call		minbrake_load;		/ Sí, carga decanso de compresor
+nocturnoFunc01:
+
                GPIOR0[f_comp] = 0;				//bres		GPIOR0,#f_comp
                GPIOR0[f_dh] = 0;				//bres		GPIOR0,#f_dh
                //;bres		GPIOR0,#f_lamp
@@ -314,6 +326,8 @@ endNoct:
 			if(GetRegFlagState (estado1_Aux, est1Refri)){ //btjt eeEstado1,#est1Refri,refriON
             	 goto refriON;
              }
+
+
 refriOFF:
 		   st_refri();
 //           GPIOR0[f_comp] = 0;					//bres		GPIOR0,#f_comp
@@ -345,13 +359,24 @@ refriON:
          //	;clr			datled;					/ manten indicadores de display apagados
 
          timeRstBLE = 1;					// manten modulo wifi en reset
-         flagsC[f_spReached] = 1; 			///bset	flagsC,#f_spReached; / indica que el setpoint fue alcanzado para permitir fallas de temperatura
+//         flagsC[f_spReached] = 1; 			///bset	flagsC,#f_spReached; / indica que el setpoint fue alcanzado para permitir fallas de temperatura
 
 		//	;mov			datdig1,#$0B;		/ Apaga los dígitos
 		//	;mov			datdig2,#$0A;		/ Apaga los dígitos
 
 ac_OK:
-         goto main_refrigera;
+
+		compState = 0;							//clr			compState
+		if(!GPIOR0[f_comp]){					//btjf		GPIOR0,#f_comp,noCompState
+			goto	noCompState;				//mov			compState,#1
+		}										//noCompState:
+		compState = 1;
+noCompState:
+
+
+
+		goto main_refrigera;
+
 
 // ;**************************************************************************************************
 //        ;Rutinas del proceso Refrigera
@@ -377,50 +402,37 @@ no_change_time:
 			interdhh = (uint16_t)wreg;			//mov			interdhl,wreg;	/ Carga 5 segundos para pasar a deshielo
 			blink_640();				//call blink_640			/// En wreg quedan los múltiplos de 640 ms
 
-			//ldw	X,cntblkh
-			if(cntblkh < 100){//cpw X,#100
-				goto indi_off; //jrult	indi_off
+
+			if(wreg == 3){				//ld      A,wreg
+				goto	Indi_time;		//cp		A,#3;
+			}							//jreq		Indi_time;		/ Duración de deshielo
+			if(wreg == 5){				//cp		A,#5;
+				goto	Indi_sp;		//jreq		Indi_sp;		/ Setpoint
 			}
-			if(cntblkh <= 250){
-				goto Indi_int; //jrule	Indi_int
+			if(wreg == 7){				//cp		A,#7;
+				goto	Indi_dif;		//jreq		Indi_dif;		/ Diferencial
 			}
-			if(cntblkh < 300){
-				goto indi_off; //rult indi_off
-			}
-			if(cntblkh < 450){
-				goto Indi_time;//rult Indi_time
-			}
-			if(cntblkh < 500){
-				goto indi_off; //rult indi_off
-			}
-			if(cntblkh < 650){
-				goto Indi_sp; //rult Indi_sp
-			}
-			if(cntblkh < 700){
-				goto indi_off; //rult indi_off
-			}
-			if(cntblkh < 850){
-				goto Indi_dif; //rult Indi_dif
+			if(wreg != 1){				//cp		A,#1;			/ Interdeshielo
+				goto	defindi;		//jrne		defindi;		/ Mantiene el display apagado
 			}
 
-indi_off:
-           goto defindi;
 
            // MAN_paso 1 de indicacion parametros
 Indi_int:	 //mov			tempo2,interdh;	/ Muestra interdeshielo en horas
              //soloent (Plantilla [interdh]);	//call soloent		;	/ Muestra interdeshielo en horas
 			soloent (reePlantilla[interdh]);
-             //op_menu (eePlantilla [eeD1_Msg1], eePlantilla [eeD2_Msg1]);
-			op_menu (reePlantilla[eeD1_Msg1] , reePlantilla[eeD2_Msg1]);
-			//datdig1 = eePlantilla [eeD1_Msg1];		//"U"
-             //datdig2 = eePlantilla [eeD2_Msg1];		//"A"
-             //datled = 0;			//clr	datled
-             for(uint8_t k=0; k<8; k++){
-            	 datled[k] = 0;
-             }
+//             //op_menu (eePlantilla [eeD1_Msg1], eePlantilla [eeD2_Msg1]);
+//			op_menu (reePlantilla[eeD1_Msg1] , reePlantilla[eeD2_Msg1]);
+//			//datdig1 = eePlantilla [eeD1_Msg1];		//"U"
+//             //datdig2 = eePlantilla [eeD2_Msg1];		//"A"
+//             //datled = 0;			//clr	datled
+//             for(uint8_t k=0; k<8; k++){
+//            	 datled[k] = 0;
+//             }
              goto defindi;
 
 //------------------------------------------------------------------------
+             //;// MAN_paso 2 de indicacion parametros
 Indi_time:
             //tempo2 = Plantilla[timedh];		//mov			tempo2,timedh;	/ Toma el tiempo de duración del deshielo en minutos
             //if(Plantilla[dhmode] != 1 ){  /// ¿El deshielo es por gas caliente?
@@ -433,60 +445,19 @@ Indi_time:
             goto defindi;
 indica45:   // tempo1 = 0;
             convad10(Plantilla[timedh]);			//call convad10
+            goto defindi;
 
-            //;cambia mensajes
-            //A,eeprotype
-            //if(eePlantilla[eeprotype] == 1){//cp A,#1
-            if(reePlantilla[eeprotype]){
-            	goto indica_110v; //jreq indica_110v
-            }
-            //if(eePlantilla[eeprotype] == 2){
-            if(reePlantilla[eeprotype] == 2){
-            	goto indica_220v; //jreq indica_220v
-            }
 
-indica_na:
-            wreg = 0x26;				//"-"
-            waux = 0x26;				//"-"
-            goto indica_volt;
 
-indica_110v:
-             wreg = 0x1F;				//" "
-             waux = 0x0B;				//"b"
-             goto indica_volt;
-
-indica_220v:
-              wreg = 0x1F;				//" "
-              waux = 0x0A;				//"A"
-              goto indica_volt;
-
-indica_volt:
-			 op_menu (wreg, waux);
-             //datdig1 = wreg;
-             //datdig2 = waux;
-             //datled = 0;		// clr datled
-             for(uint8_t k=0; k<8; k++){
-            	 datled[k] = 0;
-             }             
-             goto defindi;
 
              // MAN_paso 3 de indicacion parametros
 Indi_sp:    sp_dpy();					//call sp_dpy				/ Despliega el Set Point que esta operando
-            //tempo2 = versionFirm1;	/// primer dato de version
-			soloent(versionFirm1);		//call soloent
-			//datled = 0;					// clr datled
-			for(uint8_t k=0; k<8; k++){
-				datled[k] = 0;
-			}
-			goto defindi;
+			goto defindi;		//jra			defindi;
 
+
+			// MAN_paso 4 de indicacion parametros
 Indi_dif:	dif_dpy();		//call dif_dpy		// Despliega el Diferencial que este operando
-            //tempo2 = versionFirm2;			// segundo dato de version
-            soloent(versionFirm2);				//call		soloent;
-            // datled = 0;							// clr datled
-            for(uint8_t k=0; k<8; k++){
-            	datled[k] = 0;
-            }
+
 
 
 defindi:   buildmode();					//call buildmode;				//	/ Construye el modo de cambio de estado para la rutina refrigera
@@ -496,7 +467,7 @@ defindi:   buildmode();					//call buildmode;				//	/ Construye el modo de cambi
            goto defind10;				/// No, pregunta por otro modo
 
 indica_j00:
-            if(Plantilla [numSens] != 1){ 	// Si el número de sensores con el que trabaja es 1, no preguntes por condiciones iniciales del sensor evaporador
+            if(GetRegFlagState(Plantilla [numSens],f_sen2)){ 	// Si el número de sensores con el que trabaja es 1, no preguntes por condiciones iniciales del sensor evaporador
             	goto indica_j00b;
             }
             if(GPIOR0[f_disable]){ //btjt GPIOR0,#f_disable,indica_j01  /// Esta deshabilitado el deshielo al arranque? sí, carga interdeshielo
@@ -526,211 +497,42 @@ defind10:
              if(holdseg != 0){  //tnz holdseg; jrne finindi;	/ ¿Ya es más de 1 segundo?
             	 goto finindi;
              }
-             if(trefst[f_sac]){ //btjt trefst,#f_sac,indica_j04
-            	 goto indica_j04;
-             }
-             goto finindi;
+//             if(trefst[f_sac]){ //btjt trefst,#f_sac,indica_j04
+//            	 goto indica_j04;
+//             }
+//             goto finindi;
 
-indica_j04:
-             goto toap;			//	jp			toap;			/ Entra a autoprueba con el conector
+
+//indica_j04:
+//             goto toap;			//	jp			toap;			/ Entra a autoprueba con el conector
+
+
 
 finindi:     goto finref;
 
 //;--------------------------------------------------------------------------------------------------
 autopru:
-            wreg = durautop;
-            latchtimeh = (uint16_t)(wreg);		// mov			latchtimel,wreg;,	Copia el tiempo que esta corriendo
-            blink_640();						//call blink_640			//call		blink_640;				/ En wreg quedan los múltiplos de 640 ms
-            if(wreg != 0){						/// ¿Es el primer ciclo?
-            	goto version;					//jrne		version;					/ No, ve a mostrar la version
-            }
-            fauto[7] = 1;						//bset		fauto,#7
-            goto defap;							/// Sí, mantiene apagado todo
 
-version:
 
-			if(fauto[1]){//btjt fauto,#1,fail_det		// Ya se detecto una falla? si, no hagas secuencia
-				goto fail_det;			//fail_det;/ Ya se detecto una falla? si, no hagas secuencia
-			}
-			wreg = num_ver;			//;		/ Versión del Firmware
-			soloent1();				//call soloent1
-			datled[0] = 1;//BitSet(datled,0);			/// Enciende el punto
-			fauto[0] = 1;			/// No muestres fallas de sensor ambiente
-
-           if(durautop <= 16){
-        	   goto door_det; //jrule door_det
-           }
-           if(!HAL_GPIO_ReadPin(PFULLDEF_P5_PORT,PFULLDEF_P5_PIN)){
-        	   goto no_op_door;//btjf PD_IDR,#swdoor,no_op_door
-           }
-           				//no_op_door;	/	¿La puerta está abierta?
-           trefst[4] = 1; //bset		trefst,#4;				/	Sí, activa alarma de puerta abierta
-           goto ask_fail;
-no_op_door:
-            goto defap;
-door_det:
-			if(durautop <= 13){ //jrule do_sec ***
-            	goto do_sec;
-            }
-			datled[1] = 0;					//bres		datled,#1;				/ apaga el signo
-            if(!HAL_GPIO_ReadPin(PFULLDEF_P5_PORT,PFULLDEF_P5_PIN)){//btjf PD_IDR,#swdoor,no_det_door;
-            	goto no_det_door;				//	¿La puerta está abierta?
-            }			//	¿La puerta está abierta?
-            fauto[2] = 1;					//bset		fauto,#2;					/ Indica que se abrio la puerta
-            datled[1] = 1;		 		//bset		datled,#1;				/ prende el signo
-            GPIOR1[f_led] = 0;				// Apaga el led inidcador
-no_det_door:
-			goto defap;
-
-do_sec:
-           	   fauto[0] = 0;		//bres		fauto,#0;					/ Ya se pueden mostrar fallas de sensor ambiente
-ask_fail:
-			for(int k=0;k<8;k++){
-				if(trefst[k] != 0){//tnz  trefst					//;						/ Hay alguna falla ?
-           		   goto fail_det;//jrne fail_det
-           	   }
-           	   if(trefst2[k] != 0 ){//tnz trefst2;					;						/ Hay alguna falla ?
-           		   goto fail_det; //jrne fail_det
-           	   }
-			}
-
-           	   goto ask_do_sec;	//;				/	No, continua con la secuencia
-
-fail_det:
-			op_menu (0x0A, 0x0A);
-			//datdig1 = 0x0A;
-			//datdig2 = 0x0A;
-			if(GetRegFlagState (lowByte(cntblkh), 6)){ //btjt	cntblkl,#6,blk_aa0;
-				goto blk_aa0;							//blk_aa0;		/ Parpadea cada 640 ms
-			}
-			op_menu (0x1F, 0X1F);
-			//datdig1 = 0x1F;							//;		/ Apaga los dígitos
-			//datdig2 = 0X1F;							//;		/ Apaga los dígitos
-
-blk_aa0:
-           fauto[1] = 1;	//;					/ indica de hubo falla
-           fauto[7] = 1;
-
-           if(trefst[f_hv]){//btjt trefst,#f_hv,dpy_volt_f;		;	/ Hay alarma de voltaje?
-        	   goto dpy_volt_f;
-           }
-           if(!trefst[f_lv]){  //btjf trefst,#f_lv,no_dpy_volt_f;
-        	   goto no_dpy_volt_f;
-           }
-
-dpy_volt_f:
-              fauto[3] = 0;					//bres		fauto,#3
-              if(GetRegFlagState(durautop2, 0)){//btjt durautop2,#0,no_dpy_f
-            	  goto no_dpy_f;
-              }
-              fauto[3] = 1;					//bset		fauto,#3
-
-no_dpy_f:
-				wreg = voltl;
-				if(wreg < 100 ){ //ld a,voltl
-					goto under_100_f; //jrult under_100_f
-				}
-				wreg = wreg - 100;
-
-				if(wreg < 100){
-					goto under_100_f;
-				}
-				wreg = wreg - 100;
-
-under_100_f:
-              //ld wreg,a
-				soloent1();	//call soloent1
-				datled[0] = 0;			//bres		datled,#0;				/ apaga el punto
-
-no_dpy_volt_f:
-
-                goto defap;					// Si, no hagas secuencia
-
-ask_do_sec:
-				if(fauto[2]){						// se abrio la puerta? Si, realiza la secuencia
-					goto on_compres;
-				}
-				goto fail_det;
-
-on_compres:
-				GPIOR0[f_comp] = 1;			// Enciende el compresor
-				datled[luzC] = 1;//BitSet(datled,luzC);			// Enciende el compresor
-				//ld A,durautop
-				if(durautop <= 11 ){//cp A,#11;
-            	 	 goto on_desh;
-             	 }
-             	 goto defap;
-
-on_desh:
-				GPIOR0[f_comp] = 0;					// apaga el compresor
-				Bset_Clear_trfst(datled, datled,luzD, luzC);
-//            	BitSet(datled,luzD);				// Enciende el deshielo
-//				BitClear(datled,luzC); 				// apaga el compresor
-				GPIOR0[f_dh] = 1;					// Enciende el deshielo
-            	datled[luzD] = 1;// BitSet(datled,luzD);				// Enciende el deshielo
-            	if(durautop <= 9){
-            		goto on_vent;//jrule on_vent
-            	}
-            	goto defap;
-
-on_vent:
-				GPIOR0[f_dh] = 0;						/// apaga el deshielo
-				Bset_Clear_trfst(datled, datled,luzF, luzD);
-//				BitSet(datled,luzF);					/// Enciende el ventilador
-//				BitClear(datled,luzD);				/// apaga el deshielo
-				GPIOR1[f_fan] = 1;					/// Enciende el ventilador
-				if(durautop <= 7){
-					goto on_lamp; //jrule	on_lamp
-				}
-				goto defap;
-
-on_lamp:
-				GPIOR1[f_fan] = 0;						// apaga el ventilador
-				Bset_Clear_trfst(datled, datled,luzN, luzF);
-//				BitSet(datled,luzN);					// Enciende el lampara
-//				BitClear(datled,luzF);					// apaga el ventilador
-				GPIOR0[f_lamp] = 1;					// Enciende el lampara
-				if(durautop <= 05){
-					goto dpy_volt; //jrule	dpy_volt
-				}
-				goto defap;
-
-dpy_volt:
-				GPIOR0[f_lamp] = 0;					// apaga el lampara
-				datled[luzN] = 0;// BitClear(datled,luzN); 				// apaga el lampara
-				wreg = voltl;
-				if(wreg < 100){
-					goto under_100; //jrult	under_100
-				}
-				wreg = wreg - 100;
-
-				if(wreg < 100){
-					goto under_100;
-				}
-				wreg = wreg - 100;
-
-under_100:
-				//ld	wreg,a
-				soloent1();			//call soloent1
-				datled[0]= 0; //BitClear(datled,0);			// apaga el punto
-
-				fauto[6] = 1;
-				fauto[7] = 0;
-
-defap:			buildmode();			//call		buildmode;		/ Construye el modo de cambio de estado
-				if(!GetRegFlagState(modo,0)){ //btjf modo,#0,finap;
-					goto finap;
-				}
 defap1:			goto toindi;						// Cambia al estado de indicación de parámetros
 finap:			goto finref;
 //;--------------------------------------------------------------------------------------------------
 control:
+
+				if(Plantilla[dhmode] != 0){
+					goto	control_no_vaho_func;
+				}
+				vaho_func();				//call		vaho_func
+control_no_vaho_func:
+
+
 				datled[luzF] = 0;			//bres		datled,#luzF
 				//wreg = lowByte(drp_fanh);		//drp_fanl;
 				if(drp_fanh == 0){
 					goto ask_door_fan; //jreq ask_door_fan
 				}
 				goto fan_off;
+
 
 ask_door_fan:
                if(GetRegFlagState(Plantilla[logicos2],ventDoorOFF)){ //btjt logicos2,#ventDoorOFF,ask_fan_on	/ sí los parámetros de configuración lo indican ignora el control de ventilador por puerta
@@ -753,9 +555,26 @@ ask_fan_on:
 				if(ret_fan_co != 0){ //tnz ret_fan_co
 					goto fan_off; //jrne fan_off
 				}
-				goto fan_on;//jra fan_on			// Si, el ventilador permanece encedido
+//				goto fan_on;//jra fan_on			// Si, el ventilador permanece encedido
+
+
+				//; con cambio de lógica apaga el ventilador miesntras el compresor esté encendido
+				if(!Plantilla[modLogic]){			//btjf		logicos2,#modLogic,noModlog_04
+					goto noModlog_04;
+				}
+				goto	fan_off;					//jra			fan_off
+noModlog_04:
+				goto	fan_on;						//jra			fan_on;								/ Si, el ventilador permanece encedido
+
 
 fan_control:
+				//; con cambio de lógica enciende el ventilador miesntras el compresor esté apagado
+				if(!Plantilla[modLogic]){			//btjf		logicos2,#modLogic,noModlog_05
+					goto noModlog_05;
+				}
+				goto	fan_on;						//jra			fan_on;
+noModlog_05:
+
 				wreg = Plantilla [cicloFd];			// Carga ciclo de ventilador diurno
 				BaBentre10_math();					//  BaBentre10
 				if(waux != 0){						// esta en cero la parte alta???
@@ -846,12 +665,9 @@ ctl20:         	//ldw			X,liminf_w  ;// manuel_math_change//	liminfl;
 				if((int16_t)liminf_w < (int16_t)tdev_to_Word()){		/// liminf - tdev  ;	/ tdev < ó = liminf?
 					goto equal;
          	 	}
-
-				Bset_Clear_trfst(flagsC, datled,f_spReached, 6);
-
-//				BitSet(flagsC,f_spReached);			//bset	flagsC,#f_spReached
-//				BitClear(datled,6);			//		bres		datled,#6;0x40		; Desactiva bandera de modo pull down  >> IJG JULIO 2012
-
+				datled[6] = 0;			       //		bres		datled,#6;0x40		; Desactiva bandera de modo pull down  >> IJG JULIO 2012
+				decwreg(&cntCiclosCmp);			  // ldw     X,#cntCiclosCmp
+	              	  	  	  	  	  	  	  	  // call    decwreg
 
 
 rest:			if(portX[rel_co]){	//btjt		PA_ODR,#rel_co,control_j04;	/ Esta encendido el compresor?      RM_20220714 Cambio en pin de compresor pasa de PC a PA
@@ -860,13 +676,13 @@ rest:			if(portX[rel_co]){	//btjt		PA_ODR,#rel_co,control_j04;	/ Esta encendido 
         		goto defctl;			//jra			defctl;			/ No, deja correr el tiempo de descanso
 
 control_j04:
+
 				minbrake_load();	//call minbrake_load
 				goto defctl;		// Si, termina con compresor apagado
 
 equal:			if(portX[rel_co]){		//btjt		PA_ODR,#rel_co,control_j05;	/ Deja el compresor como está en ese momentoRM_20220714 Cambio en pin de compresor pasa de PC a PA
 					goto control_j05;
 				}
-
         		goto defctl;
 
 control_j05:
@@ -880,9 +696,6 @@ refrioff:
 defctl:
 //;------------------------------------------------------------------------------------------
 //;-------------Alarma de deficiencia--------------------------------------------------------
-
-				//; En equipo medico deahbilita función de deficiencia (tercer sensor se usa para vacuna)
-				Plantilla [timeDefi] = 0; //clr timeDefi **************************************************
 
 				if(Plantilla[timeDefi] == 0 ){ /// si el tiempo de deficiencia es 0, se cancela la detección de falla "A"
 					goto noChkTimeDefi; //jreq	noChkTimeDefi
@@ -902,9 +715,9 @@ defctl:
 					goto loadDefiCnts;
 				}
 
-				if(Plantilla[numSens] == 3){ 	// se está trabajando con 3 sensores?
-					goto chkTimeDefi_3s_01;		// Sí, realiza mediciones para 3 sensores unicamente
-				}
+//				if(Plantilla[numSens] == 3){ 	// se está trabajando con 3 sensores?
+//					goto chkTimeDefi_3s_01;		// Sí, realiza mediciones para 3 sensores unicamente
+//				}
 				goto chkTimeDefi_1s_02;			//jra			chkTimeDefi_1s_02;	/ No, realiza la segunda medición de 1 sensor
 
 loadDefiCnts:
@@ -918,9 +731,9 @@ loadDefiCnts:
 				goto noChkTimeDefi;
 
 chkTimeDefi:
-				if(Plantilla[numSens] == 3){			/// se está trabajando con 3 sensores?
-					goto chkTimeDefi_3s;				/// realiza mediciones para 3 sensores unicamente
-				}
+//				if(Plantilla[numSens] == 3){			/// se está trabajando con 3 sensores?
+//					goto chkTimeDefi_3s;				/// realiza mediciones para 3 sensores unicamente
+//				}
 
 chkTimeDefi_1s:
                   if(trefst2[f_s3short]){	//btjt		trefst2,#f_s3short,noAlarmDefi;	Si hay alguna falla con el sensor ambiente cancela falla de deficiencia
@@ -1003,9 +816,14 @@ noChkTimeDefi:
 no_reset_interdh:
 
                   //ld A,numSens
-                  if(Plantilla[numSens] == 1){ //cp A,#1
-                	  goto noDeshXTemp;//jreq noDeshXTemp;   / Si el número de sensores con el que trabaja es 1, no revises temperatura de evaporador para entrar a deshielo
-                  }
+//                  if(Plantilla[numSens] == 1){ //cp A,#1
+//                	  goto noDeshXTemp;//jreq noDeshXTemp;   / Si el número de sensores con el que trabaja es 1, no revises temperatura de evaporador para entrar a deshielo
+//                  }
+
+
+				if(!GetRegFlagState(Plantilla[numSens],f_sen2)){
+					goto noDeshXTemp;		//noDeshXTemp
+				}
 				//	;------------------------------------------------------------------------------------------------------
 				//	;---------- Agrega condición de temperatura ambiente para forzar deshielo por temperatura evaporador
                   //wreg = tdevf;//mov wreg,tdevf;
@@ -1013,32 +831,15 @@ no_reset_interdh:
                   //ldw     X,waux
                   STM8_16_X = (uint16_t)(tdevl * 256) + (uint16_t)(tdevf);
 
-                  if(trefst[f_saa]){ //btjt	trefst,#f_saa,noDeshXTemp;
+                  if(trefst[f_sda]){ //btjt	trefst,#f_sda,noDeshXTemp;
                 	  goto noDeshXTemp;
                   }
-                  if(trefst[f_sac]){ //btjt	trefst,#f_sac,noDeshXTemp;		/ ¿Falla en el sensor ambiente? Sí, no entres a deshielo por temperatura.
+                  if(trefst[f_sdc]){ //btjt	trefst,#f_sdc,noDeshXTemp;	/ ¿Falla en el sensor de evaporador? Sí, no entres a deshielo por temperatura.
                 	  goto noDeshXTemp;
                   }
 
-                  if((int16_t)STM8_16_X >= (int16_t)TwoByteInArrayToWord (&Plantilla[defrStartTempAmb_H])){ //cpw	X,defrStartTempAmb;   TEMP_ambiente < defrStartTempAmb programado
+                  if((int16_t)STM8_16_X >= (int16_t)TwoByteInArrayToWord (&Plantilla[defrStartTemp_H])){ //cpw	X,defrStartTempAmb;   TEMP_ambiente < defrStartTempAmb programado
                 	  goto noDeshXTemp; //jrsge	noDeshXTemp
-                  }
-                  //;------------------------------------------------------------------------------------------------------
-
-					//mov			wreg,tevaf;
-					//mov			waux,teval
-					//ldw     X,waux
-                  STM8_16_X = (uint16_t)(teval * 256) + (uint16_t)(tevaf);
-
-                  if(trefst[f_sda]){//btjt	trefst,#f_sda,noDeshXTemp;
-                	  goto noDeshXTemp;
-                  }
-                  if(trefst[f_sdc]){//btjt	trefst,#f_sdc,noDeshXTemp		/ ¿Falla en el sensor de evaporador? Sí, no entres a deshielo por temperatura.
-                	  goto noDeshXTemp;
-                  }
-
-                  if((int16_t)STM8_16_X >= (int16_t)TwoByteInArrayToWord (&Plantilla[defrStartTemp_H])){//	cpw X,defrStartTemp;	TEMP_congelador < defrStartTemp programado
-                	  goto noDeshXTemp;//jrsge noDeshXTemp
                   }
                   goto todh; //jp todh
 
@@ -1058,6 +859,12 @@ defct10:
 					goto finctl; //jrne	finctl;
 				}
 
+				if(!botonst[b2_f2]){ // ¿Función secundaria del botón deshielo?
+					goto control_j07_0;     // Si, cambia al estado de deshielo
+				}
+				goto	todh;  // jp			todh;			/ Si, cambia al estado de deshielo
+control_j07_0:
+
 				if(!flags_accMenu){ //btjf flags_accMenu,#0,control_j07	/ ¿deshielo forzado por selección de menú?
             		goto control_j07;
             	}
@@ -1069,14 +876,32 @@ control_j07:
 finctl:       	 goto finref;
 //;--------------------------------------------------------------------------------------------------
 autodesh:
-				Bset_Clear_trfst(datled, datled,3,luzF);
-//				BitSet(datled,3);				//bset datled,#3					bset		datled,#3;0x08;	/ Enciende la luz de deshielo
-//				BitClear(datled,luzF);			//bres datled,#luzF
 
-				////ld A,numSens
-				if(Plantilla[numSens] == 1){
-					goto deshXvent;				/// Si el número de sensores con el que trabaja es 1, el deshielo siempre es por ventilador (o natural)
+				if(Plantilla[dhmode] != 0){
+					goto autodesh_no_vaho_func;				/// Si el número de sensores con el que trabaja es 1, el deshielo siempre es por ventilador (o natural)
 				}
+				vaho_func();					//call		vaho_func
+autodesh_no_vaho_func:
+
+
+				datled[3] = 1;					//bset		datled,#3;0x08;	/ Enciende la luz de deshielo
+				datled[luzF] = 0;					//bres		datled,#luzF
+
+				if(timeDpyDf == 0){
+					goto autodesh_01;				/// Si el número de sensores con el que trabaja es 1, el deshielo siempre es por ventilador (o natural)
+				}
+				datdig1 = 0x0D;				 		// mov			datdig1,#$0D         ;Despliega dF
+				datdig2 = 0x0F;						// mov			datdig2,#$0F         ;/
+				datled[dp] = 0;						// bres		datled,#dp
+				datled[sign] =	0;					// bres		datled,#sign
+
+
+autodesh_01:
+
+				if(!GetRegFlagState(Plantilla[numSens],f_sen2)){
+					goto deshXvent;		//noDeshXTemp
+				}
+
 
 				if(Plantilla[dhmode] != 0x01){	// Es deshielo por válvula?
 					goto deshie20;				/// No

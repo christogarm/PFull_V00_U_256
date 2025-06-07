@@ -1,3 +1,6 @@
+/* CGM 27/05/2025
+ * Ya Adaptado a CTOFF
+ */
 
 #include "main.h"
 #include "board_PFULLDEF.h"
@@ -6,49 +9,92 @@
 //#include "math.h"
 
 /*
- * Parámetros del puente de Wheastone
+ * 			CGM 07/05/2025
+ * Analisis del Amplificador aplicado en el Proyecto Pfull (Ir a ver el Diagrama OP+1 del Sensor 5)
+ * 			 _				   _   _			_	  _			     _
+ * 			|	2*R169			| |		RTP		 |	 |	 R169		  |
+ * 	Vo 	= 	| ---------- (VSEN) | | ------------ | - |	------ (VSEN) |
+ * 			|_	 R170		   _| |_ R157 + RTP _|	 |_	 R170		 _|
+ *
+ * 		-- Sustitución de la ecuacion por una literal:
+ * 				 _				   _			 _			  _	  			 _			     _
+ * 				|	2*R169			|			|	  RTP	   |	 		|	 R169		  |
+ * 		Alpha = | ---------- (VSEN) |;	Gamma =	| ------------ |	Beta =	|	------ (VSEN) |
+ * 				|_	 R170		   _|			|_ R157 + RTP _|	 		|_	 R170		 _|
+ *
+ * 		 -- Ecuación Reducida y Despejada
+ * 	Vo	=	Gamma * X - Beta		->		Gamma = (Vo / Alpha) - (Beta/Alpha)
+ *
+ * Ecuación Lineal Caracteristicas del RTP 1000
+ *
+ * 	RTP = 3.91 * T + 1000
+ *
+ * Igualacion de ambas ecuaciones en función del Voltaje de Salida del OPAMP
+ * 		 _									  _
+ *		| ( Gamma/(1 - Gamma) ) * R157 - 1000  |
+ * 	T =	| ------------------------------------ |	[°C]
+ * 		|_				   3.91				  _|
  */
-#define VSEN			319		// Voltaje VSEN
-#define R157			1000		// Resistencia 157 de 1000 [Ohms]
-#define R169			37400000		// Resistencia 169 de 37400	[Ohms]
-#define R170			12000		// Resistencia 170 de 12000 [Ohms]
-#define pendienteRTP	256			// Pendiente de la Recta Caracteristica del RTP (multiplicada por 1000)
-#define ordenadaRTP		-256		// Ordenanda de la Recta Caracteristica del RTP
 
-/*
- * CGM 30/04/2025
- * Calculo de la Temperatura de los OPAMPs
- */
+// Definiciones y Variables utilizadas para reducir el codigo, Fueron redondeadas y calculadas en una calculadora
+// Las variables se utilizan en una parte Entera y otra decimal
 
-#define alpha_OP1		23.07		// Valor calculado a partir de los valores de Resistencias colocados en el OPAMP
-#define beta_OP1		9.94		// Valor calculado a partir de los valores de Resistencias colocados en el OPAMP
+#define		alphaEnt_OP1		23
+#define		alphaFrac_OP1		7455
+#define		betaEnt_OP1			9
+#define		betaFrac_OP1		94227
+int			gammaEnt_OP1	=	0;
+int			gammaFrac_OP1	=	0;
 
-uint16_t gamma_OP1 = 0;				// Valor calculado a partir de los valores de Resistencias colocados en el OPAMP y del voltaje de Salida
-uint16_t tRTP1000 [8] = {0};		// Muestras
-uint16_t temperatura_OP1 = 0;
+#define		const1Ent			0			// Parte Entera y Decimal para realizar un cambio de la muestra del ADC a terminos del Voltaje y se divide entre Alpha para reducir codigo
+#define		const1Frac			14		// Operacion:	3.3/(1024*Alpha)
+#define		const2Ent			255			// División entre la Ordenada al origen y la pendiente de la Ecuacion Lineal del RTP1000
+#define		const2Frac			75448		// Operacion:	1000/3.91
+#define		const3Ent			255			// Division entre la Resistencia 157 y la Pendiente
+#define		const3Frac			75448		// Operación:	R157/3.91
+#define		const4Ent			0			// Division entre Alpha y Beta
+#define		const4Frac			43088		// Operación:	Alpha/Beta
 
-//uint16_t    tsac_w = 0;
-//tret_w
-//teval
-//tevaf
-//tdevl
-//tdevf
+// Definiciones para mejorar la resolucion de las operaciones
+#define mulDigFrac 100000				// Multiplicador para saber cuantos decimales de resolución se desea tener en la suma, resta y multiplicacion, si cambian estos valores, se deben de modificar todas las constantes declaradas aqui o donde se utilizen las funciones de Suma, Multiplicacion y Division declaradas en este archivo
+										// mulDigFrac = 1000;		xxxEnt = 4785;	xxxFrac = 123;		->	Valor Flotante = 4785.123
+										// mulDigFrac = 100000;		xxxEnt = 4785;	xxxFrac = 12345;	->	Valor Flotante = 4785.12345
 
-/*
- * Temperatura del Termopar RTP1000
- */
-uint16_t	tRTP1000_p = 0;
-uint16_t	vRTP1000_p = 0;
-uint16_t	constantRTP = 0;
-uint16_t	RTP1000 = 0;
-uint16_t	temperatureRTP = 0;
+#define corrResDiv	32					// Este valor se utilza para realizar un corrimiento en el dividendo para se tenga mas resolución en los decimales
+										// Nota: si se da valores muy altos puede provocar el desbordamiento del tipo de dato utilizado
 
+// Variables para la toma de muestras, son de 16 bits debido a que el ADC esta configurado a 10 bits
+uint16_t	muestraOP1[8] = {0};
+uint16_t	muestraOP2[8] = {0};
+uint16_t	muestraOP3[8] = {0};
+uint16_t	muestraOP4[8] = {0};
+
+// Promedios de las muestras
+uint16_t	promedioOP1 = 0;
+uint16_t	promedioOP2 = 0;
+uint16_t	promedioOP3 = 0;
+uint16_t	promedioOP4 = 0;
+
+// Medición del Sensor
+int		sensorEntOP1 	= 0;
+int		sensorFracOP1 	= 0;
+int		sensorEntOP2 	= 0;
+int		sensorFracOP2 	= 0;
+int		sensorEntOP3 	= 0;
+int		sensorFracOP3 	= 0;
+int		sensorEntOP4 	= 0;
+int		sensorFracOP4 	= 0;
+
+uint8_t countSel = 0;
+uint8_t countOP1 = 0;
+uint8_t countOP2 = 0;
+uint8_t countOP3 = 0;
+uint8_t countOP4 = 0;
 
 uint16_t	tsacram [8] = {0};
 uint16_t    tretram [8] = {0};
 uint16_t    tambram [8] = {0};
 uint16_t    tevaram [8] = {0};
-
 
 uint16_t   curva = 0;
 uint8_t    A = 0;
@@ -81,6 +127,32 @@ uint16_t   ultimoprm = 0;
 //////////////////////////////////////////////////////////////////////////////////////////////////7
 //uint16_t adcram = 0;
 //*************************************************************************************************
+
+/*
+ * Prototipos de las Funciones
+ */
+
+// Funciones para Reducir codigo
+uint16_t promedio_8(uint16_t * muestras_);
+
+// Operaciones Aritmeticas con numeros Enteros como si fueran Flotantes
+void sumar(	int sum1Ent, int sum1Frac,
+			int sum2Ent, int sum2Frac,
+			int * ResulEnt, int * ResulFrac);
+
+void multiplicar(	int factor1Ent, int factor1Frac,
+					int factor2Ent, int factor2Frac,
+					int * productoEnt, int * productoFrac);
+
+void dividir(	int divisorEnt, int divisorFrac,
+				int dividendoEnt, int dividendoFrac,
+				int * cocienteEnt, int * cocienteFrac);
+
+// Muestreo y Conversion de los OPAMPS a Temperatura
+void muestreoOPAMx(	uint16_t * muestraOPx, uint16_t * promedioOPx, uint8_t *countOPx,
+					int * sensorEntOPx, int * sensorFracOPx);
+
+
 void temper(void){
 
 
@@ -95,281 +167,134 @@ tempe05:
 		decwreg(&retcncfa); // Decrementa tiempo para liberar fallas
 		decwreg(&retcncfe);
 		decwreg(&retcncfr);
-		decwreg(&retcncfc);
-//temper_j00:
+		//decwreg(&retcncfc);
+temper_j00:
 		cnttemp = 0;   	   // Inicia el contador de 100 ms
 
-		/*
-		 * PRUEBAS DEBUGGER // Comentar de ser necesario
+		/*CGM 09/05/2025
+		 * Toma de Muestras de los OPAMPS
 		 */
+//		countSel++;
+//		switch(countSel){
+//			case 1:
+//				ADC1->CHSELR = ADC_CHSELR_CHSEL14;
+//				break;
+//			case 2:
+//				//ADC1->CHSELR = ADC_CHSELR_CHSEL8;
+//				break;
+//			case 3:
+//				//ADC1->CHSELR = ADC_CHSELR_CHSEL4;
+//				break;
+//			case 4:
+//				//ADC1->CHSELR = ADC_CHSELR_CHSEL15;
+//				break;
+//			default:
+//				countSel = 0;
+//				break;
+//		}
 
-		ADC1->CHSELR = 0;
-		ADC1->CHSELR |= ADC_CHSELR_CHSEL15;
-		capturaAD ();
-		tRTP1000[cntmues] = adcramh;
-		if(cntmues == 7){
-			tRTP1000_p = 0;
-			for(uint8_t i = 0; i<8; i++){
-				tRTP1000_p += tRTP1000[i];
-			}
-
-			tRTP1000_p = tRTP1000_p/8;
-			vRTP1000_p = 330*tRTP1000_p/1024;
-			uint32_t mul1 = vRTP1000_p+(R169/1000)*VSEN/R170;
-			uint32_t mul2 = ((2*R169/R170+1000)*VSEN)/1000;
-			constantRTP = 1000*mul1/mul2;
-			RTP1000 = constantRTP*R157/(1000-constantRTP);
-			temperatureRTP = pendienteRTP*RTP1000/100 + (ordenadaRTP*10) ;
-		}
-//-------------------------------------------------------------------------------------------------
-		//-------------Cuarto sensor de temperatura--------------------------------------------------------
-		//ADC Temperatura Ambiental o Condensador (temperaturas hasta 50ºC)
-
-				//ADC_ChannelConfTypeDef sConfig = {0};
-				//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-				//---Toogle  GPIOA->BSRR = GPIO_BSRR_BS_11;
-				//ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
-				//ADC1->CHSELR = ADC_CHSELR_CHSEL0;
-				//ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
-				//ADC->CCR |= ADC_CCR_VREFEN;
-//				capturaAD();
-				//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-				//---Toogle  GPIOA->BSRR = GPIO_BSRR_BR_11;
-				/*hadc.Instance->CHSELR = (uint32_t) 0;
-				sConfig.Channel = ADC_CHANNEL_10;
-				sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
-				HAL_ADC_ConfigChannel(&hadc, &sConfig);
-				adcram = capturaAD();  //Convierte la señal*/
-								        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
-						ADC1->CHSELR = 0;
-				        ADC1->CHSELR |= ADC_CHSELR_CHSEL0;  // Canal 0
-
-				        capturaAD ();
-
-//lookshort_S4:
-		Y_A();
-		//Y = adcramh;
-		//A = edorefri;
-
-		if(A == 0x01)
-			goto cmp_man_01_s04;        // En autoprueba deja estos límites
-		if(Y < 942)						// Límite superior 942 (4.6v (rt = 27.4k rs = 55))
-			goto lookopen_S04;          // No, revise límite inferior
-		goto sens_short_S04;
-
-cmp_man_01_s04:
-		if(Y < 0x01C4)                  // Límite superior 0x1BE \  Límites para autoprueba | Para una resistencia de 22 [Kohm]
-			goto lookopen_S04;          // No, revise límite inferior
-
-sens_short_S04:
-		Bset_Clear_trfst(&trefst[0], &trefst2[0],5, 7);
-//		BitSet(trefst,5);   //#f_s4short   // Indica la falla (Sensor de salida en corto)
-		//BitSet(trefst_aux,5);   //#f_s4short   // Indica la falla (Sensor de salida en corto)
-//		BitClear(trefst2,7); //#f_s4open   // Cancela la otras falla del sensor de salida
-		//BitClear(trefst2_aux,7); //#f_s4open   // Cancela la otras falla del sensor de salida
-
-		goto loadret_S04;  /// Carga el retardo de cancelación
-
-lookopen_S04:
-		A = edorefri;
-		if(A == 1)
-			goto cmp_man_02_S04;  // En autoprueba deja estos límites
-		if(Y >= 0x002B)           // Ajuste en comportamiento de la Falla del sensor evaporador IJG 30/07/14
-			goto sens_ok_S04;     // Sí, indica sensor OK
-		goto sens_open_S04;
-
-cmp_man_02_S04:
-		if(Y >= 0x01AE)           // Límite inferior 0x1B4 /  con tolerancia del 1% en el
-			goto sens_ok_S04;     // Sí, indica sensor OK
-
-sens_open_S04:
-		Bset_Clear_trfst(&trefst2[0], &trefst[0],7, 5);
-//		BitSet(trefst2,7);  //#f_s4open   // Indica la falla (Sensor de salida abierto)
-		//BitSet(trefst2_aux,7);  //#f_s4open   // Indica la falla (Sensor de salida abierto)
-//		BitClear(trefst,5); //#f_s4short  // Cancela la otras falla del sensor de salida
-		//BitClear(trefst_aux,5); //#f_s4short  // Cancela la otras falla del sensor de salida
-
-loadret_S04:
-		retcncfc = 0x0F;    // Carga retardo de cancelación de falla; 1.5 segundos
-		goto tempeLoad_s04;
-
-sens_ok_S04:
-		A = retcncfc;
-		if(A != 0)         // Ya se agotó el retardo?
-			goto tempeLoad_s04;
-		Bclear_Clear_trfst(&trefst[0], &trefst2[0],5, 7);
-//		BitClear(trefst,5);  //#f_s4short  // Cancela banderas de falla de sensor de salida
-		//BitClear(trefst_aux,5);  //#f_s4short  // Cancela banderas de falla de sensor de salida
-//		BitClear(trefst2,7);  //#f_s4open  // Cancela banderas de falla de sensor de salida
-		//BitClear(trefst2_aux,7);  //#f_s4open  // Cancela banderas de falla de sensor de salida
-
-tempeLoad_s04:
-		tsacram[cntmues] = adcramh;//////////////////////////////////////////////////////Reduccion de obtencion de muestra
 
 //-------------------------------------------------------------------------------------------------
 //-------------Tercer sensor de temperatura--------------------------------------------------------
 
-											//ADC Temperatura Salida de aire
-			//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-		//---Toogle  GPIOA->BSRR = GPIO_BSRR_BS_11;
-			//ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
-//			ADC1->CHSELR = ADC_CHSELR_CHSEL18;
-			//f ((ADC1->CR & ADC_CR_ADSTART) == 0)
-			//{
-		    // Verificar si el modo de secuencia es fijo o en reversa
-				//if ((ADC1->CFGR1 & ADC_CFGR1_SCANDIR) == ADC_SCAN_SEQ_FIXED ||
-						//(ADC1->CFGR1 & ADC_CFGR1_SCANDIR) == ADC_SCAN_SEQ_FIXED_BACKWARD)
-				//{
-		        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
-					ADC1->CHSELR = 0;
-			        ADC1->CHSELR |= ADC_CHSELR_CHSEL18;  // Canal 0
-					capturaAD();
-				//}
+											//ADC Temperatura Salida de aire		        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
+	ADC1->CHSELR = 0;
+	ADC1->CHSELR |= ADC_CHSELR_CHSEL18;  // Canal 0
+	capturaAD();
 
-		    // Limpiar los bits del canal 0 en el registro SMPR para asegurar configuración correcta
-	//	    ADC1->SMPR &= ~ADC_SMPR_SMPSEL0;  // Limpiar los bits del canal 0
-		    // Establecer el tiempo de muestreo para el canal 0 (equivalente a 1.5 ciclos)
-	//	    ADC1->SMPR |= (ADC_SMPR_SMPSEL0_0 | ADC_SMPR_SMPSEL0_1);  // 1.5 ciclos de muestreo para el canal 0
-			//}
-
-			//ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
-//			capturaAD();
-			//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-			//---Toogle  GPIOA->BSRR = GPIO_BSRR_BR_11;
-			/*hadc.Instance->CHSELR = (uint32_t) 0;
-			sConfig.Channel = ADC_CHANNEL_9; ///////////////////////////////////////////Cambiar canales
-			sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
-			HAL_ADC_ConfigChannel(&hadc, &sConfig);
-			adcram = capturaAD();  // Convierte la señal*/
-
-
-	Y_A();
+lookshort_S3:
+	//Y_A();
 	//Y = adcramh;
 	//A = edorefri;
 
-	if(A == 1)
-		goto cmp_man_01_s03;    // En autoprueba deja estos límites
-	if(Y < 950)                 // Límite superior 942 (4.6v (rt = 27.4k rs = 55))
-		goto lookopen_S03;      // No, revise límite inferior
+	if(edorefri == 1)
+		goto cmp_man_01_s03;    		// En autoprueba deja estos límites
+	if(adcramh < 950)                 	// Límite superior 942 (4.6v (rt = 27.4k rs = 55))
+		goto lookopen_S03;      		// No, revise límite inferior
 	goto sens_short_S03;
 
 cmp_man_01_s03:
-		if(Y < 0x01C4)         // Límite superior 0x1BE \  Límites para autoprueba | Para una resistencia de 22 [Kohm]
+		if(adcramh < 0x01C4)         // Límite superior 0x1BE \  Límites para autoprueba | Para una resistencia de 22 [Kohm]
 			goto lookopen_S03; // No, revise límite inferior
 
 sens_short_S03:
+		//		BitSet(trefst2,4);     // Indica la falla (Sensor de salida en corto)
+		//		BitClear(trefst2,5);   // Cancela la otras falla del sensor de salida
 		Bset_Clear_trfst(&trefst2[0], &trefst2[0],4, 5);
-//		BitSet(trefst2,4);     // Indica la falla (Sensor de salida en corto)
-		//BitSet(trefst2_aux,4);     // Indica la falla (Sensor de salida en corto)
-//		BitClear(trefst2,5);   // Cancela la otras falla del sensor de salida
-		//BitClear(trefst2_aux,5);   // Cancela la otras falla del sensor de salida
+
 		goto loadret_S03;      // Carga el retardo de cancelación
 
 lookopen_S03:
-		A = edorefri;
-		if(A == 1)
+		//A = edorefri;
+		if(edorefri == 1)
 			goto cmp_man_02_S03;   // En autoprueba deja estos límites
 
-		if(Y >= 0x002B)            // Ajuste en comportamiento de la Falla del sensor evaporador
+		if(adcramh >= 0x002B)            // Ajuste en comportamiento de la Falla del sensor evaporador
 			goto sens_ok_S03;      // Sí, indica sensor OK
 		goto sens_open_S03;
 
 cmp_man_02_S03:
-		if(Y >= 0x01AE)            // Límite inferior 0x1B4 /  con tolerancia del 1% en el probador.
+		if(adcramh >= 0x01AE)            // Límite inferior 0x1B4 /  con tolerancia del 1% en el probador.
 			goto sens_ok_S03;      // Sí, indica sensor OK
 
 sens_open_S03:
 		Bset_Clear_trfst(&trefst2[0], &trefst2[0],5, 4);
 //		BitSet(trefst2,5);         // Indica la falla (Sensor de salida abierto)
-		//BitSet(trefst2_aux,5);         // Indica la falla (Sensor de salida abierto)
 //		BitClear(trefst2,4);       // Cancela la otras falla del sensor de salida
-		//BitClear(trefst2_aux,4);       // Cancela la otras falla del sensor de salida
 
 loadret_S03:
 		retcncfr = 0x0F;           // Carga retardo de cancelación de falla; 1.5 segundos
 		goto tempeLoad_s03;
 
 sens_ok_S03:
-		A = retcncfr;
-		if(A != 0)                 // Ya se agotó el retardo?
+		//A = retcncfr;
+		if(retcncfr != 0)                 // Ya se agotó el retardo?
 			goto tempeLoad_s03;
 		Bclear_Clear_trfst(&trefst2[0], &trefst2[0],4, 5);
 //		BitClear(trefst2,4);       // Cancela banderas de falla de sensor de salida
-		//BitClear(trefst2_aux,4);       // Cancela banderas de falla de sensor de salida
 //		BitClear(trefst2,5);	   // Cancela banderas de falla de sensor de salida
-		//BitClear(trefst2_aux,5);	   // Cancela banderas de falla de sensor de salida
 
 tempeLoad_s03:
 		tretram[cntmues] = adcramh;//////////////////////////////////////////////////////Reduccion de obtencion de muestra
 //-------------------------------------------------------------------------------------------------
 									//ADC Temperatura Enfriador
-		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-		//---Toogle  GPIOA->BSRR = GPIO_BSRR_BS_11;
-		//ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
-//		ADC1->CHSELR = ADC_CHSELR_CHSEL10;
-//		if ((ADC1->CR & ADC_CR_ADSTART) == 0)
-//		{
-//		    // Verificar si el modo de secuencia es fijo o en reversa
-		    //if ((ADC1->CFGR1 & ADC_CFGR1_SCANDIR) == ADC_SCAN_SEQ_FIXED ||
-		        //(ADC1->CFGR1 & ADC_CFGR1_SCANDIR) == ADC_SCAN_SEQ_FIXED_BACKWARD)
-		    //{
-		        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
 
-				ADC1->CHSELR = 0;
-		        ADC1->CHSELR |= ADC_CHSELR_CHSEL10;  // Canal 0
-		        capturaAD ();
-		    //}
+		ADC1->CHSELR = 0;
+		ADC1->CHSELR |= ADC_CHSELR_CHSEL10;  // Canal 0
+		capturaAD ();
 
-		    // Limpiar los bits del canal 0 en el registro SMPR para asegurar configuración correcta
-	//	    ADC1->SMPR &= ~ADC_SMPR_SMPSEL0;  // Limpiar los bits del canal 0
-		    // Establecer el tiempo de muestreo para el canal 0 (equivalente a 1.5 ciclos)
-	//	    ADC1->SMPR |= (ADC_SMPR_SMPSEL0_0 | ADC_SMPR_SMPSEL0_1);  // 1.5 ciclos de muestreo para el canal 0
-		//}
-		//ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
-//		capturaAD();
-		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-		//---Toogle  GPIOA->BSRR = GPIO_BSRR_BR_11;
-
-		/*hadc.Instance->CHSELR = (uint32_t) 0;
-		sConfig.Channel = ADC_CHANNEL_6; ///////////////////////////////////////////Cambiar canales
-		sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
-		HAL_ADC_ConfigChannel(&hadc, &sConfig);
-		adcram = capturaAD(); // Convierte la señal*/
-
-
-		Y_A();
+cmp_shr:
+		//Y_A();
 		//Y = adcramh;
 		//A = edorefri;
 
-		if(A == 1)
+		if(edorefri == 1)
 			goto cmp_man_01;   // En autoprueba deja estos límites
-		if(Y < 950)            // Límite superior 942 (4.6v (rt = 27.4k rs = 55))
+		if(adcramh < 950)            // Límite superior 942 (4.6v (rt = 27.4k rs = 55))
 			goto lookopen;     // No, revise límite inferior
 		goto sens_short;
 
 cmp_man_01:
-		if(Y < 0x01C4)         // Límite superior 0x1BE \  Límites para autoprueba | Para una resistencia de 22 [Kohm]
+		if(adcramh < 0x01C4)         // Límite superior 0x1BE \  Límites para autoprueba | Para una resistencia de 22 [Kohm]
 			goto lookopen;     // No, revise límite inferior
 
 sens_short:
 		Bset_Clear_trfst(&trefst[0], &trefst[0],0, 1);
 
 //		BitSet(trefst,0);       //0x01;	/ Indica la falla (Sensor de ambiente en corto)
-		//BitSet(trefst_aux,0);       //0x01;	/ Indica la falla (Sensor de ambiente en corto)
 //		BitClear(trefst,1);     //0x02;	/ Cancela la otras falla del sensor de ambiente interno
-		//BitClear(trefst_aux,1);     //0x02;	/ Cancela la otras falla del sensor de ambiente interno
 		goto loadret;           // Carga el retardo de cancelación
 
 lookopen:
-		A = edorefri;
-		if(A == 1)
+		//A = edorefri;
+		if(edorefri == 1)
 			goto cmp_man_02;    // En autoprueba deja estos límites
-		if(Y >= 0x002B)         // Ajuste en comportamiento de la Falla del sensor evaporador IJG 30/07/14
+		if(adcramh >= 0x002B)         // Ajuste en comportamiento de la Falla del sensor evaporador IJG 30/07/14
 			goto sens_ok;       // Sí, indica sensor OK
 		goto sens_open;
 
 cmp_man_02:
-		if(Y >= 0x01AE)         // Límite inferior 0x1B4 /  con tolerancia del 1% en el probador.
+		if(adcramh >= 0x01AE)         // Límite inferior 0x1B4 /  con tolerancia del 1% en el probador.
 			goto sens_ok;       // Sí, indica sensor OK
 
 sens_open:
@@ -385,115 +310,75 @@ loadret:
 		goto tempe13;
 
 sens_ok:
-		A = retcncfa;
-		if(A != 0)            // Ya se agotó el retardo?
+		//A = retcncfa;
+		if(retcncfa != 0)            // Ya se agotó el retardo?
 			goto tempe13;
-
-		//BitClear(trefst_aux,0);   // Cancela banderas de falla de sensor de ambiente
+sens_ok10:
 		Bclear_Clear_trfst(&trefst[0], &trefst[0],0, 1);
 //		BitClear(trefst,0);   // Cancela banderas de falla de sensor de ambiente
-		//BitClear(trefst_aux,1);   // Cancela banderas de falla de sensor de ambiente
 //		BitClear(trefst,1);   // Cancela banderas de falla de sensor de ambiente
 
 tempe13:
-	tambram[cntmues] = adcramh;//////////////////////////////////////////////////////Reduccion de obtencion de muestra
+		tambram[cntmues] = adcramh;//////////////////////////////////////////////////////Reduccion de obtencion de muestra
 //-------------------------------------------------------------------------------------------------
 	//; ADC Temperatura Deshielo
 
-	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-	//---Toogle  GPIOA->BSRR = GPIO_BSRR_BS_11;
-	//ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
-//	ADC1->CHSELR = ADC_CHSELR_CHSEL14;
-	//if ((ADC1->CR & ADC_CR_ADSTART) == 0)
-	//{
-	    // Verificar si el modo de secuencia es fijo o en reversa
-	    //if ((ADC1->CFGR1 & ADC_CFGR1_SCANDIR) == ADC_SCAN_SEQ_FIXED ||
-	        //(ADC1->CFGR1 & ADC_CFGR1_SCANDIR) == ADC_SCAN_SEQ_FIXED_BACKWARD)
-	   // {
-	        // Habilitar el canal 0 en la secuencia de conversión usando la directiva definida
-			ADC1->CHSELR = 0;
-	        ADC1->CHSELR |= ADC_CHSELR_CHSEL14;  // Canal 0
-	        capturaAD ();
-	    //}
+		ADC1->CHSELR = 0;
+		ADC1->CHSELR |= ADC_CHSELR_CHSEL14;  // Canal 0
+		capturaAD ();
 
-	    // Limpiar los bits del canal 0 en el registro SMPR para asegurar configuración correcta
-//	    ADC1->SMPR &= ~ADC_SMPR_SMPSEL0;  // Limpiar los bits del canal 0
-	    // Establecer el tiempo de muestreo para el canal 0 (equivalente a 1.5 ciclos)
-//	    ADC1->SMPR |= (ADC_SMPR_SMPSEL0_0 | ADC_SMPR_SMPSEL0_1);  // 1.5 ciclos de muestreo para el canal 0
-	//}
-//	while ((ADC1->ISR & ADC_ISR_CCRDY) == 0)//((ADC1->ISR & ADC_ISR_EOC) == 0)
-//	{
-//
-//	}
-	//ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
-	//ADC->CCR |= ADC_CCR_VREFEN;
-//	capturaAD();
-	//---Toogle  GPIOA->BSRR = GPIO_BSRR_BR_11;
-	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-	/*hadc.Instance->CHSELR = (uint32_t) 0;
-	sConfig.Channel = ADC_CHANNEL_7; ///////////////////////////////////////////Cambiar canales
-	sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
-	HAL_ADC_ConfigChannel(&hadc, &sConfig);
-	adcram = capturaAD();  //Convierte la señal*/
+		//Y_A();
+		//Y = adcramh;
+		//A = edorefri;
 
-	Y_A();
-	//Y = adcramh;
-	//A = edorefri;
-
-	if(A == 1)
-		goto cmp_man_03;   // En autoprueba deja estos límites
-	if(Y < 950)            // Límite superior 942 (4.6v (rt = 27.4k rs = 55))
-		goto lookopene;    // No, revise límite inferior
-	goto senshorte;
+		if(edorefri == 1)
+			goto cmp_man_03;   // En autoprueba deja estos límites
+		if(adcramh < 950)            // Límite superior 942 (4.6v (rt = 27.4k rs = 55))
+			goto lookopene;    // No, revise límite inferior
+		goto senshorte;
 
 cmp_man_03:
-	if(Y < 0x01C4)         // Límite superior 0x1BE \  Límites para autoprueba | Para una resistencia de 22 [Kohm]
+	if(adcramh < 0x01C4)         // Límite superior 0x1BE \  Límites para autoprueba | Para una resistencia de 22 [Kohm]
 		goto lookopene;    // No, revise límite inferior
 
 senshorte:
 	Bset_Clear_trfst(&trefst[0], &trefst[0],2, 3);
 
 //	BitSet(trefst,2);      //0x04   / Indica sensor del evaporador en corto
-	//BitSet(trefst_aux,2);      //0x04   / Indica sensor del evaporador en corto
 //	BitClear(trefst,3);     //0x28;	/ Cancela las otras dos fallas del sensor de evaporador
-	//BitClear(trefst_aux,3);     //0x28;	/ Cancela las otras dos fallas del sensor de evaporador
 	goto loadret2;         // Carga retardo de cancelación de falla
 
 lookopene:
-	A = edorefri;
-	if(A == 1)
+	//A = edorefri;
+	if(edorefri == 1)
 		goto cmp_man_04;   // En autoprueba deja estos límites
-	if(Y >= 0x002B)        // Ajuste en comportamiento de la Falla del sensor evaporador IJG 30/07/14
+	if(adcramh >= 0x002B)        // Ajuste en comportamiento de la Falla del sensor evaporador IJG 30/07/14
 		goto sens_oke;     // Si, entrega el dato medido y cancela las banderas de falla
 	goto sens_opene;
 
 cmp_man_04:
-	if(Y >= 0x01AE)        // Límite inferior 0x1B4 /  con tolerancia del 1% en el probador.
+	if(adcramh >= 0x01AE)        // Límite inferior 0x1B4 /  con tolerancia del 1% en el probador.
 		goto sens_oke;     // Si, entrega el dato medido y cancela las banderas de falla
 
 sens_opene:
 	Bset_Clear_trfst(&trefst[0], &trefst[0],3, 2);
 //	BitSet(trefst,3);   //0x08;	/ Indica sensor del evaporador abierto
-	//BitSet(trefst_aux,3);   //0x08;	/ Indica sensor del evaporador abierto
 //	BitClear(trefst,2); //0x24;	/ Cancela las otras dos fallas del sensor de evaporador
-	//BitClear(trefst_aux,2); //0x24;	/ Cancela las otras dos fallas del sensor de evaporador
 
 loadret2:
 	retcncfe = 0x14;    // Carga retardo de cancelación de falla; 2 segundos
 	goto tempe16;
 
 sens_oke:
-	A = retcncfe;
-	if(A != 0)          // Ya se agotó el retardo?
+	//A = retcncfe;
+	if(retcncfe != 0)          // Ya se agotó el retardo?
 		goto tempe16;
 	Bclear_Clear_trfst(&trefst[0], &trefst[0],2, 3);
 //	BitClear(trefst,2); //0x0C;	/ Cancela indicaciones de falla del sensor del evaporador
-	//BitClear(trefst_aux,2); //0x0C;	/ Cancela indicaciones de falla del sensor del evaporador
 //	BitClear(trefst,3); //0x0C;	/ Cancela indicaciones de falla del sensor del evaporador
-	//BitClear(trefst_aux,3); //0x0C;	/ Cancela indicaciones de falla del sensor del evaporador
 
 tempe16:
-	if(trefst[2]) //#f_sdc // El sensor del evaporador esta en corto?
+	if(trefst[f_sdc]) //#f_sdc // El sensor del evaporador esta en corto?
 	//if(GetRegFlagState(trefst_aux, 2)) //#f_sdc // El sensor del evaporador esta en corto?
 		goto temper_j01;
 	goto tempe16a;                 // No, revisa temperatura alta
@@ -502,140 +387,50 @@ temper_j01:
 		adcramh = 0x000A;           // Carga el dato de temperatura del evaporador con < -50°C
 tempe16a:
 		tevaram[cntmues] = adcramh;//////////////////////////////////////////////////////Reduccion de obtencion de muestra
-//;---------------------------------------------------------------------------------------------
-		//; ADC Medición de voltaje de alimentación en 12Vcd
-
-		/*MOV				ADC1_CR1,#%00100011   ; [6:5]10-bit resolution=01, 1:Conversion start=1, 0:A/D converter ON / OFF=1
-	MOV				ADC1_SQR1,#%10000000	; 7:DMA Disabled = 1 , [3:0] CHSEL_S[27:24]
-	MOV				ADC1_SQR2,#%00000000	; [7:0] CHSEL_S[23:16]
-	MOV				ADC1_SQR3,#%00000100	; [7:0] CHSEL_S[15:8]    , PD4/ADC1_IN10: Selecciona (Voltaje 12Vcd)
-	MOV				ADC1_SQR4,#%00000000	; [7:0] CHSEL_S[7:0]
-	call		capturaAD;		/ Convierte la señal
-
-	ldw			X,#volt_12vcd;
-	mov			wreg,cntmues;
-	call		cargamues;*/
 
 		cntmues++;         //Incrementa el contador de muestra
 		A = cntmues;
 		if(A >= 8)         // Ya fueron 8 muestras?
 			goto tempe17;  // Si, obten el promedio
-		else
-			goto fintemp;
+		goto fintemp;
 
 tempe17:
 
-//;---------------------------------------------------------------------------------------------
-/* BATERIA
-              btjt		flagsLogger2,#2,fuente_off;			se detecto falla de AC?
-							;No , manten display encendido y funcionamiento normal
-							mov     edo_display,#$AA    ;El display debe estar ENCENDIDO
-							clr			flagsBattery
-							ldw			X,#2160;					/ 36 horas
-							;ldw			X,#5
-							ldw			timeBatLow,X;			/carga tiempo para indicar bateria baja en minutos
-              jra     fin_revisa_v12v
-fuente_off:
-
-							ldw			X,#volt_12vcd
-							call		prom8mues          ;Calcula el promedio
-							ldw			vdc_ADC,Y
-							 cpw     Y,#330   ;		/ Equivale a 6.0 Vcd de alimentación
-							 jrule   bateria_baja
-							;mientras el voltaje sea mayor a 6v con falla de AC inidica que se está alimentando por batería
-							btjt		flagsBattery,#batON,bateria_on
-							;mov			cntblkh,#$0F
-							mov			cntblkh,#$1F
-							mov			cntblkl,#$FF
-bateria_on:
-							 bset		 flagsBattery,#batON
-							 bres		 flagsBattery,#batLOW
-							 bres		 flagsBattery,#batOFF
-							 ;jra     fin_revisa_v12v
-							 jra		askTimeBatLow;				siempre pregunta por condición de bateria baja
-bateria_baja:
-							 cpw     Y,#300   ;		/ Equivale a 5.5 Vcd de alimentación
-							 jrule   bateria_descargada; Voltaje menos a  5.5 volts se considera batería descargada
-askTimeBatLow:
-							 ldw		X,timeBatLow
-							 tnzw		X
-							 jrne		fin_revisa_v12v
-							 bset		 flagsBattery,#batLOW
-							 bres		 flagsBattery,#batOFF
-							 jra     fin_revisa_v12v
-
-bateria_descargada:
-							 bset		 flagsBattery,#batOFF
-							 ;mov     edo_display,#$00    ;El display debe estar APAGADO
-
-fin_revisa_v12v:
-*/  resul = 0;
-	for(uint8_t i = 0; i < 8; i++)
-	{
-		resul = resul + tsacram[i];    // Calcula el promedio
-	}
-	resul = resul / 8;
+	resul = promedio_8(&tretram[0]);
 	linealiza();
-	X = tempo;
-	tsac_w = X;        //Entrega el dato de temperatura de salida linealizada del sensor 4 ambiente o condensador
+	tret_w = tempo;    /// Entrega el dato de temperatura de salida linealizada
 
+	resul = promedio_8(&tevaram[0]);
 
-	resul = 0;
-	for(uint8_t i = 0; i < 8; i++)
-	{
-		resul = resul + tretram[i];   // Calcula el promedio
-	}
-	resul = resul / 8;
-	linealiza();
-	X = tempo;
-	tret_w = X;    /// Entrega el dato de temperatura de salida linealizada
+tempe24:
 
-
-	resul = 0;
-	for(uint8_t i = 0; i < 8; i++)
-	{
-		resul = resul + tevaram[i];      // Calcula el promedio
-	}
-	resul = resul / 8;
 	linealiza();
 	tevaf = lowByte(tempo);      // Entrega el dato de temperatura del evaporador a 10 bits
 	teval = highByte(tempo);
 
-	resul = 0;
-	for(uint8_t i = 0; i < 8; i++)
-	{
-		resul = resul + tambram[i];    // Calcula el promedio
-	}
-	resul = resul / 8;
+	resul = promedio_8(&tambram[0]);
 
-	Y = promant;                  // Toma el valor anterior del promedio
-	Y = Y - resul;			      // w = promant - Resul
-	if (Y == 0)
+	if (resul == promant)
 		goto tempe27;                //nota1: checar comparaciones
-	else if ((GetRegFlagState(Y, 15)) == 0)
+tempe25a:
+	if (promant >= resul)
 		goto tempe25b;            //La diferencia de promedios es positiva?
 
-	Y = Y - 0xFFFF;               // La diferencia es igual a -1?
-	if (Y == 0)
+	//Y = Y - 0xFFFF;               // La diferencia es igual a -1?
+	if (resul == 0xFFFF)
 		goto vesiestab;  		  // Si, revisa estabilidad
-	Y = resul;
-	Y = Y - 0x0001;              // Decrementa el promedio actual
-	resul = Y;
+
+	resul = resul - 1;
 	goto tempe26;
 
 tempe25b:
-		Y = Y - 0x0001;           // La diferencia es igual a 1?
-		if (Y == 0)
+		if ((promant-resul) == 1)
 			goto vesiestab;       // Si, revisa estabilidad
-		Y = resul;
-		Y = Y + 0x0001;          // Decrementa el promedio actual
-		resul = Y;
+		resul = resul + 0x0001;          // Decrementa el promedio actual
 		goto tempe26;
 
 vesiestab:
-		Y = ultimoprm;     // Toma el valor del último promedio
-		Y = Y - resul;     //w = prominter - Resul
-		if (Y == 0)
+		if (ultimoprm = resul)
 			goto estable;  // El nuevo dato es igual a último?
 		cntsame = 0;       // No, inicia el contador de promedios iguales
 		goto noestab;
@@ -647,12 +442,12 @@ noestab:
 		Y = resul;
 		ultimoprm = Y;     // Almacena el último dato para la siguiente comparación
 		A = cntsame;
-		if (A < 0x0F) // Ya esta estable por lo menos por 12 segundos?
+		if (cntsame < 0x0F) // Ya esta estable por lo menos por 12 segundos?
 			goto tempe29;
 
 tempe26:
 		X = resul;          // Almacena el dato anteriorpara la siguiente comparación
-		promant = X;
+		promant = resul;
 		linealiza();
 		tdevf = lowByte(tempo);  // Entrega el dato de temperatura del ambiente en °C con fracción
 		tdevl = highByte(tempo);
@@ -662,46 +457,29 @@ tempe27:
 		cntsame = 0;          // Inicia el contador de promedios iguales hacia arriba
 
 tempe29:
-		X = tdev_to_Word();	// tdev;
-		tDisplay_w = X;
-
-		A = Plantilla [numSens];
-		if (A < 3)
-			goto tempe26a;   // si el numero de sensores no es tres, siempre muestra en display sensor 1
-		if(!GetRegFlagState(Plantilla [logicos], 7))// if(GetRegFlagState(Plantilla [logicos], 7) == 0) // Sí está seleccionada la función visualiza sensor 3 en display
-			goto tempe26a;
-		if(trefst2[4]) //#f_s3short
-		//if(GetRegFlagState(trefst2_aux, 4)) //#f_s3short
-			goto desptdv_failSens3;   // El sensor 3 esta en corto?
-		if(!trefst2[5]) //#f_s3open
-		//if(GetRegFlagState(trefst2_aux, 5) == 0) //#f_s3open
-			goto desptdv_OKSens3;     // No, entonces el sensor 3 esta abierto?
-desptdv_failSens3:
-		goto tempe26a;                // Si el sensor 3 tiene alguna falla , muestra temperatura de sensor 1
-desptdv_OKSens3:
-		X = tret_w;
-		tDisplay_w = X;
-
-tempe26a:
-		if (retcncfa == 0x00)          // Ya llegó a cero el retardo
-			goto tempe30;              // Si
-		else if(retcncfa < 0x09)       // Ya se obtuvo un promedio correcto?
-			goto tempe39;              // Si, cargalo al display
-		X = 0xFE34;
-		// tdev = X;
-		tdevl = highByte(X);
-		tdevf = lowByte(X);
-		goto tempe40;
+		//ld			A,retcncfa;
+		if(retcncfa == 0)			//cp			A,#$00;		/ Ya llegó a cero el retardo
+			goto tempe30;			//jreq		tempe30;		/ Si
+		//cp			A,#$09;		/ Ya se obtuvo un promedio correcto?
+		if(retcncfa < 0x9)
+			goto tempe39;	//jrult		tempe39;		/ Si, cargalo al display
+		//;//manuel reduc...     jp			tempe40
+		//
+		//ldw			X,#$FE34
+		tdevf = 0x34;		//ldw			tdevl,X
+		tdevl = 0xFE;		//
+		goto tempe40;		//jra			tempe40
 
 
 tempe30:
-		if(!flagsa[0]) //#arran   // Estas en período de arranque?     nota 2: Cambiar flagsa a registro
+		if(!flagsa[arran]) //#arran   // Estas en período de arranque?     nota 2: Cambiar flagsa a registro
 			goto temper_j02;      // Si, toma el dato de temperatura medido
 		goto tempe39;
 
 temper_j02:
 		Y = tdevdpy_w;         // manuel_math_change//   tdevdpyl;
-		Y = Y - tDisplay_w;    // w = TdeVdpy - TdeV
+		//Y = Y - tDisplay_w;    // w = TdeVdpy - TdeV
+		Y = Y - tdevl;
 		if (Y == 0)
 			goto tempe40;
 		else if ((GetRegFlagState(Y, 15)) == 0)                               //nota3 checar combinacion con JRSGT
@@ -720,54 +498,52 @@ temper_j02:
 		if (Y < 11)           // Se compara con 0xFE si se quieren dos decrementos abajo
 			goto tempe37b;
 
-		X = tDisplay_w;
+		X = tdevl;
 		X = X - 10;            //w = tdev - 1.0
 		//waux = X;
-		raux = X;
+		waux = X;
 		goto tempe39a;
 
 tempe37b:
 		X = tdevdpy_w;     //manuel_math_change//  tdevdpyf;
 		X = X + 1;         //manuel_math_change//  tdevdpyl;
 		//waux = X;
-		raux = X;
+		waux = X;
 		goto tempe39a;
 
 tempe39:
-		X = tDisplay_w;
-		//waux = X;
-		raux = X;
+		wreg = tdevf;		//call		ld_tdev_to_wreg
+		waux = tdevl;
+		//clr			cnthold;	/ Cancela el retardo
 		cnthold = 0;                  // Cancela el retardo
 
 // manuel_math_change ............................. filtro digital
 tempe39a:
-//		tnz			cntHoldP;		/ Ya terminó el tiempo de bloqueo por puerta?
-//		jrne		tempe40;  / no, congela display
-//		;sí, pregunta por tiemmpo de bloqueo por deshielo
-
-		if(cntHoldP)
-			goto tempe40;
 
 		A = cnthold;
 		if (A == 0)                   // Ya terminó el tiempo?
 			goto tempe39b;            // Si, carga el dato a tdevdpy
 
-		Y = limsup_w;                 // manuel_math_change//   limsupl;/ Compara contra el límite superior para que congele en ese valor
-		//Y = Y - waux;
-		Y = Y - raux;                 // tdev esta por arriba de limsup?
+		//Y = limsup_w;                 // manuel_math_change//   limsupl;/ Compara contra el límite superior para que congele en ese valor
+		//Y = Y - waux;                 // tdev esta por arriba de limsup?
 		//if(Y < 0)   //////////////////JRSLT              nota4: checar combinacion con JRSLT
-		if(GetRegFlagState(Y, 15))
+		//if(GetRegFlagState(Y, 15))
+		if(limsup_w < waux)
 			goto tempe40;             // Si, congela el display en limsup
 tempe39b:
 //tdevdpyl,waux;	/ Almacena el dato anterior para la siguiente comparación
+		/*
+		 * No se hizo correctamente el cargado de la Palabra
+		 */
 		// X = waux;
-		X = raux;
-		tdevdpy_w = X;
+		X = waux;
+
+		tdevdpy_w = ((uint16_t) tdevl << 8) + tdevf;
 tempe40:
 		ret_up = 0;  // Inicia el retardo hacia arriba
 tempe50:
 		cntmues = 0;
-		if (!trefst[3]) //#f_sda
+		if (!trefst[f_sda]) //#f_sda
 		//if (GetRegFlagState(trefst_aux, 3) == 0) //#f_sda
 			goto tempe52;
 		X = 0xFE34;
@@ -775,18 +551,13 @@ tempe50:
 		teval = highByte(X);
 
 tempe52:
-		if (!trefst2[5]) //#f_s3open
+		if (!trefst2[f_s3open]) //#f_s3open
 		//if (GetRegFlagState(trefst2_aux, 5) == 0) //#f_s3open
 			goto tempe53;
 		X = 0xFE34;
 		tret_w = X;
 
 tempe53:
-		if (!trefst2[7]) //#f_s4open
-		//if (GetRegFlagState(trefst2_aux, 7) == 0) //#f_s4open
-			goto fintemp;
-		X = 0xFE34;
-		tsac_w = X;
 
 fintemp:
 
@@ -794,36 +565,20 @@ fintemp:
 
 		if (A == 1)
 			goto noClrSensFail;  // sí estás en autoprueba permite fallas
-		A = Plantilla [numSens];
-		if (A == 4)
-			goto noClrSensFail;  // sí hay tres sensores no preguntes si hay que borrar fallas
-		if (A == 3)
-			goto clrSacFail;     // sí hay tres sensores no preguntes si hay que borrar fallas
-		if (A == 2)
-			goto clrRetFail;
-		if (A != 1)
-			goto noClrSensFail;  // Si el número de sensores con el que trabaja es 1, borra fallas de evaporador
 
 clrEvaFail:
-		Bclear_Clear_trfst(trefst, trefst,2, 3);
-//		BitClear(trefst,2);      // Cancela la fallas del sensor de evaporador
-		//BitClear(trefst_aux,2);      // Cancela la fallas del sensor de evaporador
-//		BitClear(trefst,3);
-		//BitClear(trefst_aux,3);
+
+		if( GetRegFlagState(Plantilla[numSens],f_sen2) )
+			goto clrRetFail;
+		Bclear_Clear_trfst(&trefst[0], &trefst[0],2, 3);
 
 clrRetFail:
+		if( GetRegFlagState(Plantilla[numSens],f_sen3) )
+			goto noClrSensFail;
 		Bclear_Clear_trfst(trefst2, trefst2,4, 5);
 //		BitClear(trefst2,4);     // Cancela la fallas del sensor de retorno
-		//BitClear(trefst2_aux,4);     // Cancela la fallas del sensor de retorno
 //		BitClear(trefst2,5);
-		//BitClear(trefst2_aux,5);
 
-clrSacFail:
-		Bclear_Clear_trfst(trefst, trefst2,5, 7);
-//		BitClear(trefst,5); //#f_s4short   // Cancela la fallas del sensor de retorno
-		//BitClear(trefst_aux,5); //#f_s4short   // Cancela la fallas del sensor de retorno
-//		BitClear(trefst2,7); //#f_s4open
-		//BitClear(trefst2_aux,7); //#f_s4open
 noClrSensFail:
 		asm ("nop");
 
@@ -854,69 +609,24 @@ void linealiza (void)
 
 
 wise_hot_3:
-
 	wise_hot_rep (83, 0xFFFF);
-//	wreg = 83;              // Multiplica el dato por el factor
-//	Y = curva;
-//
-//	mult1x2();              // Multiplica
-//
-//	X = resul;              // En tempo2 quedó el entero del dato de temperatura
-//	X = X - 0xFFFF;         // ordenada al origen en °C  (-255.996)
-//	tempo = X;
 	goto fincurva;
 
 wise_hot_2:
 	wise_hot_rep (52, 0x93CC);
-
-//	wreg = 52;              // Multiplica el dato por el factor
-//	Y = curva;
-//	mult1x2();              // Multiplica
-//
-//	X = resul;
-//	X = X - 0x93CC;         // ordenada al origen en °C  (-147.8)
-//	tempo = X;
 	goto fincurva;
 
-
 wise_hot_1:
-
 	wise_hot_rep (29, 0x4980);
-//	wreg = 29;              // Multiplica el dato por el factor
-//	Y = curva;
-//	mult1x2();              // Multiplica
-//
-//	X = resul;
-//	X = X - 0x4980;         // ordenada al origen en °C  (-77.0)
-//	tempo = X;
 	goto fincurva;
 
 lil_principal:
 
 	wise_hot_rep (19, 0x2ECC);
-//	wreg = 19;              // Multiplica el dato por el factor
-//	Y = curva;
-//	mult1x2();              // Multiplica
-//
-//	X = resul;
-//	X = X - 0x2ECC;         // ordenada al origen en °C  (-46.8)
-//	tempo = X;
 	goto fincurva;
 
-
 curva_fria:
-
 	wise_hot_rep (30, 0x3780);
-
-//	wreg = 30;              // Multiplica el dato por el factor
-//	Y = curva;
-//	mult1x2();              // Multiplica
-//
-//	X = resul;
-//	X = X - 0x3780;         // ordenada al origen en °C  (-55.5)
-//	tempo = X;
-
-//goto fincurva;
 
 fincurva:
 
@@ -1005,6 +715,21 @@ void wise_hot_rep (uint8_t wreg_p, uint16_t X_p)
 	tempo = X;
 }
 
+/* 		CGM 06/05/2025
+ * 		Se realiza un promedio de las  muestras guardadas en un arreglo de 8 elementos
+ */
+
+uint16_t promedio_8(uint16_t * muestras_){
+	uint16_t promedioX = 0;
+	for(uint8_t i = 0; i < 8; i++ ){
+		promedioX +=  (*muestras_);
+		muestras_++;
+	}
+	return (promedioX >> 3);
+}
+
+
+
 void Y_A (void)
 {
 	Y = adcramh;
@@ -1025,6 +750,142 @@ void Bclear_Clear_trfst(uint8_t * trfst_3, uint8_t * trfst_4,uint8_t V, uint8_t 
 	*(trfst_4 + W) = 0;// BitClear(trfst_4,W);
 }
 
+/* 		CGM 06/05/2025
+ *  Suma para dos numeros para tratar los datos enteros como si fueran flotantes
+ *
+ * _sumXEnt_:	Representa la parte Entera del Sumando.
+ * _factorXFrac_:	Representa la parte Decimal del Factor; Las partes de Fraccionarias deben de ser 5 Digitos.
+ * 						factorXFrac = 1 -> 0.00001	factorXFrac = 12 -> 0.00012		factorXFrac = 12345 -> 0.12345
+ * _ResulEnt_: 	Almacena en la dirección dada el resultado de la parte entera de la Suma
+ * _ResulFrac_: Almacena en la dirección dada el resultado de la parte decimal de la Suma
+ */
+void sumar(	int sum1Ent, int sum1Frac,
+			int sum2Ent, int sum2Frac,
+			int * ResulEnt, int * ResulFrac)
+{
+	// se almacenan la parte entera y fraccionaria
+	int64_t sum1Ent_ = (int64_t) (sum1Ent*mulDigFrac + sum1Frac);
+	int64_t sum2Ent_ = (int64_t) (sum2Ent*mulDigFrac + sum2Frac);
+
+	// Se realiza la suma o la resta dependiendo de la diferencia de signos
+	int64_t Suma = sum1Ent_ + sum2Ent_;
+
+	int SumaEnt = (int) (Suma/mulDigFrac);
+	int SumaFrac =  (Suma - SumaEnt*mulDigFrac);
+
+	*ResulEnt = SumaEnt;
+	*ResulFrac = SumaFrac;
+}
+
+/*		CGM 05/05/2025
+ * Multiplicador para dos Factores para tratar los datos enteros como si fueran flotantes.
+ *
+ * _factorXEnt_:	Representa la parte Entera del Factor.
+ * _factorXFrac_:	Representa la parte Decimal del Factor; Las partes de Fraccionarias deben de ser 5 Digitos.
+ * 						factorXFrac = 1 -> 0.00001	factorXFrac = 12 -> 0.00012		factorXFrac = 12345 -> 0.12345
+ * _productoEnt_: 	Almacena en la dirección dada el resultado de la parte entera de la multiplicación
+ * _productoFrac_: 	Almacena en la dirección dada el resultado de la parte decimal de la multiplicación
+ */
+void multiplicar(	int factor1Ent, int factor1Frac,
+					int factor2Ent, int factor2Frac,
+					int * productoEnt, int * productoFrac)
+{
+	// Factores con sus respectivas Partes Enteras y Fraccionarias
+	int64_t Factor1 = (int64_t) (factor1Ent * mulDigFrac + factor1Frac);
+	int64_t Factor2 = (int64_t) (factor2Ent * mulDigFrac + factor2Frac);
+
+	// Multiplicación y acomodo de los Resultados
+	int64_t Resultado = Factor1 * Factor2;
+	int64_t ResultadoEnt = (Resultado/(mulDigFrac))/mulDigFrac;
+	int64_t ResultadoFrac = (Resultado - (ResultadoEnt*mulDigFrac*mulDigFrac))/mulDigFrac;
+
+	// Almacena los Resultados
+	*productoEnt = (int) ResultadoEnt;
+	*productoFrac = (int) ResultadoFrac;
+}
+
+/*		CGM 05/05/2025
+ * División de dos numeros
+ * _divisorEnt_: Parte entera del Divisor
+ * _divisorEnt_: Parte decimal del Divisor
+ * _dividendoFrac_: Parte entera del Dividento
+ * _dividendoFrac_: Parte decimal del Dividento
+ * _cocienteEnt_: Parte Entera del Resultado
+ * _cocienteFrac_: Parte Decimal del Resultado
+ */
+void dividir(	int divisorEnt, int divisorFrac,
+				int dividendoEnt, int dividendoFrac,
+				int * cocienteEnt, int * cocienteFrac)
+{
+	// Divisor y Dividendo con sus respectivas Partes Enteras y Fraccionarias
+	int64_t divisor = (int64_t) (divisorEnt * mulDigFrac + divisorFrac);
+	int64_t dividendo = (int64_t) (dividendoEnt * mulDigFrac + dividendoFrac);
+
+	// Divison y acomodo de los Resultados
+	//int64_t Resultado = dividendo * mulDigFracDiv / divisor;
+	int64_t Resultado = (dividendo << corrResDiv) / divisor;
+	//int ResultadoEnt = (int) (Resultado/mulDigFracDiv);
+	int ResultadoEnt = (int) (Resultado >> corrResDiv);
+	//int ResultadoFrac = (int) ((Resultado - ResultadoEnt*mulDigFracDiv)/(divDigFrac));
+	int ResultadoFrac = (int) (((Resultado - (ResultadoEnt << corrResDiv))*mulDigFrac) >> corrResDiv);
+
+	// Almacena los Resultados
+	*cocienteEnt = ResultadoEnt;
+	*cocienteFrac = ResultadoFrac;
+}
+
+void muestreoOPAMx(	uint16_t * muestraOPx, uint16_t * promedioOPx, uint8_t *countOPx,
+					int * sensorEntOPx, int * sensorFracOPx){
+	capturaAD();							// Tomamos la muestra
+	muestraOPx[*countOPx] = adcramh; 		// La almacenamos en un buffer
+	if(*countOPx == 8){
+		// Obtenemos un Promedio de las muestras
+		*promedioOPx = 0;
+		for(uint8_t i; i<8; i++)
+			*promedioOPx += muestraOPx[i];
+		*promedioOPx = (*promedioOPx >> 3); // Es igual que dividir entre 8
+
+		// Conversion de la muestra de ADC a Temperatura
+
+		int AxEnt = 0;
+		int AxFrac = 0;
+
+		// Ax = promedioOPX * ( 3.3/(1024*Alpha) )
+		multiplicar(	*promedioOPx,	00000,
+						const1Ent,		const1Frac,
+						&AxEnt,			&AxFrac);
+		// Gamma = Ax + Beta/Alpha
+		sumar(	AxEnt,			AxFrac,
+				const4Ent,		const4Frac,
+				&gammaEnt_OP1, 	&gammaFrac_OP1);
+		// Ax = 1 - Gamma
+		sumar(	1,					00000,
+				-gammaEnt_OP1,		-gammaFrac_OP1,
+				&AxEnt, 			&AxFrac);
+		// Ax = Gamma/Ax
+		dividir(AxEnt,		AxFrac,
+				gammaEnt_OP1,	gammaFrac_OP1,
+				&AxEnt,		&AxFrac);
+		// Ax = Ax * (R157/3.91)
+		multiplicar(	AxEnt,		AxFrac,
+						const3Ent,	const3Frac,
+						&AxEnt,		&AxFrac);
+
+		// sensorEntOP1 = Ax - (1000/3.91)
+		sumar(	AxEnt,			AxFrac,
+				-const2Ent,		-const2Frac,
+				sensorEntOPx, 	sensorFracOPx);
+	}
+	else{
+		*countOPx += 1;
+	}
+
+}
+
+
+/*
+ *
+ */
 
 
 /*

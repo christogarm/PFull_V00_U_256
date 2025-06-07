@@ -1,4 +1,5 @@
-../Core/Src/inicio.c:9:6:inicio	16	static
-../Core/Src/inicio.c:223:6:timeBCD_to_UNIX	8	static
-../Core/Src/inicio.c:268:9:BCDtoByte	16	static
-../Core/Src/inicio.c:289:6:findPointLogger	32	static
+../Core/Src/inicio.c:14:6:inicio	16	static
+../Core/Src/inicio.c:228:6:timeBCD_to_UNIX	8	static
+../Core/Src/inicio.c:272:9:BCDtoByte	16	static
+../Core/Src/inicio.c:290:6:chk_var	8	static
+../Core/Src/inicio.c:350:6:findPointLogger	32	static

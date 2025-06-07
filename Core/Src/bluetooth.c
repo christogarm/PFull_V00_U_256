@@ -1,5 +1,7 @@
 
-
+/*
+ * Ya se Adapto a CTOFF
+ */
 
 
 
@@ -232,7 +234,7 @@ void	ConfigBLE_Ble (){
 			break;
 */
 	  case 5:			//  Manuel,   Cambia el nombre de difusion
-		  	if (SendATreply_Ble("BLE_AT+NAMEIMBERA-CTOF-F\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
+		  	if (SendATreply_Ble("BLE_AT+NAMEIMBERA-CTOF-WF\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
 			//if (SendATreply_Ble("BLE_AT+NAMEIMBERA-HEALTH\r\n\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
 				WaitSerAnsw_Ble_func(6);
 //				WaitSerAnsw_Ble = 0;
@@ -262,7 +264,7 @@ void	ConfigBLE_Ble (){
 			asm ("nop");
 			// Termina configuracion, escribe en EEPROM un testigo
 
-				// _ASM: Pendiente a traducir asm
+			FlashManager((uint32_t) &eePlantilla[eeFlagBLE], 0x66);			// Revisar si es necesario poner este testigo
 
 			break;
 	}
@@ -429,6 +431,8 @@ void TransmitReceive_Ble(){
 	   		  codeTX = 0x62;
 	   	  if (memcmp(SerialAnswBLE, "\x40\x63",2) == 0)		 	// CÓDIGO DE logger eventos wifi
 	   		  codeTX = 0x63;
+	   	  if (memcmp(SerialAnswBLE, "\x40\x64",2) == 0)		    // Comando para prueba de cargas
+	   		  codeTX = 0x64;
 	   	}// close  if (DevLock == 0x72)
 
 	} //Close if (receivecomplete_Ble)

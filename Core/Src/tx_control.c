@@ -1,5 +1,6 @@
 
 /*
+ * CTOF IMPLEMENTADO
  * Resumen de comandos implementados
  0x4021					tx_control_handshake		..Completo Funciona Ok (Handshake)
  0x4053					tx_control_realTimeState	..Completo Funciona Ok (Estatus)
@@ -17,13 +18,11 @@
 
 uint32_t cksum_aux = 0;
 uint32_t cksum_gral_aux = 0;
-
 uint32_t pagina_borrado = 64;
 uint32_t direccion_fw = 0x8020000;
-
 uint32_t   chksum_to_compare = 0;
 uint8_t    contador_bloques_fw = 16;
-
+//_Bool FlagEraseLogger = 0;
 
 void tx_control(void){
 
@@ -77,10 +76,14 @@ statDef_clrBLE:
 	keyTx = 0;				//clr		keyTx  ;// en caso de desconexion cancela toda transmisión
 	// clr		flagsTX
 	//clr		flagsRxFirm
+	if(flagsRxFirm[0])
+		reinicio_valores_act_fw();
+
 	for(uint8_t i=0 ; i<8 ; i++){
 		flagsTX[i] = 0;
 		flagsRxFirm[i] = 0;
 	}
+
 
 	flagsLogger[4] = 0;			//bres	flagsLogger,#4;				// permite loggeo de eventos
 	flagsLogger[5] = 0;			//bres	flagsLogger,#5;				// permite loggeo de datos
@@ -148,6 +151,18 @@ tx_tokenBLE:
 	//ldw		bufferTxControl,X
 	bufferTxControl[0] = 0x40;
 	bufferTxControl[1] = 0xFA;
+
+	/*	CGM 29/05/2025
+	 * Modificacion CTOFF
+	 */
+
+//	ldw		X,#directorioMQTT
+//	ldw		Y,#(bufferTxControl+2)
+//	mov		wreg,#17
+//	call	copyVector
+	wreg = 17;
+	copyVector(&directorioMQTT[0],&bufferTxControl[2]);
+
 	flagsTX[2] = 0;				//bres	flagsTX,#2;						/ Indica que no hay que transmitir Header
 
 	//ldw		X,#bufferTxControl
@@ -158,8 +173,8 @@ tx_tokenBLE:
 	//mov		blockSizeTX,#2
 	pointTx = &bufferTxControl[0];
 	pointInitTx = &bufferTxControl[0];
-	pointEndTx = &bufferTxControl[2];
-	blockSizeTX = 2;
+	pointEndTx = &bufferTxControl[19];
+	blockSizeTX = 19;
 
 	//clrw	X
 	//ldw		chksum_HW,X
@@ -257,7 +272,7 @@ tokenWiFi_02:
 			goto rx_tokenWiFi_02;
 		}
 
-		if (codeTX != 0){
+		if (codeTX){
 			goto	rx_tokenWiFi_02b;			//jrne	rx_tokenWiFi_02b;			/ si llego algún comando no mandes token y consideralo como OK
 		}
 
@@ -393,6 +408,7 @@ noLoadResetBLE:
 		for(uint8_t i=0; i<8; i++){//clr flagsRxFirm;	/ borra banderas de Rx de firmware para cancelar proceso
 			flagsRxFirm [i]= 0;
 		}
+		reinicio_valores_act_fw();
 		codeTX = 0;//clr	codeTX;		/ ignora comandos si es que se producieron
 		goto ask_tx_control_01;//jp	ask_tx_control_01;	/ no entres a proceso de Rx firmware
 
@@ -545,7 +561,13 @@ ask_tx_control_19:
 			timeOutRst = 240;		//mov		timeOutRst,#240;				// carga time out de resetcon 240 segundos
 			goto tx_wifi_eventlogger;//jp		tx_wifi_eventlogger
 ask_tx_control_20:
+			//ld		A,codeTX
+			if(codeTX!= 0x64)				//cp		A,#$64
+				goto ask_tx_control_21;		//jrne	ask_tx_control_21
+			timeOutRst = 240;				//mov		timeOutRst,#240;				/ carga time out de resetcon 60 segundos
+			goto tx_control_PrCargas;		//jp		tx_control_PrCargas
 
+ask_tx_control_21:
 
 //;---------------------------------------------------------------------------------------------------------
 //;								Sección agregada para Transmisión de datos a WiFi
@@ -557,6 +579,28 @@ jmp_tx_wifi:
 //;---------------------------------------------------------------------------------------------------------
 			// Linea no se ejecuta
 			//goto	end_tx_control;			//jp		end_tx_control
+//;----------------------------------------------------------
+tx_control_PrCargas:
+
+			tiempoPrCargas = 10; // mov		tiempoPrCargas,#10;		/carga con 10 segundos el tiempo de prueba de cargas
+
+			//;// Carga datos de bloque de handshake para transmitir la respuesta
+			Bloque_handshake[comando1] = 0xF1;	// mov		comando1,#$F1
+			Bloque_handshake[comando2] = 0x3D;	//mov		comando2,#$3D;				/ indica que la grabación fue exitosa
+
+			//ldw		X,#comando1
+			pointTx = &Bloque_handshake[comando1];//ldw		pointTx,X
+			pointInitTx = &Bloque_handshake[comando1];//ldw		pointInitTx,X
+			//ldw		X,#comando2
+			pointEndTx = &Bloque_handshake[comando2];//ldw		pointEndTx,X
+			blockSizeTX = 2;//mov		blockSizeTX,#2
+
+			flagsTX[3] = 1;		//bset	flagsTX,#3;						/ evita que se mande checksum
+			keyTx = 0x55;		//mov		keyTx,#$55;						/ listo para mandar transmisión
+			codeTX = 0;			//clr		codeTX;
+
+			goto end_tx_control;	//jp		end_tx_control
+
 
 //;								Handshake
 //;----------------------------------------------------------
@@ -822,11 +866,10 @@ tx_control_realTimeState:
 
 		Bloque_TiempoReal [volt_RT]= voltl;				//volt_RT,voltl;	/ toma el volatje de la función de medición rms
 
-		Bloque_TiempoReal [actuadores_RT] = 0;
-		if (GPIOR0 [f_comp])											// compresor activo ?
-			Bloque_TiempoReal[actuadores_RT] |= 0x1;// BitSet(Bloque_TiempoReal[actuadores_RT], 0);				// carga estado de compresor
-		if (GPIOR0 [f_dh])												// deshielo activo ?
-			Bloque_TiempoReal[actuadores_RT] |= 0x2;//BitSet(Bloque_TiempoReal[actuadores_RT], 1);				// carga estado de deshielo
+		Bloque_TiempoReal [actuadores_RT] = 0;			// Cambios CTOFF
+		Bloque_TiempoReal [actuadores_RT] |= (uint8_t) GPIOR0[0];
+		Bloque_TiempoReal [actuadores_RT] |= (uint8_t) (GPIOR0[1] << 1);
+
 		if (flagsC[0])													// puerta abierta ?
 			Bloque_TiempoReal[actuadores_RT] |= 0x4;////BitSet(Bloque_TiempoReal[actuadores_RT], 2);				// sí, indica puerta abierta
 		if (flagsC[1])													// Modo ahorro 1 activo ?
@@ -845,12 +888,13 @@ tx_control_realTimeState:
 		for(int k=0;k<8;k++){
 			Bloque_TiempoReal[alarmas2_RT] |=(uint8_t) (trefst2[k]<<k);
 		}
-
 		Bloque_TiempoReal[alarmas2_RT] &= 0xFE;//BitClear(Bloque_TiempoReal[alarmas2_RT],0);
 		//Bloque_TiempoReal [alarmas_RT] = trefst;
 		for(uint8_t k=0; k<8; k++){
 			Bloque_TiempoReal [alarmas_RT] |= (uint8_t) trefst[k]<<k;
 		}
+		Bloque_TiempoReal[corriente_RT_L] = (uint8_t)  (variable_corriente & 0xFF);
+		Bloque_TiempoReal[corriente_RT_H] = (uint8_t)  (variable_corriente >> 8);
 								// copia el resgistro de alarmas trefst
 
 		blockSizeTX =size_TiempoReal;				// tamaño del bloque
@@ -880,23 +924,23 @@ tx_control_realTimeState:
 		//;copia los datos al buffer de tx
 		point_X = &Bloque_TiempoReal[0];	 // ldw		X,#tempAmb_RT
 		point_Y = &bufferTxControl[8];	 //
-		for(uint8_t i = 0; i < 10 ; i++ )
+		for(uint8_t i = 0; i < 12 ; i++ )
 			point_Y[i] = point_X[i];
 
 		chksum_32_HW_LW = 0;					// limpia registros de checksum
 
 		point_X = &bufferTxControl[0];			// carga dirección del buffer a calcular chksum
-		buildChksumBloq (point_X, 18);			// tamaño del bloque a calcular el chksum
+		buildChksumBloq (point_X, 20);			// tamaño del bloque a calcular el chksum
 
-		bufferTxControl [18] = (uint8_t)((chksum_32_HW_LW & 0xFF000000)>> 24);
-		bufferTxControl [19] = (uint8_t)((chksum_32_HW_LW & 0x00FF0000)>> 16);
-		bufferTxControl [20] = (uint8_t)((chksum_32_HW_LW & 0x0000FF00)>>  8);
-		bufferTxControl [21] = (uint8_t)(chksum_32_HW_LW & 0x000000FF);
+		bufferTxControl [20] = (uint8_t)((chksum_32_HW_LW & 0xFF000000)>> 24);
+		bufferTxControl [21] = (uint8_t)((chksum_32_HW_LW & 0x00FF0000)>> 16);
+		bufferTxControl [22] = (uint8_t)((chksum_32_HW_LW & 0x0000FF00)>>  8);
+		bufferTxControl [23] = (uint8_t)(chksum_32_HW_LW & 0x000000FF);
 
 	    pointTx = &bufferTxControl[0];
 		pointInitTx = &bufferTxControl[0];
-		pointEndTx = &bufferTxControl [22];
-	    blockSizeTX = 22;   //4 bytes ChecksumblockSizeTX = 25;   //4 bytes Checksum
+		pointEndTx = &bufferTxControl [24];
+	    blockSizeTX = 24;   //4 bytes ChecksumblockSizeTX = 25;   //4 bytes Checksum
 
 		flagsTX [2] = 0;					// Indica que no hay que transmitir Header
 		flagsTX [3] = 1;					// evita enviar chksum
@@ -913,8 +957,8 @@ tx_control_parameters:
 		//28-oct-2024 RGM:		uint8_t *point_Y;
 
 		//; Carga datos de Header
-		Bloque_Header [softVersion1] = version1;		// mov		softVersion1,version1
-		Bloque_Header [softVersion2] = version2;		// mov		softVersion2,version2;	/ Carga versión del firmware
+		Bloque_Header [softVersion1] = Plantilla[version1];		// mov		softVersion1,version1
+		Bloque_Header [softVersion2] = Plantilla[version2];		// mov		softVersion2,version2;	/ Carga versión del firmware
 		Bloque_Header [bufferSize_4] = 0;				// bufferSize_HW
 		Bloque_Header [bufferSize_3] = 0;				// bufferSize_HW
 		Bloque_Header [bufferSize_2] = 0;				// bufferSize_LW
@@ -1045,7 +1089,7 @@ ok_writeParam:
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
 tx_control_writeFirm:
-			bandera_act_fw_j = 1;   //Parche para parar loggeo
+//			bandera_act_fw_j = 1;   //Parche para parar loggeo
 
             Bloque_handshake [comando1] = 0xF1;//	mov	comando1,#$F1
             Bloque_handshake [comando2] = 0X03;//	mov	comando2,#$03;	/ indica que está listo para la recepción del firmware
@@ -1074,7 +1118,7 @@ tx_control_writeFirm:
 //;										Rx Firmware(Número de Bloques)
 //;----------------------------------------------------------
 rx_firmware:
-			bandera_act_fw_j = 1;
+//			bandera_act_fw_j = 1;   //Parche para evitar loggeo miesntras se realiza actualizacion de fw
 			flagsLogger[4]=1;		// bset	flagsLogger,#4;				/ cancela loggeo de eventos
 			flagsLogger[5]=1;		// bset	flagsLogger,#5;				/ cancela loggeo de datos
 			if(!flagsRxFirm[3]){ // btjf	flagsRxFirm,#3,rx_firmware01; Ya se completo la recepción de bloques de firmware ?
@@ -1104,7 +1148,7 @@ rx_numBloqFirm_01:
 			ld		A,(X);								/ carga número de bloques a recibir
 			ld		numBloqFirm,A
 			*/
-			numBloqFirm = (RxBuffer_Ble[2] << 8) | RxBuffer_Ble[3] ;
+			numBloqFirm = (RxBuffer_Ble[2] << 8) | RxBuffer_Ble[3];  //Num de bloques fw de 16 bits
 			cntBloqFirm = 0;		//clr		cntBloqFirm;					/ reinicia el contador de bloques recibidos
 			BloqDatalooger[comando1] = 0xF1;		//mov		comando1,#$F1
 			BloqDatalooger[comando2] = 0x07;		// mov		comando2,#$07;				/ indica que está listo para la recepción de los bloques del firmware
@@ -1135,10 +1179,6 @@ rxBloqFirm:
 			goto end_tx_control;		//jp		end_tx_control
 
 rxBloqFirm_01:
-
-			//GPIOR1[f_fan] = 0;
-			//GPIOR0[f_comp] = 0;  //Parche, desactivacion de relevadores
-
 
 			flagsRxFirm[2]=0; // bres	flagsRxFirm,#2;				/ borra bandera de paquete recibido
 			// clrw	X
@@ -1202,17 +1242,21 @@ load_bloqFirm:
 			//  ldw		chksumFirm_HW,Y
 			chksumFirm_HW_LW += chksum_32_HW_LW; // 							ldw		chksumFirm_LW,X;			/ fuarda el checksum general calculado hasta ahora
 
-			if(direccion_fw >= 0x803F000)
+			if(direccion_fw >= 0x803F000){    //Parche para borrar loggger y resetear si hay algun error en tratar de escribir en un lugar de memoria incorrecto
+//				FlagEraseLogger = 1;
+				clean_logger();
 				NVIC_SystemReset();
+			}
 
 			if(contador_bloques_fw == 16)
 			{
 				borra_pagina_logger(pagina_borrado);
 				contador_bloques_fw = 0;
-
 			}
 			contador_bloques_fw++;
 			graba_bloque_fw();
+
+			timeoutRXFw = 0;
 
 //			ProgMemCode = 0xAA; // mov		ProgMemCode,#$AA;			/ Indica que se va a grabar bloque de FLASH
 //			// LDW		X,#RxBuffer_Ble;					/ apunta al buffer de datos RECIBIDOS
@@ -1249,11 +1293,12 @@ no_writeBloqFirm:
 			for(int i=0; i<8; i++)				// clr		flagsRxFirm;					/ borra banderas de Rx de firmware para cancelar proceso
 				flagsRxFirm[i]=0;
 			codeTX = 0;						// clr		codeTX;								/ ignora comandos si es que se producieron
+			reinicio_valores_act_fw();
 
-			bandera_act_fw_j = 0;
-			direccion_fw = 0x8020000;
-			pagina_borrado = 64;
-			contador_bloques_fw = 16;
+//			bandera_act_fw_j = 0;
+//			direccion_fw = 0x8020000;
+//			pagina_borrado = 64;
+//			contador_bloques_fw = 16;
 
 ok_writeBloqFirm:
 			// ldw		X,#comando1
@@ -1326,10 +1371,11 @@ rxFirmErr:
 			for (int i = 0; i<8; i++)// clr		flagsRxFirm;					/ borra banderas de Rx de firmware para cancelar proceso
 				flagsRxFirm[i]=0;
 			codeTX = 0;// clr		codeTX;								/ ignora comandos si es que se producieron
-			bandera_act_fw_j = 0;
-			direccion_fw = 0x8020000;
-			pagina_borrado = 64;
-			contador_bloques_fw = 16;
+			reinicio_valores_act_fw();
+//			bandera_act_fw_j = 0;
+//			direccion_fw = 0x8020000;
+//			pagina_borrado = 64;
+//			contador_bloques_fw = 16;
 rxFirmOK:
 			// ldw		X,#comando1
 			pointTx =  &BloqDatalooger[comando1]; 	// ldw		pointTx,X
@@ -1378,9 +1424,7 @@ tx_clean_logger_loop:
 			 * Logger de Eventos:			110 - 119 pagina
 			 * Logger de Datos o Tiempo:	120 - 125 pagina
 			 */
-			for(uint32_t i = 110; i<126; i++){
-				erasePage(i);
-			}
+			clean_logger();
 
 			//cntBloqFirm++; // inc		cntBloqFirm;					/ incrmenta el contador de datos recibidos
 
@@ -1434,10 +1478,139 @@ ok_clean_logger:
 			keyTx = 0x55; 		// mov		keyTx,#$55;						/ listo para mandar transmisión
 			codeTX=0;			//clr		codeTX;
 
+
 			goto end_tx_control;// jp		end_tx_control
 
 //----------------------------------------------------------
 tx_modParam:
+
+			//;/ toma el número de bytes que serán grabados
+			//ldw		X,#RxBuffer_Ble;			/ carga dirección del buffer de recepción
+			//addw	X,#2;									/ agrega offset para cargar numero de bytes a modificar
+			//ld		A,(X);								/ carga numero de bytes a modificar
+			numByte = RxBuffer_Ble[2];//ld		numByte,A;						/ guardalo en variable numByte
+			if(numByte>60)//cp		A,#60
+				goto tx_modParam_error; //jrugt	tx_modParam_error;		/ si el numero de bytes es mayor a 60 manda error y no ejecutes comando
+
+			//;--- checando chksum
+			//clrw	X
+			//ldw		chksum_HW,X
+			chksum_32_HW_LW = 0; //ldw		chksum_LW,X;					/ limpia registros de checksum
+			//
+			//ldw		X,#RxBuffer_Ble;			/ carga dirección del buffer de recepción
+			wreg = 0;//clr		wreg
+			waux = numByte;//mov 	waux,numByte;					/ calcula tamaño del bloque a calcular el chksum
+			waux = waux << 1;	//sll		waux
+			//ld		A,#3
+			//add		A,waux
+			waux += 3;//ld		waux,A
+			//
+			buildChksumBloq(&RxBuffer_Ble[0],waux);//call	buildChksumBloq
+			cksum_gral_aux = (RxBuffer_Ble[waux] << 24) | (RxBuffer_Ble[waux+1] << 16) | (RxBuffer_Ble[waux+2] << 8) | RxBuffer_Ble[waux+3];
+			//ldw		X,tempo2;
+			//cpw		X,chksum_LW;					/ compara la parte baja del checksum
+			//jrne	tx_modParam_error;		/ si no iguales sal sin modificar Geolocalización
+			//ldw		X,resulh;
+			//cpw		X,chksum_HW;					/ compara la parte baja del checksum
+			//jrne	tx_modParam_error;		/ si no iguales sal sin modificar Geolocalización
+			//;-------------------
+			//
+			if(chksum_32_HW_LW != cksum_gral_aux)
+				goto tx_modParam_error;
+
+			//;--- Checando direcciones restringidas
+			//ldw		X,#RxBuffer_Ble;			/ apunta al incio del vector de direcciones
+			uint8_t * pointX_ = &RxBuffer_Ble[3];//addw	X,#3;
+			wreg = 0; //clr		wreg
+tx_modParam_chkDirloop:
+			//ld		A,(X);								/ carga direccón apuntada en X
+			if(*pointX_ >= 0x80)		//cp		A,#$80
+				goto tx_modParam_error;		//jruge	tx_modParam_error;		/ direcciones mayores o iguales a 0x80 están restringidas
+			if(*pointX_ == 0)		//cp		A,#$00
+				goto tx_modParam_error;		//jreq	tx_modParam_error;		/ direccion de parámetro de seguridad 1  restringido
+			if(*pointX_ == 0x41)		//cp		A,#$41
+				goto tx_modParam_error;		//jreq	tx_modParam_error;		/ direccion de parámetro de seguridad 2  restringido
+			if(*pointX_ == 0x7F)		//cp		A,#$7F
+				goto tx_modParam_error;		//jreq	tx_modParam_error;		/ direccion de parámetro de seguridad 3  restringido
+			if(*pointX_ == 0x7B)		//cp		A,#$7B
+				goto tx_modParam_error;		//jreq	tx_modParam_error;		/ direccion de parámetro de firmware 1  restringido
+			if(*pointX_ == 0x7C)		//cp		A,#$7C
+				goto tx_modParam_error;		//jreq	tx_modParam_error;		/ direccion de parámetro de firmware 2  restringido
+			pointX_++;		//incw	X
+			wreg++;			//inc		wreg
+			//ld		A,wreg
+			if(wreg < numByte)						//cp		A,numByte;						/ ya se revisaron todas las direcciones del vector ?
+				goto tx_modParam_chkDirloop;		//jrult	tx_modParam_chkDirloop ; / no, continúa checando la s direcciones
+//;-------------------
+
+//;/ Apunta al inicio del vector de direciones
+			//ldw		X,#RxBuffer_Ble;			/ carga dirección del buffer de recepción
+			//addw	X,#3;
+			//ldw		resulh,X
+
+			//clr		tempo2
+			//clr 	tempo1;									/ inicializa contador de bytes grabados
+
+			uint8_t * pointVAdd = &RxBuffer_Ble[3];			// Apuntador del Vector de Direcciones
+			uint8_t * pointVVal = pointVAdd + numByte;			// Apuntador del Vector de Valores
+			uint8_t countParam = 0;
+tx_modParam_loop:
+			//;/ Obtención de la dirección a modificar a partir del vector de direcciones
+			//ldw		X,#eedato_seg1;				/ apunta al inicio de la eeprom
+			//ldw		Y,resulh;							/ apunta al incio del vector de direeciones
+			//addw	Y,tempo2;							/ apunta al offset correspondiente
+			//ld		A,(Y);								/ carga el offset en A
+			//clr		waux
+			//ld		wreg,A
+			//addw	X,waux;								/ suma el offset para obtener la dirección del byte a modificar
+			//
+			//;/ Obtención del valor a grabar a partir del vector de valores
+			//ldw		Y,resulh;							/ apunta al incio del vector de direeciones
+			//clr		waux
+			//mov		wreg,numByte
+			//addw	Y,waux;						/ suma el numero de bytes a grabar  para apuntar al inicio del vector de valores
+			//addw	Y,tempo2;								/ apunta al valor correspondiente
+			//ld		A,(Y);								/ carga el valor en A
+			//ld		waux,A;								/ mantenlo en waux
+
+			//wreeprom
+			//call		wreeprom;						/ ejecuta el grabado
+			reePlantilla[*pointVAdd] = *pointVVal;
+			wreeprom (*pointVVal, (uint32_t) &eePlantilla[*pointVAdd]);
+
+			//inc		tempo1;									/	incrementa el contaor de bytes grabados
+			//ld		A,tempo1
+			//cp		A,numByte;					/ ya se grabaron todos los bytes ?
+			//jrult	tx_modParam_loop
+			countParam++;
+			pointVAdd++;		// Siguiente Direccion del Vector
+			pointVVal++;		// Siguiente Valor del Vector
+			if(countParam < numByte)
+				goto tx_modParam_loop;
+
+
+			//;// Carga datos de bloque para transmitir la respuesta
+			Bloque_handshake[comando1] = 0xF1;		//mov		comando1,#$F1
+			Bloque_handshake[comando2] = 0x3D;		//mov		comando2,#$3D;				/ indica que la grabación fue exitosa
+			//
+			goto tx_modParam_ok;//jra		tx_modParam_ok
+
+tx_modParam_error:
+			//;// Carga datos de bloque para transmitir la respuesta
+			Bloque_handshake[comando1] = 0xF1;		//mov		comando1,#$F1
+			Bloque_handshake[comando2] = 0x3E;		//mov		comando2,#$3E;				/ indica que hubo un error y no se programaron los datos
+
+tx_modParam_ok:
+			//ldw		X,#comando1
+			pointTx = &Bloque_handshake[comando1];		//ldw		pointTx,X
+			pointInitTx = &Bloque_handshake[comando1];//ldw		pointInitTx,X
+			//ldw		X,#comando2
+			pointEndTx = &Bloque_handshake[comando2];//ldw		pointEndTx,X
+			blockSizeTX = 2;	//mov		blockSizeTX,#2
+			//
+			flagsTX[3] = 1;		//bset	flagsTX,#3;						/ evita que se mande checksum
+			keyTx = 0x55;		//mov		keyTx,#$55;						/ listo para mandar transmisión
+			codeTX = 0;			//clr		codeTX;
 
 fin_tx_modParam:
 			goto end_tx_control;		//jp		end_tx_control
@@ -1470,6 +1643,7 @@ tx_write_status:
 			wreg = RxBuffer_Ble[2];  // ld		wreg,A;
 			//waux = eeEstado1; // mov		waux,eeEstado1;				/ carga estados actuales
 			waux = reeEstado1;
+
 chk_est1_b0:
 			if(!GetRegFlagState(wreg, est1Refri)) {// btjf	wreg,#est1Refri,chk_est1_b1; / hay cambio de estado refrigerador on/off ?
 				goto chk_est1_b1;
@@ -1480,20 +1654,26 @@ chk_est1_b0:
 			numMsg = 1; 		// mov		numMsg,#1
 
 chk_est1_b1:
-			if(!GetRegFlagState(wreg, est1Noct)){// btjf	wreg,#est1Noct,chk_est1_b2; / hay cambio de modo nocturno ?
-				goto chk_est1_b2;
-			}
+			/*
+			 * Cambios CTOF
+			 */
+			if(!GetRegFlagState(wreg, est1Noct))
+				goto chk_est1_b2;					//btjf	wreg,#est1Noct,chk_est1_b2; / hay cambio de modo nocturno ?
+			//;// omite función nocturno en equipos medicos
+			flagsa[noctman] = 1;					//bset	flagsa,#noctman;	/ activa modo nocturno manual
+			//; indica que hay que mostrar un mensaje
+			cntMsgCmd = 250;	//mov		cntMsgCmd,#250
+			numMsg = 4;			//mov		numMsg,#4
 chk_est1_b2:
 			if(!GetRegFlagState(wreg, est1Lamp)){// btjf	wreg,#est1Lamp,chk_est1_b3; / hay cambio de estado de lampara ?
 				goto chk_est1_b3;
 			}
-			flagsC[f_lampDoor] ^= 1;	 // bcpl	flagsC,#f_lampDoor;				/ cambia el estado de la bandera de control de lámpara
+			flagsb[f_luzb] ^= 0x1;	//bcpl		flagsb,#f_luzb;				/ cambia el estado de la bandera de control de lámpara
 			waux &= 0xFB;// BitClear(waux,est1Lamp); // bres	waux,#est1Lamp
-			if(!flagsC[f_lampDoor]){// btjf	flagsC,#f_lampDoor,chk_est1_b2_01;	actualiza estado de lampara para guardarlo en eeprom
+			if(!flagsb[f_luzb]){//btjf	flagsb,#f_luzb,chk_est1_b2_01;	actualiza estado de lampara para guardarlo en eeprom
 				goto chk_est1_b2_01;
 			}
 			BitSet(waux,est1Lamp);// bset	waux,#est1Lamp
-
 chk_est1_b2_01:
 			cntMsgCmd = 250; 	// mov		cntMsgCmd,#250
 			numMsg = 2; 		// mov		numMsg,#2
@@ -1510,6 +1690,10 @@ chk_est1_b3:
 
 			t_ahorro2_H= 0;		// clr		t_ahorro2_H
 			// clr		t_ahorro2_L
+
+			flagsC[f_ahorro1] = 1;		//	bset	flagsC,#f_ahorro1
+			flagsC[f_ahorro2] = 1;		//	bset	flagsC,#f_ahorro2
+			cntdpysp = 0xF0;			//	mov			cntdpysp,#$F0;		/ Despliega Set Point y el diferencial
 
 			goto chk_est1_b4;	// jra		chk_est1_b4
 
@@ -1533,20 +1717,12 @@ chk_est1_b5:
 			ld_alarmDelay(); // call		ld_alarmDelay;				/ carga tiempo de Snooze LC
 
 chk_est1_b6:
-			if(GetRegFlagState(Plantilla[logicos2],funReleDesh)){
-				goto deshTypeAct_05;
+			if(!GetRegFlagState(wreg, est1WifiReset)){		// btjf	wreg,#est1LockDr,chk_est1_b7; / hay cambio de estado en cerradura ?
+				goto chk_est2_b1;
 			}
-			if(!GetRegFlagState(wreg, est1LockDr)){		// btjf	wreg,#est1LockDr,chk_est1_b7; / hay cambio de estado en cerradura ?
-				goto chk_est1_b7;
-			}
-			BitComplement(waux,est1LockDr);	// bcpl	waux,#est1LockDr;	/ cambia estado de rele cerradura
+			timeRstBLE = 5;
 
-			// indica que hay que mostrar un mensaje
-			cntMsgCmd = 250;	// mov		cntMsgCmd,#250
-			numMsg = 3;	// mov		numMsg,#3
-
-chk_est1_b7:
-deshTypeAct_05:
+chk_est2_b1:
 
 			// carga waux en eeprom
 			// ldw		X,#eeEstado1;
@@ -1563,7 +1739,7 @@ deshTypeAct_05:
 tx_write_status_error:
 			// Carga datos de bloque para transmitir la respuesta
 			BloqDatalooger[comando1] = 0xF1; 	// mov		comando1,#$F1
-			BloqDatalooger[comando2] = 0x3D;	// mov		comando2,#$3D;				/ indica que la grabación fue exitosa
+			BloqDatalooger[comando2] = 0x3E;	// mov		comando2,#$3E;				/ indica que la grabación fue exitosa
 
 
 tx_write_status_ok:
@@ -1622,11 +1798,6 @@ estado1_b5:
 		estado1[est1Snooze] = 1;// bset	estado1,#est1Snooze
 
 estado1_b6:
-		estado1[est1LockDr] = 0;// bres	estado1,#est1LockDr
-		if(!GPIOR0[f_dh]){ // btjf	GPIOR0,#f_dh,estado1_b7;
-			goto estado1_b7;
-		}
-		estado1[est1LockDr] = 1; // bset	estado1,#est1LockDr
 
 estado1_b7:
 
@@ -1664,6 +1835,7 @@ estado1_b7:
 		// ldw		bufferTxControl+8,X
 		// ldw		X,estado3
 		// ldw		bufferTxControl+10,X
+
 		bufferTxControl[8] = 0;
 		bufferTxControl[9] = 0;
 		bufferTxControl[10] = 0;
@@ -1862,8 +2034,8 @@ tx_read_GEO:
 			blockSizeTX = 8; // mov		blockSizeTX,#8;				/ tamaño del bloque
 
 			// Carga datos de Header
-			// mov		softVersion1,version1
-			Bloque_Header[softVersion1] = Plantilla[version2]; // mov		softVersion2,version2;	/ Carga versión del firmware
+			Bloque_Header[softVersion1] = Plantilla[version1]; // mov		softVersion1,version1
+			Bloque_Header[softVersion2] = Plantilla[version2]; // mov		softVersion2,version2;	/ Carga versión del firmware
 
 			//ldw		X,#0
 			//ldw		bufferSize_HW,X
@@ -2095,7 +2267,7 @@ tx_timeBCD:
 			rrc		waux
 			rrc		waux
 			rrc		waux*/
-			waux = waux<<5;
+			waux = waux<<6;
 			// enmascara  los bits 7,6 y 5
 			// ld		A,#%11100000
 			// and		A,waux
@@ -2489,7 +2661,7 @@ tx_wifi_timeLogger_01:
 		codeTX = 0;
 		//; checa timeout
 		// tnz		timeoutTxWifi
-		if(timeoutTxWifi != 0){
+		if(timeoutTxWifi){
 			goto tx_wifi_timeLogger_02;// jrne	tx_wifi_timeLogger_02
 		}
 		flagsWIFI[f_timeLoggerCmd]=0;// bres	flagsWIFI,#f_timeLoggerCmd
@@ -2654,7 +2826,7 @@ tx_wifi_eventLogger:
 		}
 
 		//; en caso contrario carga información para transmitir comando
-		flagsWIFI[f_eventLoggerCmd]=1;// bset		flagsWIFI,#f_eventLoggerCmd
+		flagsWIFI[f_eventLoggerCmd] = 1;// bset		flagsWIFI,#f_eventLoggerCmd
 
 		//;Sí el contador no viene en cero no grabes datos
 		//ldw		X,cntRegTxWifi
@@ -3087,6 +3259,23 @@ comp_event_end_WF:
 		BloqEventComp[EC_tempEvaEnd_H] = teval;
 		BloqEventComp[EC_tempEvaEnd_L] = tevaf;
 
+		/*
+		 * Cambios CTOFF
+		 */
+//		ldw		X,potencia
+//		ld		A,XL
+//		ld		EC_voltInit,A
+//		;cambia de posición  la parte alta  para combinar 3 bits con event type
+//		ld		A,XH
+//		swap	A
+//		sll		A
+//		and		A,#%11100000
+//		or		A,EC_eventType
+//		ld		EC_eventType,A
+
+		BloqEventComp[EC_voltInit] = (uint8_t)(potencia & 0xFF);
+		BloqEventComp[EC_eventType] |= (uint8_t)((potencia>>8) & 0x3);
+
 		flagsEventWF[1] = 0;		// bres	flagsEventWF,#1;					/ borra inicio de evento compresor
 
 		// ldw		X,#comandoEC
@@ -3462,8 +3651,8 @@ noFlag_Aux_TD:
 		bufferWifiTx[20] =(uint8_t) (tret_w&0xFF);
 		//;carga cuarto sensor
 		// ldw		X,tsac_w
-		bufferWifiTx[21] = (uint8_t) ((tret_w&0xFF00)>>8);// ldw		bufferWifiTx+21,X
-		bufferWifiTx[22] = (uint8_t) (tret_w&0xFF);
+		bufferWifiTx[21] = (uint8_t) ((variable_corriente&0xFF00)>>8);// ldw		bufferWifiTx+21,X
+		bufferWifiTx[22] = (uint8_t) (variable_corriente&0xFF);
 
 		// ldw		X,#bufferWifiTx
 		pointTx = &bufferWifiTx[0];// ldw		pointTx,X
@@ -3838,6 +4027,37 @@ void graba_bloque_fw (void)
 
 	}
 	while(HAL_FLASH_Lock() != HAL_OK );
+}
+
+void reinicio_valores_act_fw(void)
+{
+	//Va<riables y contadores necesarios act_fw
+	cksum_aux = 0;
+	cksum_gral_aux = 0;
+	pagina_borrado = 64;
+	direccion_fw = 0x8020000;
+	chksum_to_compare = 0;
+	contador_bloques_fw = 16;
+
+
+	timeoutRXFw = 0;
+
+	cntByteBlockDATA = 0; 	// clr		cntByteBlockDATA
+	cntBlockDATA = 0; 		// clr		cntBlockDATA
+	cntByteBlockEVENT = 0; // clr		cntByteBlockEVENT
+	cntBlockEVENT = 0;		// clr		cntBlockEVENT
+
+	clean_logger();
+	clean_buffer();
+
+}
+
+void clean_logger(void)
+{
+
+	for(uint32_t i = 110; i<126; i++){
+		erasePage(i);
+	}
 }
 
 

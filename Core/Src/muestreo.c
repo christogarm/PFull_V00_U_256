@@ -8,28 +8,61 @@
 #include "ELTEC_EmulatedEEPROM.h"
 #include "stm32u0xx_hal_pwr_ex.h"
 
+// rutina refrigera Adaptada CTOF Completa ..............
+
 uint32_t cnt_veces_muestreo_2 = 0;
 //*************************************************************************************************
 
 void muestreo(void){
 
 
-		cnt_veces_muestreo++; //inc cnt_veces_muestreo/// A,cnt_veces_muestreo
-
-
-		if(cnt_veces_muestreo <= 200){ // 200){ //cp  A,#200
-			goto detecta_flanco;//jrule detecta_flanco
+		if(GetRegFlagState(Plantilla[eelogicos2],5)){		//;¿Se usará el TRANSDUCTOR de corriente de IMBERA?
+				goto	muestreo_00;
 		}
+		cnt_2ms_corrIMB++;									//inc     cnt_2ms_corrIMB           ;SI, obten una muestra instantanea cada 2ms
+		if (cnt_2ms_corrIMB != 4){			//;El proceso muestre se ejecuta cada 250us apróx
+			goto	muestreo_00;			//jrne    muestreo_00
+		}
+		cnt_2ms_corrIMB =0;					//clr     cnt_2ms_corrIMB         ;Han transcurrido 2ms. Limpia el contador
 
+		ADC1->CHSELR = 0;
+        ADC1->CHSELR |= ADC_CHSELR_CHSEL0;  		// Canal 0
+        capturaAD ();								// muestra es a 10 bits
+        ram_h = adcramh;							//;Guarda el resultado de la conversión en RAM TEMPORAL
+        											//mov		  ram_l,adcraml           ;/Lee primero el MAYOR
+        muestra_corrIMB += ram_h;					//;Realiza la suma acumulada de las muestras
+        											//;ADC de 10 bits, 64 muestras máximo de 1,024 (si fueran 20A)
 
-//		if(cnt_veces_muestreo < 3)
-//			cnt_veces_muestreo_2++;
-//		else
-//			cnt_veces_muestreo_2 = 0;
-//
-//		if(cnt_veces_muestreo_2 < 200)
-//			goto detecta_flanco;
+        cnt_muestras_corrIMB++;						// inc     cnt_muestras_corrIMB    ;¿Han trasncurrido 64 muestras?
+		if (cnt_muestras_corrIMB != 64){			// ld      A,cnt_muestras_corrIMB  ;/
+			goto	muestreo_00;					// cp      A,#64
+		}											//	jrne    muestreo_00		          ;/
+		cnt_muestras_corrIMB= 0;					// clr     cnt_muestras_corrIMB  ;64 muestras trasncurridas, limpia el contador
+		mcorr_ponderada_1 = mcorr_ponderada_2;		//;La última muestra se conviente en la muestra anterior
+													//ldw     X,muestra_corrIMB     ;Realiza el promedio de las 64 muestras obtenidas
+													//ld      A,#64                 ;/
+													//div     X,A                   ;/
+		mcorr_ponderada_2 = muestra_corrIMB/64;		//ldw     mcorr_ponderada_2,X   ;El resultado es la muestra actual
+		muestra_corrIMB = 0;						//clrw    X                     ;Limpia el acumulado de las muestras
+		ram_h = mcorr_ponderada_1/2;				//;Aplica factor de ponderación de 50%
+													//;a la primer muestra promediada
+		STM8_16_X = mcorr_ponderada_2/2;			//;Aplica factor de ponderación de 50%
+													//;a la segunda muestra promediada
+		STM8_16_X = STM8_16_X + ram_h;				//;Suma las dos muestras ponderadas
+		//;El factor se aplica al final para no desbordar
+		fact_mul = 39; 								//mov     fact_mul,#39     ;eecorrIMB_mul  ;Aplica factor, el resultado llega en X
+		fact_div = 2;								//mov     fact_div,#2      ;eecorrIMB_div  ;/
+		aplica_factor();							//call    aplica_factor         ;Aplica el factor a la muestra adquirida
+		corriente_IMB = STM8_16_X;					//ldw     corriente_IMB,X       ;Almacena el resultado en la variable correspondiente
 
+muestreo_00:
+		//ldw     X,#t_filtro_flanco;
+		decwreg(&t_filtro_flanco);	//call    decwreg;        / Agota el tiempo para filtrar cruces por cero
+
+		cnt_veces_muestreo++; //inc cnt_veces_muestreo/// A,cnt_veces_muestreo
+		if(cnt_veces_muestreo <= 200){ 		// 200){ //cp  A,#200
+			goto alterna_presente;			//jrule   alterna_presente      ;Hay alterna presente
+		}
 	    cnt_veces_muestreo = 0;  //clr cnt_veces_muestreo
 	    cruze_por_cero[0] = 1;		//bset    cruze_por_cero,#0
 
@@ -40,7 +73,28 @@ void muestreo(void){
 //	  	goto error_muestreo; //jp error_muestreo
 
 //batOFF_OK:
-	    flagsLogger2 [0] = 1; //bset flagsLogger2,#0
+	    flagsLogger2 [0] = 1; //bset	flagsLogger2,#0; /indica un fallo de energía
+
+// ;-------------------------------------------------------------------------------
+// ;RM_20240816 Evita grabados y HALT si no se ha calibrado el control
+
+
+	    if(reef_voltaje == 0x3C){
+			goto grabadoEmergencia_00; //		jreq    grabadoEmergencia_00         ;
+		}
+		goto error_muestreo;							//jp      error_muestreo
+
+//;-------------------------------------------------------------------------------
+grabadoEmergencia_00:
+				//;------------ Grabado de emergencia por fallo de energía
+		if(edorefri >= 2){					// ya pasó por indica o autoprueba ?
+			goto grabadoEmergencia; 		// sí, continua
+		}
+		goto grabadoEmergenciaFin;			//jp		grabadoEmergenciaFin;							/ no, espera
+
+
+//		;							btjf	flagsLogger2,#0,grabadoEmergenciaFin; / hay fallo de energía ? No, continúa sin grabado de emergencia
+//		;							btjt	flagsLogger2,#1,grabadoEmergenciaFin; / ya se ejecuto el grabado de emergencia ? Sí, no vuelvas a grabar.
 
 
 grabadoEmergencia:
@@ -158,59 +212,40 @@ grabadoEmergencia:
 
 
 grabadoEmergenciaFin:
+    // Deshabilitacion de Perifericos Necesarios para Bajo Consumo JTA
 
 	GPIOA->MODER |= 0x3FFFFFFF;
 	GPIOB->MODER |= 0xFFFFFFFF;
-	GPIOC->MODER |= 0xFFFDFFFF;
+	GPIOC->MODER |= 0xFFFFFFFF;					//Puertos Colocados en analogico menos GPIOA15 que es la interrupcion para salir de bajo consumo
 	GPIOD->MODER |= 0xFFFFFFFF;
 	GPIOE->MODER |= 0xFFFFFFFF;
 	GPIOF->MODER |= 0xFFFFFFFF;
 
 	__HAL_RCC_GPIOB_CLK_DISABLE();
 	__HAL_RCC_GPIOD_CLK_DISABLE();
-	__HAL_RCC_GPIOE_CLK_DISABLE();
+	__HAL_RCC_GPIOE_CLK_DISABLE();				//Deshabilitacion de CLK para puertos
 	__HAL_RCC_GPIOF_CLK_DISABLE();
 
-	while(HAL_I2C_DeInit(&hi2c1) != HAL_OK);
+	while(HAL_I2C_DeInit(&hi2c1) != HAL_OK);   //Deshabilitacion de perifericos por medio de funcion DEInit
 	while(HAL_UART_DeInit(&huart2) != HAL_OK);
 	while(HAL_UART_DeInit(&huart4) != HAL_OK);
-	ADC_Deinit_Func();
-	//while(HAL_ADC_DeInit(&hadc1) != HAL_OK);
-	__HAL_RCC_DMA1_CLK_DISABLE();
+	//while(HAL_ADC_DeInit(&hadc1) != HAL_OK); //HAL DEInit ADC
+	ADC_Deinit_Func();						   //Deinicializacion de ADC por medio de acceso directo a registros
 
-//	__HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
-//	if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0x2000, RTC_WAKEUPCLOCK_RTCCLK_DIV16, 0) != HAL_OK)
-//	{
-//		Error_Handler();
-//	}
+	__HAL_RCC_DMA1_CLK_DISABLE();              //Deshabilitacion de CLK para DMA1
 
-	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
-	HAL_NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);         //Habilitacion de interrupcion por medio de PIN PA15
+	HAL_NVIC_DisableIRQ(DMA1_Channel2_3_IRQn); //Deshabilitacion de interrupciones DMA1
 	HAL_NVIC_DisableIRQ(DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQn);
 
-//	IWDG->KR   = 0x00005555;
-//	IWDG->PR   = 0X6;
-//	IWDG->RLR  = 0X2D3;
-//	while((IWDG->SR & IWDG_SR_RVU) != 0x00u)
-//	HAL_IWDG_Refresh(&hiwdg);
+	HAL_SuspendTick();                         //Suspencion tickSys HAL
 
+	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI); //Entada de modo de bajo consumo STOP2, tener en cuenta en configuration bits para freeze de WatchDOg
 
+	HAL_ResumeTick();							//Regreso de Bajo consumo por medio de corriente Alterna, reestablecimiento de Systick
 
-//sleep_rt:
-
-	HAL_SuspendTick();
-
-	HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
-
-	HAL_ResumeTick();
-//	if(bandera_RTC)
-//	{
-//		bandera_RTC = 0;
-//		goto sleep_rt;
-//	}
-
-	//HAL_IWDG_Refresh(&hiwdg);
-	reconfigura_perif();
+	HAL_IWDG_Refresh(&hiwdg);                   //Clear Watch
+	reconfigura_perif();						//Reconfiguracion de perifericos necesarios
 
 	cnt_veces_muestreo_2 = 0;
 
@@ -221,599 +256,211 @@ grabadoEmergenciaFin:
 	flagsa[7] = 1;// flagsa = 0x81;
 	flagsa[0] = 1;
 	cntseg = 0;
+
+	timeRstBLE = 1;     // Reinicio de maquina de Estados
+
 	for(uint8_t k=0; k<8; k++)
 		flagsBattery[k] = 0;
-
 		//;Apaga Perifericos RGM_07-AGO-2023
-
-
 ibus_ocupado_halt:
 
 
 DoSleep:
-goto error_muestreo;//jp error_muestreo
 
-//;=========================================  Rutina DETECCIÓN DE FLANCO DE SUBIDA
-//;La detección de cruce por cero se realiza por umbral en el pin de MUESTREO.
-
-detecta_flanco:						 //;Más de 50ms sin cruces por cero
-		s_reloj[2] = 0;//bres s_reloj,#2
-
-up_anterior:
-
-		if(s_reloj[0]){	//btjt s_reloj,#0,alto   [actual]	   ;¿El valor de la bandera "actual" es 1?
-			goto alto;
-		}
-		s_reloj[1] = 0;   				//bres s_reloj,#1    ;[anterior]  ;NO: Anterior <- 0
-		goto end_up_anterior;//jra end_up_anterior
-
-alto:
-		s_reloj[1] = 1; 	//bset s_reloj,#1		;[anterior]   ;SI: Anterior <- 1
-
-end_up_anterior:
-
-up_actual:
-		//uint16_t   adcram = 0;
-		//mov ADC1_CR1,#%00100011   ;
-		//mov ADC1_SQR1,#%10000000	;
-		//mov ADC1_SQR2,#%00000000	;
-		//mov ADC1_SQR3,#%00000010	;
-		//mov ADC1_SQR4,#%00000000	;
-		//call capturaAD   ********************CAALL
-		//waux = adcramh;//mov		  waux,adcramh ;
-		//wreg = adcraml;//mov wreg,adcraml ;
-		//ldw     Y,waux       ;
-			// 19-AGO-2024		ADC_Select_CH5 ();
-			// 19-AGO-2024		HAL_ADC_Start(&hadc); // start the adc
-			// 19-AGO-2024		HAL_ADC_PollForConversion(&hadc, 1000); // poll for conversion
-			// 19-AGO-2024		adcram = HAL_ADC_GetValue(&hadc); // get the adc value
-			// 19-AGO-2024		HAL_ADC_Stop(&hadc);
-		// ----------------------Codigo Julio Torres
-//---Toogle  GPIOA->BSRR = GPIO_BSRR_BS_11;
-		//ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
-//		ADC1->CHSELR = ADC_CHSELR_CHSEL5;
-		ADC1->CHSELR = 0;
-
-		ADC1->CHSELR |= ADC_CHSELR_CHSEL9;  // Canal 0
-		//ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
-		//ADC->CCR |= ADC_CCR_VREFEN;
-		capturaAD();
-		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-		//---Toogle  GPIOA->BSRR = GPIO_BSRR_BR_11;
-		// ----------------------Codigo Julio Torres
-
-		asm ("nop");
-		//if(adcramh >= 10){//cpw     Y,#10
-		//if(adcramh >= 20){//cpw     Y,#10
-		//if(adcramh >= 35){// Con el valor de 35 funciona bien la deteccion del theshold
-		if(adcramh >= 35){// Con el valor de 35 funciona bien la deteccion del theshold
-
-			goto pin_cruce_alto;//jruge   pin_cruce_alto
-		}
-		s_reloj[0] = 0;		// bres    s_reloj,#0;
-		goto end_up_actual;//jra     end_up_actual;
-pin_cruce_alto:
-		s_reloj[0] = 1;	 		//bset    s_reloj,#0;
-end_up_actual:
-
-
-determina_flanco: //---------------------------------------------------------?
-		//ld A,s_reloj
-		//and A,#$03
-		//-----if(!(s_reloj[0] | s_reloj[1])){// if((s_reloj & 0x03) == 0x01){	//cp  A,#$01 **************????
-        if((!s_reloj[1]) & (s_reloj[0]) ){// if((s_reloj & 0x03) == 0x01){	//cp  A,#$01 **************????
-
-			goto flanco_subida;			//jreq flanco_subida/ salta si z=1
-		}
-		goto fin_detecta_flanco;//jra fin_detecta_flanco
-
-
-flanco_subida:
-		s_reloj[2] = 1;	//bset    s_reloj,#2								;[b_flancos]	;Activar bandera de flanco de subida
-		//bcpl    PA_ODR,#0					// Test por, prueba
-		//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);	 //28-May-2024: Salida IO7 toogle test
-		cruze_por_cero[0] = 1;			//bset    cruze_por_cero,#0			;Activa bandera de cruce por cero
-
-fin_detecta_flanco:
-
-//;=====================================  FIN Rutina DETECCIÓN DE FLANCO DE BAJADA
-
-		if(s_reloj[2]){			//btjt    s_reloj,#2,pregunta_edo_muestreo
-			goto pregunta_edo_muestreo;
-		}
-		//ld    A,edo_muestreo
-		if(edo_muestreo == 1){//cp    A,#1 ***************???
-			goto muestrea; //jreq  muestrea
-		}
-		goto fin_voltrms;//jp fin_voltrms
-
-
-pregunta_edo_muestreo:
-
-		//ld A,cnt_mues
-		if(cnt_mues == 0){//cp A,#0
-			goto no_error_muestreo;//jreq no_error_muestreo
-		}
-		goto error_muestreo;//jp error_muestreo
-
-
-no_error_muestreo:
-		edo_muestreo = 1; //mov edo_muestreo,#1
-
-
-muestrea:
-	    //ld A,cnt_mues
-		if(cnt_mues != 32 ){ //cp A,#32 ****************
-			goto adq_muesn; //jrne    adq_muesn
-		}
-		cnt_mues = 0;//clr     cnt_mues         ;SI, limpia el contador de muestras
-		edo_muestreo = 0;//mov     edo_muestreo,#0
-		// HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);	 //28-May-2024: Salida IO7 toogle test
-		goto voltaje_rms;//jp      voltaje_rms
-
-adq_muesn:
-		//mov ADC1_CR1,#%00100011
-		//mov ADC1_SQR1,#%10000000
-		//mov ADC1_SQR2,#%00000000
-		//mov ADC1_SQR3,#%00000010
-		//mov ADC1_SQR4,#%00000000
-		//CALL capturaAD
-// 19-AGO-2024		ADC_Select_CH5 ();
-// 19-AGO-2024				HAL_ADC_Start(&hadc); // start the adc
-// 19-AGO-2024		HAL_ADC_PollForConversion(&hadc, 1000); // poll for conversion
-// 19-AGO-2024				adcram = HAL_ADC_GetValue(&hadc); // get the adc value
-// 19-AGO-2024				HAL_ADC_Stop(&hadc);
-		// ----------------------Codigo Julio Torres
-//---Toogle  GPIOA->BSRR = GPIO_BSRR_BS_11;
-		//ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
-//		ADC1->CHSELR = ADC_CHSELR_CHSEL5;
-		ADC1->CHSELR = 0;
-
-		ADC1->CHSELR |= ADC_CHSELR_CHSEL9;  // Canal 0
-		//ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
-		//ADC->CCR |= ADC_CCR_VREFEN;
-		capturaAD();
-		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-		//---Toogle  GPIOA->BSRR = GPIO_BSRR_BR_11;
-		// ----------------------Codigo Julio Torres
-		asm ("nop");
-
-
-		adcramh >>= 1;    			//srlw    Y             ;Convierte la muestra de 10 bits en 9 bits ****************?????
-		adcramh >>= 1; 				//srlw    Y             ;Convierte la muestra de  9 bits en 8 bits ****************???
-
-		//ldw     X,#vl_ram     ;Apunta a la RAM correspondiente de la muestra de Voltaje de Línea
-		//ld      A,XL             ;/
-		//add     A,cnt_mues       ;/
-		//ld      XL,A
-		//ld      (X),A         ;/
-		vl_ram [cnt_mues] = (uint8_t) adcramh;
-		cnt_mues++;			//inc     cnt_mues			;Una muestra más
-
-		// HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);	 //28-May-2024: Salida IO7 toogle test
-
-termina_muestreo:
-		goto fin_voltrms;//jp      fin_voltrms
+	goto error_muestreo;//jp error_muestreo
 
 //;===============================================================================
-//;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Proceso VRMS
-//;Cada muestra de la pila generada con las 32 muestras es multiplicacda por un
-//;factor que relaciona el voltaje medido con el voltaje presente en la entrada,
-//;posteriormente cada muestra multiplicada por el factor es elevada al cuadrado
-//;y es sumada a una varibale que acumula el resultado de la sumatoria para
-//;promediarlo posteriormente. Finalmente se calcula la raíz cuadrada del
-//;resultado del promedio y se transmite por la UART.
+//;El control tiene voltaje de alimentación de CA presente, se pueden realizar
+//;mediciones de voltaje y corriente.
+
+alterna_presente:
+		if(t_filtro_flanco != 0){		//	ld      A,t_filtro_flanco       ;FILTRO DE TIEMPO PARA DETECIÓN DE FLANCO DE BAJADA
+			goto	muestra_0;				// 	jrne    muestra_0               ;continua muestreando antes de detectar FLANCOS
+		}
+		detecta_flanco();			//call    detecta_flanco        //;¿Se detecto un flanco de bajada?
+		if(!s_reloj[2]){			//btjf    s_reloj,#2,muestra_0  ;NO, Continua muestreando
+			goto muestra_0;
+		}
+		t_filtro_flanco = 63;		//mov     t_filtro_flanco,#63   ;VENTANA DE 15.75ms - 16.66ms / .250us = 66.64 SE PIERDEN CICLOS
+		cnt_veces_muestreo = 0;		//clr     cnt_veces_muestreo
+		cnt_mues_ant = cnt_mues;		//mov     cnt_mues_ant,cnt_mues
+		ban_muestreo[0] = 1;	//bset    ban_muestreo,#0     ;Activa bandera que indica el inicio de un nuevo ciclo
+		ban_muestreo[1] = 1;	//bset    ban_muestreo,#1     ;Activa bandera que indica que transcurrio un ciclo para tiempos
+		//mov     c_sigma_cuad_sampl_4_1,sigma_cuad_sampl_4_1
+		//mov     c_sigma_cuad_sampl_3_1,sigma_cuad_sampl_3_1
+		//mov     c_sigma_cuad_sampl_2_1,sigma_cuad_sampl_2_1
+		//mov     c_sigma_cuad_sampl_1_1,sigma_cuad_sampl_1_1
+				  c_sigma_cuad_sampl_1 = sigma_cuad_sampl_1;
+		//mov     c_sigma_cuad_sampl_4_2,sigma_cuad_sampl_4_2
+		//mov     c_sigma_cuad_sampl_3_2,sigma_cuad_sampl_3_2
+		//mov     c_sigma_cuad_sampl_2_2,sigma_cuad_sampl_2_2
+		//mov     c_sigma_cuad_sampl_1_2,sigma_cuad_sampl_1_2
+				  c_sigma_cuad_sampl_2 = sigma_cuad_sampl_2;
+		goto     muestra_0;		//jra     muestra_0
 
 
-voltaje_rms:
-		//sigma_cuad_sampl_1 = 0;			//clr     sigma_cuad_sampl_1
-		//sigma_cuad_sampl_2 = 0;			//clr     sigma_cuad_sampl_2
-		//sigma_cuad_sampl_3 = 0;			//clr     sigma_cuad_sampl_3
-		//sigma_cuad_sampl_4 = 0;			//clr     sigma_cuad_sampl_4
-		sigma_cuad_sampl = 0;
+muestra_0:
+		muestreo_trms();		//call    muestreo_trms
 
-suma_cuad:
-				// waux = 0; //clr waux
-				// ldw X,#vl_ram
-				// ld A,XL
-				// add A,cnt_mues
-				// ld  XL,A
-				// ld A,(X)  ////////////?????
-				wreg= vl_ram[cnt_mues]; //ld wreg,A
-//;=====================================================  Rutina CALCULA SUMATORIA
-//;Llega una muetra de 8 bytes en waux:wreg, la muestra es multiplciacda por un
-//;factor que relaciona el divisor de voltaje y la resolución del ADC.
-//;La muestra se eleva al cuadrado y se acumula en las variables par ala suma de
-//;4 bytes.
-take_sampling:
-//----------------------- Factor
-					//ldw     X,waux
-					//ld      A,eevolt_mul
-	                //eevolt_mul = waux * eevolt_mul;//mul     X,A ***************************????
-					uint16_t	foo = 0;
-					//foo = (uint16_t)(wreg * eevolt_mul);
-					foo = (uint16_t)(wreg * reevolt_mul);
-					//resul = (uint16_t)(wreg * 100);
-					//ld      A,eevolt_div
-					//div     X,A
-	                //eevolt_div = waux / eevolt_div; //************************************?????
-					//foo = foo / eevolt_div;
-					foo = foo / reevolt_div;
-					//resul = resul / 64;
-					//waux = eevolt_div; //ldw waux,X
-					//resulh = waux;//ldw resulh,X
+//;===============================================================================
+//;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  Proceso CALCULA_TRMS
 
-//------------------------Cuad-----------------------------
-			   	//level_1st_mult_H  primer byte
-	                //ld      A,wreg
-	                //ld      XL,A
-					//ld      A,resull
-					//mul     X,A
-					//resull = wreg * resull;
-	            	//ldw     level_1st_mult_H,X
-	                //level_1st_mult_H = resull;
+calcula_trms:   //;Con las muestras adquiridas, calcula los valores trms de i,v
+
+		if(ban_muestreo[1]){			//btjt    ban_muestreo,#1,cant_muestras    ;¿Ha transcurrido un ciclo?
+			goto cant_muestras;
+		}
+		goto	fin_calcula_trms;		//jp     fin_calcula_trms                ;NO, termina calculo de trms
 
 
-	            //;level_2st_mult_H  segundo byte
-					//ld      A,waux
-					//ld      XL,A
-					//ld      A,resull
-					//mul     X,A
-	                // resull = waux * resull;
-	                //level_2st_mult_H = resull; //ldw     level_2st_mult_H,X
+cant_muestras:       // ;-----------------------  ¿Cantidad de muestras adecuadas?
+		ban_muestreo[1] = 0;					//bres    ban_muestreo,#1  ;Limpia bandera que indica que transcurrio 1 ciclo
+
+		goto	calcula_itrms;					//jp      calcula_itrms
+
+		if(cnt_mues_ant == 64){			//;¿Cantidad de muestras adecuada? Depende modelo
+			goto calcula_itrms;			//;Equipos rectificador de onda completa 64 Muestras
+		}								//jreq    calcula_itrms       ;Muestreo válido, calcula itrms
+		goto	fin_calcula_trms;	    //jp      fin_calcula_trms  ;Fin proceso sin incluir muestra para promediar
 
 
-	            //;level_3st_mult_H  segundo byte
-					//ld      A,wreg
-					//ld      XL,A
-	                //ld      A,resulh
-	                //resulh = wreg * resulh; //mul     X,A -------------------------------?
-	                //level_3st_mult_H = resulh; //ldw     level_3st_mult_H,X
+calcula_itrms:	    //;--------  Calcula la corriente trms de 1 ciclo en miliampers
+//		mov     c_sigma_cuad_sampl_4,c_sigma_cuad_sampl_4_1   ;CANAL 1 es la corriente
+//		mov     c_sigma_cuad_sampl_3,c_sigma_cuad_sampl_3_1   ;/
+//		mov     c_sigma_cuad_sampl_2,c_sigma_cuad_sampl_2_1   ;/
+//		mov     c_sigma_cuad_sampl_1,c_sigma_cuad_sampl_1_1   ;/
+		c_sigma_cuad_sampl = c_sigma_cuad_sampl_1;
+		prom_muestras();			// call    prom_muestras   ;Calcula el promedio de las muestras, utiliza datos de la suma acumulada
+		calcula_raiz();				// call    calcula_raiz    ;Calcula la raíz cuadrada del promedio y regresa en X el resultado
+
+ajuste_ima:      //;-----  Aplica factor a dato de 2 bytes (X) para convertir a mA
+		fact_mul = 55;			//mov     fact_mul,#55    ;eecorr_mulsal     ;Aplica factor, el resultado regresa en X
+		fact_div = 2; 			//mov     fact_div,#2     ;eecorr_divsal     ;/
+		aplica_factor();  		//call    aplica_factor              ;/
 
 
-	             //level_4st_mult_H  segundo byte
-					//ld      A,waux
-					//ld      XL,A
-					//ld      A,resulh //----------------------------------------------?
-					//mul     X,A
-	                //resulh = waux*resulh;
-	                //level_4st_mult_H = resulh;//ldw level_4st_mult_H,X
-					level_4st_mult = (uint32_t)(foo * foo);
-	 //----------------------------------------------------------------------------------------------????
-	               //level_1st_result_L = level_1st_mult_L;//mov level_1st_result_L, level_1st_mult_L -----------?
-	                //ld A,level_1st_mult_H
-	               //level_2st_mult_L = level_1st_mult_H + level_2st_mult_L;//add A,level_2st_mult_L
-	               // wreg = 0;//clr     wreg
-	               // goto carry_1;//jrnc    carry_1 --------------------?
-	               // wreg++; //inc  wreg
+acumula_muestra_i:      //;------------  Suma acumulada de 8 muestras de corriente
+//		  mov     waux,acu8m_corriente_1     ;Realiza la suma acumulada de 8 muestras
+//		  mov     wreg,acu8m_corriente_2     ;Suma entre X y acu8m_corriente_[1:3]
+//			call    suma_acumulada_8m          ;/
+//		  mov     acu8m_corriente_1,waux     ;/
+//		  mov     acu8m_corriente_2,wreg     ;/
+		  acu8m_corriente = acu8m_corriente + STM8_16_X;
+
+calcula_vrms:      //;---------------  Calcula el voltaje trms de 1 ciclo en volts
+//		    mov     c_sigma_cuad_sampl_4,c_sigma_cuad_sampl_4_2   ;CANAL 2 es el voltaje
+//		    mov     c_sigma_cuad_sampl_3,c_sigma_cuad_sampl_3_2   ;/
+//		    mov     c_sigma_cuad_sampl_2,c_sigma_cuad_sampl_2_2   ;/
+//		    mov     c_sigma_cuad_sampl_1,c_sigma_cuad_sampl_1_2   ;/
+			c_sigma_cuad_sampl = c_sigma_cuad_sampl_2;
+			prom_muestras();			// call    prom_muestras   ;Calcula el promedio de las muestras, utiliza datos de la suma acumulada
+			calcula_raiz();				// call    calcula_raiz    ;Calcula la raíz cuadrada del promedio y regresa en X el resultado
+
+acumula_muestra_v:      //;------------  Suma acumulada de 8 muestras de corriente
+//			  mov     waux,acu8m_voltaje_1       ;Realiza la suma acumulada de 8 muestras
+//			  mov     wreg,acu8m_voltaje_2       ;Suma entre X y acu8m_corriente_[1:3]
+//			  call    suma_acumulada_8m          ;/
+//			  mov     acu8m_voltaje_1,waux       ;/
+//			  mov     acu8m_voltaje_2,wreg       ;/
+			acu8m_voltaje = acu8m_voltaje + STM8_16_X;
 
 
-//carry_1:
 
-	             //add A,level_3st_mult_L
-	             //ld level_1st_result_H,A
-				 //level_1st_result_H = level_1st_mult_H + level_3st_mult_L;
-	             //goto carry_2;//jrnc carry_2
-	            // wreg++;//inc wreg
-	             //
-//carry_2:
-	          //ld A,wreg
-	          //add	A,level_2st_mult_H
-	         // level_2st_mult_H = wreg + level_2st_mult_H;
-	          //wreg = 0;//clr wreg
-	         // goto carry_3;//jrnc    carry_3
-	         // wreg++;//inc     wreg
+esp_8muestras:       //;------------  Espera 8 muestras para actualizar mediciones
+			cnt_mues_ciclos++;		//inc     cnt_mues_ciclos            ;Una muestra más
+			if(cnt_mues_ciclos < 8){			//ld      A,cnt_mues_ciclos          ;¿Ya transcurrieron 8 muestras?
+				goto fin_calcula_trms;			//cp      A,#8
+			}									//jrult   fin_calcula_trms           ;NO, termina proceso
 
-//carry_3:
-	         //level_3st_mult_H = level_2st_mult_H + level_3st_mult_H;//add A,level_3st_mult_H -----
-	         //goto carry_4;//jrnc carry_4
-	         //wreg++;//inc wreg
+			cnt_mues_ciclos = 0;				// clr     cnt_mues_ciclos          ;Limpia el contador de muestras de ciclos
 
-//carry_4:
-	          //add A,level_4st_mult_L
-	         //;;;ld level_2st_result_L,A
-	         //level_2st_result_L = level_3st_mult_H + level_4st_mult_L;
-	         //goto carry_5;//jrnc carry_5
-	         //wreg++; //inc wreg
-//carry_5:
-	          //ld A,wreg
-	          //add A,level_4st_mult_H
-	          //ld level_2st_result_H,A
-	          //level_2st_result_H = wreg + level_4st_mult_H;
-
-	//------------------------sigma----------------------------------------------------------------------------------
-
-	          //ldw	X,level_1st_result_H
-	          //addw X,sigma_cuad_sampl_2
-	          //ldw  sigma_cuad_sampl_2,X
-	          //sigma_cuad_sampl_2 = level_1st_result_H + sigma_cuad_sampl_2;
-	          //waux = 0;//clr waux
-	          //wreg = 0;//clr wreg
-	          //goto not_inc_byte3_2;//jrnc not_inc_byte3_2
-	         // wreg++;//inc  wreg
-
-not_inc_byte3_2:
-			//ldw X,waux
-			//addw X,level_2st_result_H
-			//level_2st_result_H = waux + level_2st_result_H;
-			//addw X,sigma_cuad_sampl_4
-			//ldw sigma_cuad_sampl_4,X
-			//sigma_cuad_sampl_4 = waux + sigma_cuad_sampl_4;
-              sigma_cuad_sampl +=  level_4st_mult;
-
-	//================================================= FIN Rutina CALCULA SUMATORIA
-
-			cnt_mues++;//inc cnt_mues
-			//ld      A,cnt_mues
-			if(cnt_mues >= 32){//cp A,#32 -------------------------?
-				goto sumatoria_completa;//jreq sumatoria_completa
-			}
-			goto suma_cuad;//jp suma_cuad
-
-sumatoria_completa:
-			cnt_mues = 0;//clr cnt_mues
-
+//			mov     waux,acu8m_voltaje_1     ;SI, calcula el promedio de voltaje (8m)
+//			mov     wreg,acu8m_voltaje_2     ;/
+//			call    calcula_prom_8m          ;/
+//			ldw     voltaje_trms,X           ;Coloca el voltaje real medido en variable
+			voltaje_trms = (uint16_t)(acu8m_voltaje/8);
+//			;-------------------------------------------------------------------------------
+//			;RM_20241206 Ajuste para voltajes mayores a 180Vca
+//			clr     waux                     ;Ajusta la medición de voltaje para
+//			mov     wreg,#180                ;valores mayores a 180Vca
+//			cpw     X,waux                   ;/
+//			jrule   coloca_voltaje           ;/
+//			decw    X                      ;/
+//			decw    X                      ;/
+//
+//			;RM_20241206 Truncamiento de medición de voltaje a 1 byte para desiciones
+//			clr     waux                     ;Valida que el voltaje medido este
+//			mov     wreg,#254                ;en un rango de 0-254 para tomar decisiones
+//			cpw     X,waux                   ;y enviar por BLE
+//			jrule   coloca_voltaje           ;/
+//			ldw     X,#254                 ;/
+coloca_voltaje:                      		//;/
+			//	ld      A,XL                     ;/
+			//	ld      volt_trms,A              ;/
+			volt_trms = (uint8_t)voltaje_trms;
 //;-------------------------------------------------------------------------------
-//;ldw    Y,sigma_prom_h   ;Pregunta si la suma acumulada es mayor de 254
-//;cpw    Y,#64516
-//;jruge  mayor_255
-//;Sumatoria para 254 Volts = 2,064,512 [1F8080]
+//			clr     acu8m_voltaje_1          ;Limpia la suma acumulada de muestras
+//			clr     acu8m_voltaje_2		       ;/
+			acu8m_voltaje = 0;
 
 
-			//ld A,sigma_cuad_sampl_3
-			//if(sigma_cuad_sampl_3 <= 0x1F){//cp A,#$1F
-			//	goto segundo_dato;//jrule segundo_dato
-			//}
-			//goto mayor_254;//jp mayor_254
-segundo_dato:
-			//ld A,sigma_cuad_sampl_3
-			//if(sigma_cuad_sampl_3 == 0x1F){//cp A,#$1F
-			//	goto segundo_dato2;//jreq segundo_dato2
-			//}
-			//goto dato_rango;//jp dato_rango
-
-segundo_dato2:
-			//ld      A,sigma_cuad_sampl_2
-			//if(sigma_cuad_sampl_2  < 0x80){//cp      A,#$80
-			//	goto dato_rango;//jrult   dato_rango
-			//}
-			//jp     mayor_254
-mayor_254:
-			//ldw    X,#65025          ;255 elevado al cuadrado
-			//sigma_prom_h = 65025;//ldw     sigma_prom_h,X -------------------------------????
-			//goto fin_voltrms; //jp   fin_voltrms
+//			mov     waux,acu8m_corriente_1   ;Calcula el promedio de corriente (8m)
+//			mov     wreg,acu8m_corriente_2   ;/
+//
+//			call    calcula_prom_8m          ;/
+			STM8_16_X = (uint16_t)(acu8m_corriente/8);
+//			subw    X,#0      ;eecorr_ajuste          ;Realiza el ajuste de corriente
+//			ldw     corriente_trms,X         ;/
+			corriente_trms = STM8_16_X;
+//			;ldw     variable_corriente,X
+//			clr     acu8m_corriente_1        ;Limpia la suam acumulada de muestras
+//			clr     acu8m_corriente_2        ;/
+			acu8m_corriente = 0;
 
 
-dato_rango:
-
-prom_32mues:
-	        //A = 5;//ld A,#5
-taking_prom:
-			// sigma_cuad_sampl_4 = sigma_cuad_sampl_4 >> 1;//srl sigma_cuad_sampl_4
-			// sigma_cuad_sampl_3 = (sigma_cuad_sampl_3 >> 1) | (sigma_cuad_sampl_3 & 1) << 7;//rrc sigma_cuad_sampl_3
-			// sigma_cuad_sampl_2 = (sigma_cuad_sampl_2 >> 1) | (sigma_cuad_sampl_2 & 1) << 7;//rrc sigma_cuad_sampl_2
-			// sigma_cuad_sampl_1 = (sigma_cuad_sampl_1 >> 1) | (sigma_cuad_sampl_1 & 1) << 7;//rcc sigma_cuad_sampl_1
-			//   A--;//dec  A
-			//	   if(A != 0){//tnz A
-			//		   goto taking_prom;//jrne taking_prom
-			//	   }
-				   //ldw X,sigma_cuad_sampl_2
-				   //ldw	sigma_prom_h,X
-			//	   sigma_prom_h = sigma_cuad_sampl_2;
-			sigma_cuad_sampl  >>= 5;
-
-
-	//=========================================================  Rutina RAIZ CUADRADA
-raiz:
-root_square:
-_raiz:
-
-		//OFST_1; //OFST_1: equ 4 -----------------------?  ************************
-
-	                  //pushw x
-	                  //subw	sp,#4
-
-					  //ldw	(OFST_1-1,sp),x
-					  //clrw	x
-					  //ldw	(OFST_1-3,sp),x
-					 //jra	raiz_2
-
-
-
-
-	//raiz_1: //-------------------------------??
-
-	                 //ldw x, (OFST_1-1,sp)
-					 //ldw (OFST_1-3,sp),x
-				//FST_1 - 1  <= OFST_1;
-
-
-					 //ldw x, (OFST_1+1,sp)
-	                 //ldw y (OFST_1-1,sp)
-
-	                 //divw  x,y;
-	                 //addw x,(OFST_1-1,sp)
-					 //srlw x
-					 //ldw (OFST_1-1,sp),x
-
-
-
-
-	//raiz_2:
-	//                ldw x,(OFST_1-3, sp)
-	//				cpw	x,(OFST_1-1,sp)
-	//				jreq square ready
-	//
-	//				incw x
-	//				cpw x,(OFST_1-1,sp)
-	//				jrne raiz_1
-
-
-square_ready:
-	//              ldw x,(OFST_1-1, sp)
-	//				addw sp,#6
-
-					//ld A, XL
-					//ld volt_trms, A
-					//volt_trms = sigma_prom_h;
-					volt_trms = (uint8_t)(sqrt(sigma_cuad_sampl));
-					cnt_veces_muestreo = 0;//clr cnt_veces_muestreo
-
-					flagsLogger2[0] = 0;//bres flagsLogger2, #0
-					flagsLogger2[1] = 0;//bres flagsLogger2, #1
-					flagsLogger2[2] = 0;//BRES flagsLogger2, #2
-
-					// SAlto por lo mientras
-					//goto fin_calibra_voltaje;
-					// SAlto por lo mientras
-
-//;-------------------- Falta programa esta parte ---------------------------------------
-calibracion_voltaje:
-	        //ld A,eef_voltaje
-			asm ("nop");
-			//if(eef_voltaje != 0x3C ){//cp A, #$3c					¿Esta calibrado en voltaje el equipo?
-			if(reef_voltaje != 0x3C){
-				goto realiza_cal_volt; //jrne realiza_cal_volt
+voltaje_calibrado:
+			if(reef_voltaje == 0x3C){
+				goto corriente_calibrada; //		jreq    grabadoEmergencia_00         ;
 			}
-			goto fin_calibra_voltaje;
-
-realiza_cal_volt:
-
-//;RM_20230908 Mejoras para calibración de voltaje, espera 2 segundos antes de calibrar
-			muestras_cal_volt++; //inc     muestras_cal_volt
-			if(muestras_cal_volt >= 60){//cp  A,#60
-				goto espera_iguales;//jruge   espera_iguales
-			}
-			goto fin_calibra_voltaje;// jp fin_calibra_voltaje
-
-espera_iguales:
-
-			if(muestras_cal_volt != 60) {//  cp  A,#60
-				goto segunda_muestra;//	jrne   segunda_muestra
-			}
-			voltaje_ant_cal = volt_trms;//	mov voltaje_ant_cal,volt_trms
-			goto fin_calibra_voltaje;//jp  fin_calibra_voltaje
-
-segunda_muestra:
-
-			if(muestras_cal_volt != 61){//cp      A,#61
-				goto tercera_muestra;////jrne    tercera_muestra
-			}
-			//	  ld      A,volt_trms
-			if(volt_trms != voltaje_ant_cal){//cp  A,voltaje_ant_cal
-				//**********************************************
-				goto fin_calibra_voltaje;// MAN DEBUG
-				//**********************************************
-				goto calibra_reset;//jrne  calibra_reset
-
-			}
-			goto fin_calibra_voltaje;// jp fin_calibra_voltaje
-
-tercera_muestra:
-			//	ld      A,volt_trms
-			if(volt_trms == voltaje_ant_cal){//cp  A,voltaje_ant_cal
-				goto calibracion_valida;//jreq calibracion_valida
-			}
-			//**********************************************
-			goto fin_calibra_voltaje;// MAN DEBUG
-			//**********************************************
-			goto calibra_reset;//jp calibra_reset
+			calibra_voltaje();		//call    calibra_voltaje          ;NO, calibra voltaje
 
 
-calibracion_valida:
+corriente_calibrada:
+//;ld      A,eecorr_calibra           ;¿Esta calibrado en corriente el equipo?
+//;cp      A,#$3C                     ;/
+//;jreq    fin_calcula_trms           ;SI, el equipo ya fue calibrado, continua
+//	  ;call    calibra_corriente        ;NO, calibra corriente
 
-			//  clrw    X  ------------------------??
-			//ld      A,volt_trms
-			//ld      XL,A
 
-v_ubajo_cv:
-			//ldw Y,#60
-			//ldw waux,Y
-			//waux = 60;
-			if(volt_trms > 60 ){//cpw X,waux -------x =   ;Compara la medición sin factor con el umbral bajo
-				goto v_ualto_cv;//jrugt  v_ualto_cv
-			}
-			goto calibra_reset;//jp   calibra_reset
-
-v_ualto_cv:
-
-			//ldw     Y,#80
-			//ldw     waux,Y
-			//waux = 80;
-			if(volt_trms > 80 ){//cpw     X,waux, x  ;Mayor o igual al umbral alto, resistores mal soldados o inadecuados
-				goto calibra_reset;//jruge   calibra_reset
-			}
-			wreg = 100;					//mov  wreg,#100
-			waux = volt_trms;			//mov  waux,volt_trms
-
-graba_calvolt:
-
-desbloquea_eeprom:
-			uint32_t AddressDestination;
-			uint32_t Data ;
-//			HAL_FLASHEx_DATAEEPROM_Unlock();
-
-	                    //btjt FLASH_IAPSR,#3,eeprom_desbloqueada
-eeprom_bloqueada:		//----------------------------------registro interno
-	                      //mov FLASH_DUKR,#$AE
-	                      //mov  FLASH_DUKR,#$56
-eeprom_bloqueada_1:
-	                     //btjf FLASH_IAPSR,#3,eeprom_bloqueada_1  ------------?
-eeprom_desbloqueada:
-			//ld  A, wreg
-			//ldw  X, #eevolt_mul
-			// (eevolt_mul) = wreg; //ld (X), A
-			//Data = (uint32_t)wreg;											//;Guarda la variable de multiplicación en EEPROM
-			//AddressDestination = &eevolt_mul;
-			wreeprom(wreg,&eevolt_mul);
-			reevolt_mul = wreg;
-
-//			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
-			//HAL_IWDG_Refresh( &hiwdg );
-graba_1:
-	         //btjt FLASH_IAPSR,#2,graba_1 ------------------------registro
-
-			//ld  A,waux
-			 //ldw  X,#eevolt_div
-			 //ld	(X),A
-			//Data = (uint32_t)waux;										//;Guarda la variable de división en EEPROM
-			//AddressDestination = &eevolt_div;
-			wreeprom(waux,&eevolt_div);
-			reevolt_div = waux;
-//			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
-			//HAL_IWDG_Refresh( &hiwdg );
-graba_2:
-	         //btjt	FLASH_IAPSR,#2,graba_2  ----------------registro
-
-			// ld  A,#$3C
-			//ldw X,#eef_voltaje
-			//ld (X),A
-			//Data = (uint32_t)0x3C;										//;Indica que ya se realizo calibración de voltaje en EEPROM
-			//AddressDestination = &eef_voltaje;
-//			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
-			wreeprom(0x3C,&eef_voltaje);
-			reef_voltaje = 0x3C;
-
-			//HAL_IWDG_Refresh( &hiwdg );
-
-graba_3: //----------------------------------registro
-	        //btjt FLASH_IAPSR,#2,graba_3
-	        // mov FLASH_IAPSR,#$00	   ;Bloquea la EEPROM inmediatamente
-//			HAL_FLASHEx_DATAEEPROM_Lock();
-	        goto fin_calibra_voltaje;//jp fin_calibra_voltaje
-
-calibra_reset:
-			asm ("nop");
-			asm ("nop");
-	        goto calibra_reset;//jp      calibra_reset
-
-fin_calibra_voltaje:
-	        goto fin_voltrms;// jp fin_voltrms
 error_muestreo:
-			cnt_mues = 0;//clr cnt_mues
-			cnt_veces_muestreo = 0;//clr cnt_veces_muestreo
-			edo_muestreo = 0;//mov edo_muestreo,#0
-fin_voltrms:
+fin_calcula_trms:
+
+
+			if(GetRegFlagState(Plantilla[numSens],f_senCo)){		//;¿Se usará el TRANSDUCTOR de corriente de IMBERA?
+				goto	selecciona_transductor;
+			}
+			//; con sensor de corriente deshabilitado la corriente es cero
+											//clrw		X
+			variable_corriente = 0;			//ldw     variable_corriente,X
+			goto	fin_calcula_trms_1;		//jra     fin_calcula_trms_1
+selecciona_transductor:
+			if(GetRegFlagState(Plantilla[eelogicos2],5)){		//btjt    eelogicos2,#5,transductor_ELTEC
+				goto	transductor_ELTEC;
+			}
+		    										//ldw     X,corriente_IMB
+			variable_corriente = corriente_IMB;		//ldw     variable_corriente,X
+			goto 	fin_calcula_trms_1;	    		//jra     fin_calcula_trms_1
+transductor_ELTEC:
+													//ldw     X,corriente_trms
+			variable_corriente = corriente_trms;	//ldw     variable_corriente,X
+
+
+
+fin_calcula_trms_1:
+//;jp      inicio_recurrente
+
+//;>>>>>>>>>>>>>>>>>>>>><>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  FIN Proceso CALCULA_TRMS
+//;===============================================================================
 
 
 }
@@ -821,7 +468,6 @@ fin_voltrms:
 void ADC_Deinit_Func()
 {
  	const uint32_t tmp_adc_is_disable_on_going = ((ADC1->CR & ADC_CR_ADDIS) != 0) ? 1UL : 0UL;
-
 
 	if (((ADC1->CR & ADC_CR_ADEN) != 0) && (tmp_adc_is_disable_on_going == 0UL))
 	{

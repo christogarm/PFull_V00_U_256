@@ -89,6 +89,10 @@ int presc_tick_10ms = 0;		// contador prescala 10ms
 int presc_tick_100ms = 0;		// contador prescala 100ms
 int presc_tick_1s = 0;			// contador prescala 1s
 
+
+uint16_t variable_corriente = 0;         //Variable que despliega el resultado
+
+
 uint8_t		ProcesosC =0 ;							// Procesos C				  ;// 10-FEB-2022	 Contador de procesos para C
 
 uint8_t		StateSleep =0 ;	 // MRG_2023-JUL-26
@@ -154,15 +158,93 @@ uint16_t PNU_0x320C = 0;						// 14-Ene-2022:		Comando Ventilador activar ciclos
 //VARIABLES PARA MEDICI�N DE VOLTAJE RM_20220418
 //uint8_t s_reloj = 0;        //Frecuencia de la l�nea
 _Bool s_reloj[3] = {0};
-uint8_t cnt_mues = 0;           //Contador de muestras
 
+
+uint8_t fact_mul               = 0; //;-Factor multiplicativo aplicado a muestras
+uint8_t fact_div               = 0; //;-Factor división aplicado a muestras
+
+
+uint8_t cnt_mues = 0;           //Contador de muestras
+uint8_t cnt_mues_ant  = 0; 		//;-Respalo de cont muestras cuando es nuevo ciclo
+uint8_t cnt_mues_ciclos  = 0; //;-Contador muestras de ciclo promedio (8 ciclos)
+
+
+_Bool ban_muestreo  [8] = {0}; //;Banderas para indicar el estado del muestreo
+
+
+
+//uint8_t acu8m_voltaje_1        = 0; //;-Acumulado para 8 muestras de voltaje
+//uint8_t acu8m_voltaje_2        = 0; //;-El voltaje es de 2 bytes, la suma
+//uint8_t acu8m_voltaje_3        = 0; //;-Acumulada podría ser de 3 bytes
+uint32_t acu8m_voltaje   = 0; //;-Acumulado para 8 muestras de voltaje
+
+//uint8_t acu8m_corriente_1      = 0; //;-Acumulado para 8 muestras de corriente
+//uint8_t acu8m_corriente_2      = 0; //;-La corriente es de 2 bytes, la suma
+//uint8_t acu8m_corriente_3      = 0; //;-Acumulada podría ser de 3 bytes
+uint32_t acu8m_corriente = 0; //Acumulado para 8 muestras de corriente
+
+uint16_t voltaje_trms  = 0; //;Voltaje trms medido en V
+uint16_t corriente_trms  = 0; //;;Corriente trms medida en mA
+
+
+uint8_t  volt_trms = 0;
+uint8_t  edo_muestreo = 0;
+
+//uint8_t sigma_cuad_sampl_4     = 0; //;Almacena la suma acumulada de las muestras
+//uint8_t sigma_cuad_sampl_3     = 0; //;elevadas al cuadrado, máximo 4 BYTES
+//uint8_t sigma_cuad_sampl_2     = 0; //;Variables generales utilizadas en take_sampling
+//uint8_t sigma_cuad_sampl_1     = 0; //;/
 uint32_t sigma_cuad_sampl = 0; //valor de sampling sumado
+
+//uint8_t c_sigma_cuad_sampl_4   = 0; //;Almacena la suma acumulada de las muestras
+//uint8_t c_sigma_cuad_sampl_3   = 0; //;elevadas al cuadrado, máximo 4 BYTES
+//uint8_t c_sigma_cuad_sampl_2   = 0; //;Eventualmente contienen el promedio
+//uint8_t c_sigma_cuad_sampl_1   = 0; //;Se utiliza en las rutinas promedio y raíz
+uint32_t c_sigma_cuad_sampl = 0; //valor de sampling sumado
+
+//uint8_t sigma_cuad_sampl_4_1   = 0; //;Almacena la suma acumulada de las muestras
+//uint8_t sigma_cuad_sampl_3_1   = 0; //;elevadas al cuadrado, máximo 4 BYTES
+//uint8_t sigma_cuad_sampl_2_1   = 0; //;CANAL 1 Variables asignadas para ese canal
+//uint8_t sigma_cuad_sampl_1_1   = 0; //;/
+//uint8_t sigma_cuad_sampl_4_2   = 0; //;Almacena la suma acumulada de las muestras
+//uint8_t sigma_cuad_sampl_3_2   = 0; //;elevadas al cuadrado, máximo 4 BYTES
+//uint8_t sigma_cuad_sampl_2_2   = 0; //;CANAL 2 Variables asignadas para ese canal
+//uint8_t sigma_cuad_sampl_1_2   = 0; //;/
+uint32_t sigma_cuad_sampl_1 = 0; //valor de sampling sumado
+uint32_t sigma_cuad_sampl_2 = 0; //valor de sampling sumado
+
+//uint8_t c_sigma_cuad_sampl_4_1 = 0; //;Almacena la suma acumulada de las muestras
+//uint8_t c_sigma_cuad_sampl_3_1 = 0; //;elevadas al cuadrado, máximo 4 BYTES
+//uint8_t c_sigma_cuad_sampl_2_1 = 0; //;CANAL 1 Variables asignadas para ese canal
+//uint8_t c_sigma_cuad_sampl_1_1 = 0; //;/
+//uint8_t c_sigma_cuad_sampl_4_2 = 0; //;Almacena la suma acumulada de las muestras
+//uint8_t c_sigma_cuad_sampl_3_2 = 0; //;elevadas al cuadrado, máximo 4 BYTES
+//uint8_t c_sigma_cuad_sampl_2_2 = 0; //;CANAL 2 Variables asignadas para ese canal
+//uint8_t c_sigma_cuad_sampl_1_2 = 0; //;/
+uint32_t c_sigma_cuad_sampl_1 = 0; 	  //valor de sampling sumado
+uint32_t c_sigma_cuad_sampl_2 = 0; 	  //valor de sampling sumado
+
 uint32_t level_4st_mult = 0;
 
 uint8_t  vl_ram [32] = {0};
+
+//uint8_t ram_h                  = 0; //;Registro de almacenamiento temporal de ADC
+//uint8_t ram_l                  = 0; //;Registro de almacenamiento temporal de ADC
+uint16_t	 ram_h;
+
 uint8_t  cnt_veces_muestreo =	0;
-uint8_t  volt_trms = 0;
-uint8_t  edo_muestreo = 0;
+
+
+uint8_t  cnt_2ms_corrIMB =	0;
+uint8_t cnt_muestras_corrIMB   = 0;
+uint16_t muestra_corrIMB       = 0;
+uint16_t mcorr_ponderada_2     = 0;
+uint16_t mcorr_ponderada_1     = 0;
+uint16_t corriente_IMB         = 0;
+
+
+
+
 
 
 //---------------------------
@@ -409,15 +491,20 @@ uint8_t		retzc_ms_compresor;		  //RM_20220913 Contador de retardo al cruce por c
 uint8_t		retzc_ms_deshielo;			//RM_20220913 Contador de retardo al cruce por cero para DESHIELO
 uint8_t		retzc_ms_ventilador;		//RM_20220913 Contador de retardo al cruce por cero para VENTILADOR
 uint8_t		retzc_ms_lampara;				//RM_20220913 Contador de retardo al cruce por cero para L??MPARA
-_Bool cruze_por_cero [5] = {0}; // uint8_t		cruze_por_cero;  				//RM_20220913 Banderas para cruce por cero
+_Bool cruze_por_cero [8] = {0}; // uint8_t		cruze_por_cero;  				//RM_20220913 Banderas para cruce por cero
 //  		cruze_por_cero_Bit_0 = 0;			//Detectar cruce por cero
 //  		cruze_por_cero_Bit_1 = 0;			//COMPRESOR por cruece por cero
 //  		cruze_por_cero_Bit_2 = 0;			//DESHILEO por cruece por cero
 //  		cruze_por_cero_Bit_3 = 0;			//VENTILADOR por cruece por cero
 //  		cruze_por_cero_Bit_4 = 0;			//LAMPARA por cruece por cero
 
+uint8_t		cntCiclosCmp;			//RM_20230421
+
+
 uint8_t		muestras_cal_volt;      //RM_20230908 Para mejorar la calibración de voltaje
 uint8_t		voltaje_ant_cal;        //RM_20230908 Para mejorar la calibración de voltaje
+
+
 
 uint8_t		ctlmemo = 0;				//08/FEB/2022		DS.B 1         ;0x00;	Registro de control de manejo de memoria EEPROM 0xAA = Grabar; cualquier otra cosa = leer
 uint8_t		cntmemo = 0;				//08/FEB/2022		DS.B 1         ;0x00;	Puntero de datos de memoria EEPROM
@@ -443,11 +530,11 @@ uint8_t	Plantilla [128] = {
 		[t8_H]=highByte(0),    					[t8_L]=lowByte(0), 					//uint16_t		t8_w = 0;					//
 		[defrResetTemp_H]=highByte(0),  		[defrResetTemp_L]=lowByte(0), 		//uint16_t		defrResetTemp = 0;//
 		[defrStartTemp_H]=highByte(0), 			[defrStartTemp_L]=lowByte(0),		//uint16_t		defrStartTemp = 0;					//08/FEB/2022		DS.W 1	;	equ	$0115	;	277 d	;tA_W
-		[defrStartTempAmb_H]=highByte(0),   	[defrStartTempAmb_L]=lowByte(0),	//uint16_t		defrStartTempAmb = 0;					//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
+		[tempRetCo_H]=highByte(0),   			[tempRetCo_L]=lowByte(0),	//uint16_t		defrStartTempAmb = 0;					//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
 		[tC_H]=highByte(0),     				[tC_L]=lowByte(0), 					//uint16_t		tC_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$0119	;	281 d	;tC_W
 		[difAhorro1_H]=highByte(0),     		[difAhorro1_L]=lowByte(0), 			//uint16_t		difAhorro1 = 0;		//08/FEB/2022		DS.W	1	;	tD
 		[difAhorro2_H]=highByte(0),     		[difAhorro2_L]=lowByte(0), 			//uint16_t		difAhorro2 = 0;		//08/FEB/2022		DS.W	1	;	tE
-		[tF_H]=highByte(0),    					[tF_L]=lowByte(0), 					//uint16_t		tF_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$011F	;	287 d	;tF_W
+		[alarmaIny_H]=highByte(0),    			[alarmaIny_L]=lowByte(0), 					//uint16_t		tF_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$011F	;	287 d	;tF_W
 
 		//;-------------------  GRUPO DE PAR�?METROS A (Alarmas)  -----------------------------------
 		//;-------------------  Parámetros de Alarma  ------------------------------------
@@ -485,7 +572,7 @@ uint8_t	Plantilla [128] = {
 		[timeHold]=0, 								//uint8_t		timeHold = 0;						//08/FEB/2022		DS.B 1	;	equ	$014C	;	332 d	;LA -
 		[timeDefi]=0, 								//uint8_t		timeDefi = 0;						//08/FEB/2022		DS.B 1	;	equ	$014D	;	333 d	;LB -
 		[alarmDelay]=0, 							//uint8_t		alarmDelay = 0;						//08/FEB/2022		DS.B 1	;	equ	$014E	;	334 d	;LC -
-		[LD_b]=0, 									//uint8_t		LD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$014F	;	335 d	;LD -
+		[timeRetCo]=0, 									//uint8_t		LD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$014F	;	335 d	;LD -
 		[tmDoorEvent]=0, 							//uint8_t		tmDoorEvent = 0;						//08/FEB/2022		DS.B 1	;	equ	$0150	;	336 d	;LE -
 		[loggerTime]=0,	 							//uint8_t		loggerTime = 0;						//08/FEB/2022		DS.B 1	;	equ	$0151	;	337 d	;LF -
 
@@ -501,11 +588,11 @@ uint8_t	Plantilla [128] = {
 		[numSens]=0, 								//uint8_t		numSens = 0;						//08/FEB/2022		DS.B 1	;	equ	$0159	;	345 d	;C7 -
 		[nivDpyFail]=0, 							//uint8_t		nivDpyFail = 0;						//08/FEB/2022		DS.B 1	;	equ	$015A	;	346 d	;C8 -
 		[logicos2]=0, 								//uint8_t		logicos2 = 0;						//08/FEB/2022		DS.B 1	;	equ	$015B	;	347 d	;C9 -
-		[CA_b]=0, 									//uint8_t		CA_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015C	;	348 d	;CA -
-		[CB_b]=0, 									//uint8_t		CB_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015D	;	349 d	;CB -
+		[flagsBuzz]=0, 									//uint8_t		CA_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015C	;	348 d	;CA -
+		[flagsBuzz2]=0, 									//uint8_t		CB_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015D	;	349 d	;CB -
 		[CC_b]=0, 									//uint8_t		CC_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015E	;	350 d	;CC -
-		[D1_Msg1]=0, 								//uint8_t		CD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015F	;	351 d	;CD -
-		[D2_Msg1]=0, 								//uint8_t		CE_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$0160	;	352 d	;CE -
+		[CD_b]=0, 								//uint8_t		CD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015F	;	351 d	;CD -
+		[CE_b]=0, 								//uint8_t		CE_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$0160	;	352 d	;CE -
 		[FlagBLE]=0, 								//uint8_t 	FlagBLE						= 0	;//
 
 		//;-------------------  GRUPO DE PAR�?METROS F (Función)  -----------------------------------
@@ -517,10 +604,10 @@ uint8_t	Plantilla [128] = {
 		[maxwork]=0, 								//uint8_t		maxwork = 0;				//08/FEB/2022		DS.B 1	;	equ	$0166	;	358 d	;F4 - Tiempo máximo de compresor encendido
 		[exhausted]=0, 								//uint8_t		exhausted = 0;			//08/FEB/2022		DS.B 1	;	equ	$0167	;	359 d	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON
 		[cicloFd]=0, 								//uint8_t		cicloFd = 0;				//08/FEB/2022		DS.B 1	;	equ	$0168	;	360 d	;F6 - Cicleo para ventilador en modo diurno
-		[timeBreakDh]=0, 								//uint8_t		cicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
+		[cicloFn]=0, 								//uint8_t		cicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
 		[timedoor]=0, 								//uint8_t		timedoor = 0;				//08/FEB/2022		DS.B 1	;	equ	$016A	;	362 d	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno
-		[paramSr]=0, 								//uint8_t		paramSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
-		[margdes]=0, 								//uint8_t		margdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
+		[tOnVh]=0, 									//uint8_t		paramSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
+		[tOffVh]=0, 								//uint8_t		margdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
 		[timeluzoff]=0, 							//uint8_t		timeluzoff = 0;			//08/FEB/2022		DS.B 1	;	equ	$016D	;	365 d	;FB - Retardo apagado de pancarta al entrar a nocturno
 		[FC_b]=0, 									//uint8_t		FC_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$016E	;	366 d	;FC -
 		[tiempoAhorro1]=0, 							//uint8_t		tiempoAhorro1 = 0;	//08/FEB/2022		DS.B	1	;	FD
@@ -586,11 +673,11 @@ uint8_t	copiaPlantilla [128] = {
 		[ct8_H]=highByte(0),    				[ct8_L]=lowByte(0), 				//uint16_t		ct8_w = 0;					//
 		[cdefrResetTemp_H]=highByte(0),  		[cdefrResetTemp_L]=lowByte(0),		//uint16_t		cdefrResetTemp = 0;//
 		[cdefrStartTemp_H]=highByte(0), 		[cdefrStartTemp_L]=lowByte(0),		//uint16_t		cdefrStartTemp = 0;					//08/FEB/2022		DS.W 1	;	equ	$0115	;	277 d	;tA_W
-		[cdefrStartTempAmb_H]=highByte(0),   	[cdefrStartTempAmb_L]=lowByte(0),	//uint16_t		cdefrStartTempAmb = 0;					//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
+		[ctempRetCo_H]=highByte(0),   			[ctempRetCo_L]=lowByte(0),	//uint16_t		cdefrStartTempAmb = 0;					//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
 		[ctC_H]=highByte(0),     				[ctC_L]=lowByte(0), 				//uint16_t		ctC_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$0119	;	281 d	;tC_W
 		[cdifAhorro1_H]=highByte(0),     		[cdifAhorro1_L]=lowByte(0), 		//uint16_t		cdifAhorro1 = 0;		//08/FEB/2022		DS.W	1	;	tD
 		[cdifAhorro2_H]=highByte(0),     		[cdifAhorro2_L]=lowByte(0), 		//uint16_t		cdifAhorro2 = 0;		//08/FEB/2022		DS.W	1	;	tE
-		[ctF_H]=highByte(0),    				[ctF_L]=lowByte(0), 				//uint16_t		ctF_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$011F	;	287 d	;tF_W
+		[calarmaIny_H]=highByte(0),    				[calarmaIny_L]=lowByte(0), 				//uint16_t		ctF_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$011F	;	287 d	;tF_W
 
 		//;-------------------  GRUPO DE PAR�?METROS A (Alarmas)  -----------------------------------
 		//;-------------------  Parámetros de Alarma  ------------------------------------
@@ -628,7 +715,7 @@ uint8_t	copiaPlantilla [128] = {
 		[ctimeHold]=0, 								//uint8_t		ctimeHold = 0;						//08/FEB/2022		DS.B 1	;	equ	$014C	;	332 d	;LA -
 		[ctimeDefi]=0, 								//uint8_t		ctimeDefi = 0;						//08/FEB/2022		DS.B 1	;	equ	$014D	;	333 d	;LB -
 		[calarmDelay]=0, 							//uint8_t		calarmDelay = 0;						//08/FEB/2022		DS.B 1	;	equ	$014E	;	334 d	;LC -
-		[cLD_b]=0, 									//uint8_t		cLD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$014F	;	335 d	;LD -
+		[ctimeRetCo]=0, 									//uint8_t		cLD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$014F	;	335 d	;LD -
 		[ctmDoorEvent]=0, 							//uint8_t		ctmDoorEvent = 0;						//08/FEB/2022		DS.B 1	;	equ	$0150	;	336 d	;LE -
 		[cloggerTime]=0,	 						//uint8_t		cloggerTime = 0;						//08/FEB/2022		DS.B 1	;	equ	$0151	;	337 d	;LF -
 
@@ -734,11 +821,11 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		[eet8_H]=highByte(0),    				[eet8_L]=lowByte(0), 			//uint16_t	eet8_w = 0;						//
 		[eedefrResetTemp_H]=highByte(300),  	[eedefrResetTemp_L]=lowByte(300), 		//uint16_t	eedefrResetTemp = 300;	//;t9 - t9	Defrost reset temperature 3.0°C
 		[eedefrStartTemp_H]=highByte(-100), 	[eedefrStartTemp_L]=lowByte(-100),		//uint16_t	eedefrStartTemp = -100;	//; tA	Defrost start temperature -10.0 ºC
-		[eedefrStartTempAmb_H]=highByte(100),   [eedefrStartTempAmb_L]=lowByte(100),	 	//uint16_t	eedefrStartTempAmb = 100;						//09/FEB/2022		DC.W	{0}	;	16407 d	4017 h	;tB_W
+		[eetempRetCo_H]=highByte(100),   		[eetempRetCo_L]=lowByte(100),	 	//uint16_t	eedefrStartTempAmb = 100;						//09/FEB/2022		DC.W	{0}	;	16407 d	4017 h	;tB_W
 		[eetC_H]=highByte(0),     				[eetC_L]=lowByte(0), 			//uint16_t	eetC_w = 0;						//09/FEB/2022		DC.W	{0}	;	16409 d	4019 h	;tC_W
 		[eedifAhorro1_H]=highByte(0),     		[eedifAhorro1_L]=lowByte(0), 			//uint16_t	eedifAhorro1 = 0;		//09/FEB/2022		DC.W	{10}		;	tD
 		[eedifAhorro2_H]=highByte(0),     		[eedifAhorro2_L]=lowByte(0), 			//uint16_t	eedifAhorro2 = 0;		//09/FEB/2022		DC.W	{10}		;	tE
-		[eetF_H]=highByte(0),    				[eetF_L]=lowByte(0), 			//uint16_t	eetF_w = 0;						//09/FEB/2022		DC.W	{0}	;	16415 d	401F h	;tF_W
+		[eealarmaIny_H]=highByte(300),    		[eealarmaIny_L]=lowByte(300), 			//uint16_t	eetF_w = 0;						//09/FEB/2022		DC.W	{0}	;	16415 d	401F h	;tF_W
 
 		//;-------------------  GRUPO DE PAR�?METROS A (Alarmas)  -----------------------------------
 		//;-------------------  Parámetros de Alarma  ------------------------------------
@@ -748,8 +835,8 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		[eeanticong_H]=highByte(0),    		[eeanticong_L]=lowByte(0), 		//uint16_t	eeanticong_w = 0;	//09/FEB/2022		DC.W	{-310}	;	16423 d	4027 h	;A3 - Temperatura de anticongelamiento del producto	-31 ° C
 		[eepulldown_H]=highByte(120),    	[eepulldown_L]=lowByte(120), 		//uint16_t	eepulldown_w = 120;		//09/FEB/2022		DC.W	{120}	;	16425 d	4029 h	;A4 - Temperatura mínima para que se active el modo pulldown	12 ° C
 		[eelimineav_H]=highByte(0),    		[eelimineav_L]=lowByte(0), 		//uint16_t	eelimineav_w = 0;	//09/FEB/2022		DC.W	{-300}	;	16427 d	402B h	;A5 - Limite inferior de alarma de temperatura evaporador	-30 ° C
-		[eelimsual_H]=highByte(60),     	[eelimsual_L]=lowByte(60), 		//uint16_t	eelimsual_w = 60;		//09/FEB/2022		DC.W	{120}	;	16429 d	402D h	;A6 - Limite superior alarma de temperatura	12 ° C
-		[eeliminal_H]=highByte(-120),     	[eeliminal_L]=lowByte(-120), 		//uint16_t	eeliminal_w = -120;		//09/FEB/2022		DC.W	{-120}	;	16431 d	402F h	;A7 - Limite inferior alarma de temperatura	-12 ° C
+		[eelimsual_H]=highByte(300),     	[eelimsual_L]=lowByte(300), 		//uint16_t	eelimsual_w = 60;		//09/FEB/2022		DC.W	{120}	;	16429 d	402D h	;A6 - Limite superior alarma de temperatura	12 ° C
+		[eeliminal_H]=highByte(-40),     	[eeliminal_L]=lowByte(-40), 		//uint16_t	eeliminal_w = -120;		//09/FEB/2022		DC.W	{-120}	;	16431 d	402F h	;A7 - Limite inferior alarma de temperatura	-12 ° C
 		[eedifTempAl_H]=highByte(05),   	[eedifTempAl_L]=lowByte(05), 		//uint16_t	eedifTempAl = 05;			//09/FEB/2022		DC.W	{0}	;	16433 d	4031 h	;A8 -
 		[eedifDefi_H]=highByte(20),     	[eedifDefi_L]=lowByte(20), 		//uint16_t	eedifDefi = 20;						//09/FEB/2022		DC.W	{0}	;	16435 d	4033 h	;A9 -	diferencial de deficiencia (2.0°C)
 		[eetempTC1_H]=highByte(40),     	[eetempTC1_L]=lowByte(40), 		//uint16_t	eetempTC1 = 40;						//09/FEB/2022		DC.W	{0}	;	16437 d	4035 h	;AA -
@@ -776,7 +863,7 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		[eetimeHold]=0, 										//uint8_t		eetimeHold = 0;				//;LA -	Tiempo de bloqueo de display despues del deshielo (15 minutos)
 		[eetimeDefi]=0, 										//uint8_t		eetimeDefi = 0;				//09/FEB/2022		DC.B	0	;	16461 d	404D h	;LB -	 tiempo de compresor encendido para realizar mediciones de deficiencia 5 minutos (0 = funcion cancelada)
 		[eealarmDelay]=20, 										//uint8_t	 	eealarmDelay = 20		;// LC	tiempo para silenciar alarma
-		[eeLD_b]=0, 										//uint8_t		eeLD_b = 0;						//09/FEB/2022		DC.B	0	;	16463 d	404F h	;LD -
+		[eetimeRetCo]=0, 										//uint8_t		eeLD_b = 0;						//09/FEB/2022		DC.B	0	;	16463 d	404F h	;LD -
 		[eetmDoorEvent]=05, 										//uint8_t		eetmDoorEvent = 05;						//09/FEB/2022		DC.B	0	;	16464 d	4050 h	;LE -
 		[eeloggerTime]=01, 										//uint8_t		eeloggerTime = 1;//60;						//09/FEB/2022		DC.B	0	;	16465 d	4051 h	;LF -
 
@@ -1062,6 +1149,10 @@ uint8_t timeOutRx				= 0;	//
 
 uint8_t timeUnlockWIFI	= 0;
 
+uint8_t		compState = 0;				//@near uint8_t		compState = 0;
+
+
+
 uint8_t 	timeRstBLE	= 0;	//
 
 // Bloque de estado en tiempo real
@@ -1148,7 +1239,7 @@ _Bool flagsBuzzer[8] = {0};		// uint8_t flagsBuzzer		= 0;
 
 uint16_t 	 silencioAlarmH		= 0;
 
-_Bool flagsTC[3] = {0};		// uint8_t flagsTC		= 0;
+_Bool flagsTC[8] = {0};		// uint8_t flagsTC		= 0;
 
 
 uint8_t bufferTxControl[144] = "";
@@ -1195,9 +1286,12 @@ uint8_t time_sec		= 0;
 
 
 uint32_t timeUNIX		= 0;
+uint32_t timeUNIX_copy	= 0;
 //@near uint32_t daysToMonth[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
 uint32_t daysToMonth[12] = {0,31,59,90,120,151,182,213,243,273,304,334};
 uint8_t leapYears		= 0;
+
+uint8_t timeDpyDf = 0x66;			//@near uint8_t timeDpyDf = 0x66;
 
 uint8_t timeBuzzOn		= 0;
 uint8_t retPowerOn		= 0;
@@ -1207,6 +1301,19 @@ uint16_t	tDisplay_w = 0;
 
 
 uint8_t debBtn2F3		= 0;
+
+
+uint16_t	potencia = 0;
+
+uint16_t timeOnVaho_w = 0;			//@near uint16_t timeOnVaho_w = 0;
+uint16_t timeOffVaho_w = 0;			//@near uint16_t timeOffVaho_w = 0;
+uint8_t flagsVaho[8]	= {0};		//@near uint8_t flagsVaho			= 0;
+uint16_t timeAlarmRetCo_w = 0;		//@near uint16_t timeAlarmRetCo_w = 0;
+uint8_t cntRetCo = 0;				//@near uint8_t cntRetCo			= 0;
+
+
+
+
 _Bool  	flagsBattery[8]	= {0};
 //uint8_t flagsBattery		= 0;
 
@@ -1238,7 +1345,17 @@ uint32_t timeReg;
 uint32_t dateReg;
 // uint8_t 	prescalaI2c = 0;     //Variable prescala I2C temporal
 
+
+uint8_t      t_filtro_flanco = 0;       //RM_20240530 Para agregar el filtro de medición de voltaje
+
+
+
+
 uint8_t timeBCD_sec_ANT		= 0;
+uint8_t tiempoPrCargas = 0;      //RM_20240819 Para el comando de prueba de cargas
+
+
+uint16_t timeDpyS3		= 0;			//@near uint16_t timeDpyS3		= 0;
 
 _Bool flagsTxControl[8]		= {0};
 uint8_t delayComStat		= 0;
@@ -1246,13 +1363,13 @@ uint8_t DevLock = 0 ;
 uint8_t statComFlag = 0 ;
 uint8_t statComWIFIFlag = 0 ;
 uint16_t cntSetName = 0 ;
-uint8_t difName[50] = "BLE_AT+NAMEIMBERA-CTOF-F\r\n";
+uint8_t difName[50] = "BLE_AT+NAMEIMBERA-CTOF-WF\r\n";
 //uint8_t difName[50] = "BLE_AT+NAMEIMBERA-HEALTH\r\n";
 uint8_t timeTxTBLE			= 0;	//
 uint16_t timeoutTBLE = 0;
 
-uint8_t timePreDh_h = 0;
-uint8_t timePreDh_l = 0;
+//uint8_t timePreDh_h = 0;
+//uint8_t timePreDh_l = 0;
 
 // Bloque de evento WiFi EX
 uint8_t BloqEventWiFiEx [18] = {0};
@@ -1270,6 +1387,11 @@ uint8_t BloqEventWiFiEx [18] = {0};
 //uint8_t WF_voltInit				= 0;	// voltaje de AC
 //// Fin del bloque de evento WiFi
 
+char directorioMQTT[17]			= "eltecwifictof\0";
+
+
+uint8_t temp_wifiEvent = 0;		//@near uint8_t temp_wifiEvent = 0;
+
 
 
 // para reservar memoria Flash dedicada a Logger
@@ -1286,11 +1408,11 @@ __attribute__((section(".dataLogger"))) uint8_t dataLoggerFin = 0;
 // #pragma section @near {varFlash}
 // Nota: Esta seccion debe ir en Flash
 __attribute__((section(".varFlash"))) uint8_t  versionFirm1 = 0;
-__attribute__((section(".varFlash"))) uint8_t  versionFirm2 = 02;
+__attribute__((section(".varFlash"))) uint8_t  versionFirm2 = 01;
 //@near uint8_t versionFirm2 = 02;  //RM_20230908 VFW 0.002 Ajuste en calibración y envio de MAC a llave
 __attribute__((section(".varFlash"))) uint8_t  fm_hardware = 02;
-__attribute__((section(".varFlash"))) uint8_t  fm_modelo0 = 'F';  //'E'
-__attribute__((section(".varFlash"))) uint8_t  fm_modelo  = '7';  //'8'
+__attribute__((section(".varFlash"))) uint8_t  fm_modelo0 = 'F';
+__attribute__((section(".varFlash"))) uint8_t  fm_modelo  = '7';
 
 __attribute__((section(".BOOTLOADER"))) uint32_t crudo_bootloader[1024]= {
 
@@ -2322,6 +2444,7 @@ __attribute__((section(".BOOTLOADER"))) uint32_t crudo_bootloader[1024]= {
 
 uint16_t   foovar1[10];
 uint16_t   *foovar2;
+uint16_t   timeoutRXFw = 0;
 
 /* USER CODE END PV */
 
@@ -2351,14 +2474,10 @@ unsigned long millis(){
 
 void reconfigura_perif(void)
 {
-	//HAL_IWDG_Refresh(&hiwdg);
-
 	HAL_Init();
 	SystemClock_Config();
 
 	configura_perif_2();
-
-	initEEPROMEmulated(); // Init EEPROM Emulated
 
 	HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
 	HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
@@ -2371,7 +2490,6 @@ void configura_perif_2(void)
 	  MX_DMA_Init();
 	  MX_ADC1_Init();
 	  MX_I2C1_Init();
-	  MX_IWDG_Init();
 	  MX_TIM3_Init();
 	  MX_TIM1_Init();
 	  MX_TIM6_Init();
@@ -2428,9 +2546,7 @@ int main(void)
 	//initEEPROMEmulated(); // Init EEPROM Emulated
 	timeRstBLE = 1;
 	inicio ();
-
 	ProcesosC = 6;
-
 
   /* USER CODE END 1 */
 
@@ -2455,7 +2571,7 @@ int main(void)
 //  MX_DMA_Init();
 //  MX_ADC1_Init();
 //  MX_I2C1_Init();
-//  MX_IWDG_Init();
+  MX_IWDG_Init();
   MX_RTC_Init();
 //  MX_TIM3_Init();
 //  MX_TIM6_Init();
@@ -2466,9 +2582,9 @@ int main(void)
 
   initEEPROMEmulated(); // Init EEPROM Emulated
 
-  Modbus_ModbusSalave ();
+  //Modbus_ModbusSalave ();
    //ModbusMaster_begin(eePlantilla[eeAddModBus]);		// Manuel 23-MAR-2022	ModbusMaster_begin(222);
-  ModbusMaster_begin(reePlantilla[eeAddModBus]);
+  //ModbusMaster_begin(reePlantilla[eeAddModBus]);
   TR485_Trasnmiting = 0;														//17-DIC-2021		El dispositivo inicialmente escucha
   HAL_GPIO_WritePin(GPIOC, PFULLDEF_MAX485_DE_AND_RE_NEG, GPIO_PIN_RESET);      //17-DIC-2021 El Driver inicalmente Escucha
   /* USER CODE END 2 */
@@ -2476,12 +2592,12 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
    BluetoothState = 3;			// Maquina de estados Bluetooth 1:Configuracion 2:Obtencion parametros 3:Tx/RX
-     timeRstBLE = 8;
-     BluetoothState = 1;
-     HAL_GPIO_WritePin(PFULLDEF_VSEN, GPIO_PIN_SET);      //02-Jul-2024:  Habilita VSEN
+   timeRstBLE = 8;
+   BluetoothState = 1;
+   HAL_GPIO_WritePin(PFULLDEF_VSEN, GPIO_PIN_SET);      //02-Jul-2024:  Habilita VSEN
 
-     HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
-//     HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+   HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);  //Deshabilitacion de Inerrupcion para Bajo Consumo
+
 
      HAL_TIM_PWM_Start (&htim3,TIM_CHANNEL_2);			// Enciende PWM   JTA eliminar buzer inicial
      while(Count_Test2 < 260000)
@@ -2621,26 +2737,38 @@ while (1)
      		// tiempo para rutina buzzer
      		// #pragma asm
      		cnt_gen_ms++;//Incrementa el contador general de ms cada 1ms
-     		// prescalaI2c++;
+
+       		if(flagsRxFirm[0] == 1)
+         		timeoutRXFw++;
+
+       		if(timeoutRXFw > 3000)
+         	{
+       			for(int i=0; i<8; i++)				// clr		flagsRxFirm;					/ borra banderas de Rx de firmware para cancelar proceso
+       				flagsRxFirm[i]=0;
+         			reinicio_valores_act_fw();
+         	}
+
+
+         		// prescalaI2c++;
      	}
-//   			    HAL_RTC_GetTime (&hrtc, &hRtcTime, RTC_FORMAT_BCD);
-//   			    HAL_RTC_GetDate (&hrtc, &hRtcDate, RTC_FORMAT_BCD);
-//   			    timeBCD_year = hRtcDate.Year;
-//   		 	    timeBCD_month = hRtcDate.Month;
-//   			    timeBCD_day = hRtcDate.Date;
-//   			    timeBCD_hour = hRtcTime.Hours;
-//   			    timeBCD_min = hRtcTime.Minutes;
-//   			    timeBCD_sec = hRtcTime.Seconds;
+   			    HAL_RTC_GetTime (&hrtc, &hRtcTime, RTC_FORMAT_BCD);
+   			    HAL_RTC_GetDate (&hrtc, &hRtcDate, RTC_FORMAT_BCD);
+   			    timeBCD_year = hRtcDate.Year;
+   		 	    timeBCD_month = hRtcDate.Month;
+   			    timeBCD_day = hRtcDate.Date;														////  HAL RTC
+   			    timeBCD_hour = hRtcTime.Hours;
+   			    timeBCD_min = hRtcTime.Minutes;
+   			    timeBCD_sec = hRtcTime.Seconds;
 
-   				uint32_t tmpreg1 = (uint32_t)(READ_REG(RTC->TR) & RTC_TR_RESERVED_MASK);
-     			uint32_t datetmpreg1 = (uint32_t)(READ_REG(RTC->DR) & RTC_DR_RESERVED_MASK);
-
-     		  	timeBCD_year = (uint8_t)((datetmpreg1 & (RTC_DR_YT | RTC_DR_YU)) >> RTC_DR_YU_Pos);
-     		  	timeBCD_month = (uint8_t)((datetmpreg1 & (RTC_DR_MT | RTC_DR_MU)) >> RTC_DR_MU_Pos);
-     		  	timeBCD_day = (uint8_t)((datetmpreg1 & (RTC_DR_DT | RTC_DR_DU)) >> RTC_DR_DU_Pos);
-     		  	timeBCD_hour = (uint8_t)((tmpreg1 & (RTC_TR_HT | RTC_TR_HU)) >> RTC_TR_HU_Pos);
-       	  		timeBCD_min = (uint8_t)((tmpreg1 & (RTC_TR_MNT | RTC_TR_MNU)) >> RTC_TR_MNU_Pos);
-     		  	timeBCD_sec = (uint8_t)((tmpreg1 & (RTC_TR_ST | RTC_TR_SU)) >> RTC_TR_SU_Pos);
+//   			uint32_t tmpreg1 = (uint32_t)(READ_REG(RTC->TR) & RTC_TR_RESERVED_MASK);
+//     			uint32_t datetmpreg1 = (uint32_t)(READ_REG(RTC->DR) & RTC_DR_RESERVED_MASK);
+//
+//     		  	timeBCD_year = (uint8_t)((datetmpreg1 & (RTC_DR_YT | RTC_DR_YU)) >> RTC_DR_YU_Pos);
+//     		  	timeBCD_month = (uint8_t)((datetmpreg1 & (RTC_DR_MT | RTC_DR_MU)) >> RTC_DR_MU_Pos);   //// Acceso Directo Aregistros RTC
+//     		  	timeBCD_day = (uint8_t)((datetmpreg1 & (RTC_DR_DT | RTC_DR_DU)) >> RTC_DR_DU_Pos);
+//     		  	timeBCD_hour = (uint8_t)((tmpreg1 & (RTC_TR_HT | RTC_TR_HU)) >> RTC_TR_HU_Pos);
+//       	    timeBCD_min = (uint8_t)((tmpreg1 & (RTC_TR_MNT | RTC_TR_MNU)) >> RTC_TR_MNU_Pos);
+//     		  	timeBCD_sec = (uint8_t)((tmpreg1 & (RTC_TR_ST | RTC_TR_SU)) >> RTC_TR_SU_Pos);
 
      		  	timeBCD_to_UNIX();
      		  	//------------------------------------------------------------------------------------------
@@ -2685,22 +2813,17 @@ while (1)
      	  			noctar ();
      	  			break;		// ASM: Pendiente a traducir
      	  		case 4:
-     	  			if(bandera_act_fw_j == 0)    //Parche
-     	  			{
-     	  				refrigera();
-     	  			}
+     	  			refrigera();
      	  			break;		// ASM: Pendiente a traducir
      	  		case 5:
      	  			display();
      	  			break;		// ASM: Pendiente a traducir
      	  		case 6:
      	  			tiempo ();				// ASM: <<<-- TRADUCCION COMPLETA -->>> 15-Jul-2024
-     	  			if(bandera_act_fw_j == 0)    //Parche
-     	  			{
-     	  				logger ();				// ASM: Pendiente a traducir
-     	  			}
+
+     	  			logger ();				// ASM: Pendiente a traducir
+
     	  			tx_control ();			// ASM: "Faltan Comandos a Traducir"
-   //
      	  			if ( keyWrFirm == 0xAA){
      	  			    asm ("nop");
      	  				if	( keyTx == 00 )	{
@@ -3134,9 +3257,9 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
-  hiwdg.Init.Window = 800;
-  hiwdg.Init.Reload = 800;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_1024;
+  hiwdg.Init.Window = 4000;
+  hiwdg.Init.Reload = 4000;
   hiwdg.Init.EWI = 0;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
@@ -3574,8 +3697,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  //HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
-  //HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+//  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+//  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   HAL_GPIO_WritePin(PFULLDEF_MP1, GPIO_PIN_SET);// Activa la selección de MP1

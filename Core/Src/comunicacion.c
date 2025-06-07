@@ -275,7 +275,7 @@ noinc:
 	}
 	flagsC[f_doorOpen] = 1;// BitSet(flagsC,f_doorOpen);
 	retLampOff=5;
-	cntHoldP= Plantilla[LD_b]; // Revisar esto el timeHoldP
+
 	retvent= 0x05;
 	//if(eePlantilla[eetimepaf] != 0){ // // Se cambio a variable EEPROM porque no hay un refresco pronto en la RAM
 	if(reePlantilla[eetimepaf]!= 0){

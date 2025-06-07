@@ -21,7 +21,7 @@
 
 #define size_Header		    (uint8_t) 8       // Tamano del buffer de datos Bloque Header
 #define size_handshake      (uint8_t) 21      // Tamano del buffer de datos Bloque Hand shake
-#define size_TiempoReal     (uint8_t) 10      // Tamano del buffer de datos Bloque Tiempo Real
+#define size_TiempoReal     (uint8_t) 12      // Tamano del buffer de datos Bloque Tiempo Real
 
 
 
@@ -66,6 +66,10 @@ extern _Bool  tick_1s;					// flag base de tiempo 1s
 extern _Bool  device_conected;			// bandera dispositivo conectado
 
 extern uint8_t BluetoothState;			// Maquina de estados Bluetooth 1:Configuracion 2:Obtencion parametros 3:Tx/RX
+
+
+extern uint16_t variable_corriente;         //Variable que despliega el resultado
+
 
 #define 	num_ver		 5				//;04;	Versión del programa 0.4
 #define 	time_auto	 9				//;	Segundos de autoprueba
@@ -133,13 +137,56 @@ extern			uint16_t PNU_0x320C;						// 14-Ene-2022:		Comando Ventilador activar c
 
 //extern	uint8_t s_reloj;        //Frecuencia de la línea
 extern 	_Bool 	s_reloj[3];
+
+
+extern	uint8_t fact_mul; 	//;-Factor multiplicativo aplicado a muestras
+extern	uint8_t fact_div; 	//;-Factor división aplicado a muestras
+
 extern	uint8_t cnt_mues;           //Contador de muestras
+extern	uint8_t cnt_mues_ant; 		//;-Respalo de cont muestras cuando es nuevo ciclo
+extern	uint8_t cnt_mues_ciclos; 	//;-Contador muestras de ciclo promedio (8 ciclos)
+
+
+
+extern	_Bool ban_muestreo  [8]; //;Banderas para indicar el estado del muestreo
+
+extern  uint32_t acu8m_voltaje; //;-Acumulado para 8 muestras de voltaje
+
+extern	uint32_t acu8m_corriente; //Acumulado para 8 muestras de corriente
+
+extern	uint16_t voltaje_trms; //;Voltaje trms medido en V
+extern	uint16_t corriente_trms; //;;Corriente trms medida en mA
+
 
 extern	uint32_t sigma_cuad_sampl; //valor de sampling sumado
+extern	uint32_t c_sigma_cuad_sampl; //valor de sampling sumado
+extern	uint32_t sigma_cuad_sampl_1; //valor de sampling sumado
+extern	uint32_t sigma_cuad_sampl_2; //valor de sampling sumado
+extern	uint32_t c_sigma_cuad_sampl_1; 	  //valor de sampling sumado
+extern	uint32_t c_sigma_cuad_sampl_2; 	  //valor de sampling sumado
+
+
+
 extern	uint32_t level_4st_mult;
 
 extern	uint8_t  vl_ram [32];
+
+//uint8_t ram_h                  = 0; //;Registro de almacenamiento temporal de ADC
+//uint8_t ram_l                  = 0; //;Registro de almacenamiento temporal de ADC
+extern	uint16_t	 ram_h;
+
 extern	uint8_t  cnt_veces_muestreo;
+
+
+
+extern 	uint8_t  cnt_2ms_corrIMB;
+extern  uint8_t cnt_muestras_corrIMB;
+extern	uint16_t muestra_corrIMB;
+extern	uint16_t mcorr_ponderada_2;
+extern	uint16_t mcorr_ponderada_1;
+extern	uint16_t corriente_IMB;
+
+
 extern	uint8_t  volt_trms;
 extern	uint8_t  edo_muestreo;
 
@@ -239,6 +286,7 @@ extern	_Bool  		trefst2 [8];				//08/FEB/2022		DS.B 1
 #define		f_s3open		 5
 #define		f_defi			 6
 #define		f_s4open		 7
+#define		f_retCo			 7
 
 
 // Flags:  uint8_t		trefst = 0;					//08/FEB/2022		DS.B 1      	;	/ Registro de indicación de estado del equipo TREF
@@ -252,6 +300,7 @@ extern _Bool  	trefst [8];							//08/FEB/2022		DS.B 1      	;	/ Registro de ind
 #define		f_pa		 4//;		Bandera de indicación de alarma por puerta abierta
 //f_ta:					equ		 5//; 		Bandera de indicación de falla por temperatura alta
 #define		f_s4short	 5
+#define		f_iny		 5
 #define		f_lv		 6//; 		Bandera de indicación de voltaje bajo
 #define		f_hv		 7//; 		Bandera de indicación de voltaje alto
 
@@ -464,6 +513,8 @@ extern _Bool  	flagsC [8];			//08/FEB/2022		DS.B 1      	; / Registro C de bande
 #define 	b4_ow			 6//;
 #define 	b4_iw			 7//;
 
+//;Bits de control de las banderas (Registro logicos)
+#define 	f_lampAH		5			//f_lampAH:				equ		5//;
 
 extern uint16_t		cntNoct_H;			//08/FEB/2022		DS.B 1
 
@@ -483,9 +534,15 @@ extern uint8_t		retzc_ms_compresor;		//RM_20220913 Contador de retardo al cruce 
 extern uint8_t		retzc_ms_deshielo;		//RM_20220913 Contador de retardo al cruce por cero para DESHIELO
 extern uint8_t		retzc_ms_ventilador;	//RM_20220913 Contador de retardo al cruce por cero para VENTILADOR
 extern uint8_t		retzc_ms_lampara;		//RM_20220913 Contador de retardo al cruce por cero para LÁMPARA
-extern _Bool 		cruze_por_cero[5];// uint8_t		cruze_por_cero;  				//RM_20220913 Banderas para cruce por cero
+extern _Bool 		cruze_por_cero[8];// uint8_t		cruze_por_cero;  				//RM_20220913 Banderas para cruce por cero
+
+
+extern uint8_t		cntCiclosCmp;			//RM_20230421
+
 extern uint8_t		muestras_cal_volt;      //RM_20230908 Para mejorar la calibración de voltaje
 extern uint8_t		voltaje_ant_cal;        //RM_20230908 Para mejorar la calibración de voltaje
+
+
 
 extern	uint8_t		ctlmemo;				//08/FEB/2022		DS.B 1         ;0x00;	Registro de control de manejo de memoria EEPROM 0xAA = Grabar; cualquier otra cosa = leer
 extern	uint8_t		cntmemo;				//08/FEB/2022		DS.B 1         ;0x00;	Puntero de datos de memoria EEPROM
@@ -513,11 +570,11 @@ enum parametrosPlantilla  {
 		t8_H,     				t8_L, 					//uint16_t		t8_w = 0;					//
 		defrResetTemp_H,     	defrResetTemp_L, 		//uint16_t		defrResetTemp = 0;//
 		defrStartTemp_H,     	defrStartTemp_L, 		//uint16_t		defrStartTemp = 0;					//08/FEB/2022		DS.W 1	;	equ	$0115	;	277 d	;tA_W
-		defrStartTempAmb_H,     defrStartTempAmb_L, 	//uint16_t		defrStartTempAmb = 0;					//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
+		tempRetCo_H,     		tempRetCo_L, 	//uint16_t		defrStartTempAmb = 0;					//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
 		tC_H,     				tC_L, 					//uint16_t		tC_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$0119	;	281 d	;tC_W
 		difAhorro1_H,     		difAhorro1_L, 			//uint16_t		difAhorro1 = 0;		//08/FEB/2022		DS.W	1	;	tD
 		difAhorro2_H,     		difAhorro2_L, 			//uint16_t		difAhorro2 = 0;		//08/FEB/2022		DS.W	1	;	tE
-		tF_H,     				tF_L,					//uint16_t		tF_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$011F	;	287 d	;tF_W
+		alarmaIny_H,     		alarmaIny_L,					//uint16_t		tF_w = 0;					//08/FEB/2022		DS.W 1	;	equ	$011F	;	287 d	;tF_W
 
 		//;-------------------  GRUPO DE PARÁMETROS A (Alarmas)  -----------------------------------
 		//;-------------------  Parámetros de Alarma  ------------------------------------
@@ -555,7 +612,7 @@ enum parametrosPlantilla  {
 		timeHold,					////uint8_t		timeHold = 0;						//08/FEB/2022		DS.B 1	;	equ	$014C	;	332 d	;LA -
 		timeDefi,					////uint8_t		timeDefi = 0;						//08/FEB/2022		DS.B 1	;	equ	$014D	;	333 d	;LB -
 		alarmDelay,					////uint8_t		alarmDelay = 0;						//08/FEB/2022		DS.B 1	;	equ	$014E	;	334 d	;LC -
-		LD_b,						////uint8_t		LD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$014F	;	335 d	;LD -
+		timeRetCo,						////uint8_t		LD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$014F	;	335 d	;LD -
 		tmDoorEvent,				////uint8_t		tmDoorEvent = 0;						//08/FEB/2022		DS.B 1	;	equ	$0150	;	336 d	;LE -
 		loggerTime,					//uint8_t		loggerTime = 0;						//08/FEB/2022		DS.B 1	;	equ	$0151	;	337 d	;LF -
 
@@ -571,11 +628,11 @@ enum parametrosPlantilla  {
 		numSens,					//uint8_t		numSens = 0;						//08/FEB/2022		DS.B 1	;	equ	$0159	;	345 d	;C7 -
 		nivDpyFail,					//uint8_t		nivDpyFail = 0;						//08/FEB/2022		DS.B 1	;	equ	$015A	;	346 d	;C8 -
 		logicos2,					//uint8_t		logicos2 = 0;						//08/FEB/2022		DS.B 1	;	equ	$015B	;	347 d	;C9 -
-		CA_b,						//uint8_t		CA_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015C	;	348 d	;CA -
-		CB_b,						//uint8_t		CB_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015D	;	349 d	;CB -
+		flagsBuzz,						//uint8_t		CA_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015C	;	348 d	;CA -
+		flagsBuzz2,						//uint8_t		CB_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015D	;	349 d	;CB -
 		CC_b,						//uint8_t		CC_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015E	;	350 d	;CC -
-		D1_Msg1,					//uint8_t		CD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015F	;	351 d	;CD -
-		D2_Msg1,					//uint8_t		CE_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$0160	;	352 d	;CE -
+		CD_b,					//uint8_t		CD_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$015F	;	351 d	;CD -
+		CE_b,					//uint8_t		CE_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$0160	;	352 d	;CE -
 		FlagBLE,						//uint8_t 	FlagBLE						= 0	;//
 
 		//;-------------------  GRUPO DE PARÁMETROS F (Función)  -----------------------------------
@@ -587,10 +644,10 @@ enum parametrosPlantilla  {
 		maxwork,					//uint8_t		maxwork = 0;				//08/FEB/2022		DS.B 1	;	equ	$0166	;	358 d	;F4 - Tiempo máximo de compresor encendido
 		exhausted,					//uint8_t		exhausted = 0;			//08/FEB/2022		DS.B 1	;	equ	$0167	;	359 d	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON
 		cicloFd,					//uint8_t		cicloFd = 0;				//08/FEB/2022		DS.B 1	;	equ	$0168	;	360 d	;F6 - Cicleo para ventilador en modo diurno
-		timeBreakDh,					//uint8_t		cicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
+		cicloFn,					//uint8_t		cicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
 		timedoor,					//uint8_t		timedoor = 0;				//08/FEB/2022		DS.B 1	;	equ	$016A	;	362 d	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno
-		paramSr,					//uint8_t		paramSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
-		margdes,					//uint8_t		margdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
+		tOnVh,					//uint8_t		paramSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
+		tOffVh,					//uint8_t		margdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
 		timeluzoff,					//uint8_t		timeluzoff = 0;			//08/FEB/2022		DS.B 1	;	equ	$016D	;	365 d	;FB - Retardo apagado de pancarta al entrar a nocturno
 		FC_b,						//uint8_t		FC_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$016E	;	366 d	;FC -
 		tiempoAhorro1,				//uint8_t		tiempoAhorro1 = 0;	//08/FEB/2022		DS.B	1	;	FD
@@ -660,11 +717,11 @@ enum parametrosCPlantilla  {
 		ct8_H,     				ct8_L, 					//uint16_t		ct8_w = 0;				//
 		cdefrResetTemp_H,     	cdefrResetTemp_L, 		//uint16_t		cdefrResetTemp = 0;//
 		cdefrStartTemp_H,     	cdefrStartTemp_L, 		//uint16_t		cdefrStartTemp = 0;		//08/FEB/2022		DS.W 1	;	equ	$0115	;	277 d	;tA_W
-		cdefrStartTempAmb_H,    cdefrStartTempAmb_L, 	//uint16_t		cdefrStartTempAmb = 0;	//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
+		ctempRetCo_H,    		ctempRetCo_L, 	//uint16_t		cdefrStartTempAmb = 0;	//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
 		ctC_H,     				ctC_L, 					//uint16_t		ctC_w = 0;				//08/FEB/2022		DS.W 1	;	equ	$0119	;	281 d	;tC_W
 		cdifAhorro1_H,     		cdifAhorro1_L, 			//uint16_t		cdifAhorro1 = 0;		//08/FEB/2022		DS.W	1	;	tD
 		cdifAhorro2_H,     		cdifAhorro2_L, 			//uint16_t		cdifAhorro2 = 0;		//08/FEB/2022		DS.W	1	;	tE
-		ctF_H,     				ctF_L,					//uint16_t		ctF_w = 0;				//08/FEB/2022		DS.W 1	;	equ	$011F	;	287 d	;tF_W
+		calarmaIny_H,     		calarmaIny_L,					//uint16_t		ctF_w = 0;				//08/FEB/2022		DS.W 1	;	equ	$011F	;	287 d	;tF_W
 
 		//;-------------------  GRUPO DE PARÁMETROS A (Alarmas)  -----------------------------------
 		//;-------------------  Parámetros de Alarma  ------------------------------------
@@ -702,7 +759,7 @@ enum parametrosCPlantilla  {
 		ctimeHold,					////uint8_t		ctimeHold = 0;				//08/FEB/2022		DS.B 1	;	equ	$014C	;	332 d	;LA -
 		ctimeDefi,					////uint8_t		ctimeDefi = 0;				//08/FEB/2022		DS.B 1	;	equ	$014D	;	333 d	;LB -
 		calarmDelay,				////uint8_t		calarmDelay = 0;			//08/FEB/2022		DS.B 1	;	equ	$014E	;	334 d	;LC -
-		cLD_b,						////uint8_t		cLD_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$014F	;	335 d	;LD -
+		ctimeRetCo,					////uint8_t		cLD_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$014F	;	335 d	;LD -
 		ctmDoorEvent,				////uint8_t		ctmDoorEvent = 0;			//08/FEB/2022		DS.B 1	;	equ	$0150	;	336 d	;LE -
 		cloggerTime,				////uint8_t		cloggerTime = 0;			//08/FEB/2022		DS.B 1	;	equ	$0151	;	337 d	;LF -
 
@@ -802,11 +859,11 @@ enum parametrosEEplantilla  {
 	eet8_H,					eet8_L,							//
 	eedefrResetTemp_H,		eedefrResetTemp_L,				//;t9 - t9	Defrost reset temperature 3.0°C
 	eedefrStartTemp_H,		eedefrStartTemp_L,				//; tA	Defrost start temperature -10.0 ºC
-	eedefrStartTempAmb_H,	eedefrStartTempAmb_L,						//09/FEB/2022		DC.W	{0}	;	16407 d	4017 h	;tB_W
+	eetempRetCo_H,			eetempRetCo_L,						//09/FEB/2022		DC.W	{0}	;	16407 d	4017 h	;tB_W
 	eetC_H,					eetC_L,							//09/FEB/2022		DC.W	{0}	;	16409 d	4019 h	;tC_W
 	eedifAhorro1_H,			eedifAhorro1_L,					//09/FEB/2022		DC.W	{10}		;	tD
 	eedifAhorro2_H,			eedifAhorro2_L,					//09/FEB/2022		DC.W	{10}		;	tE
-	eetF_H,					eetF_L,							//09/FEB/2022		DC.W	{0}	;	16415 d	401F h	;tF_W
+	eealarmaIny_H,			eealarmaIny_L,							//09/FEB/2022		DC.W	{0}	;	16415 d	401F h	;tF_W
 
 	//;-------------------  GRUPO DE PARÁMETROS A (Alarmas)  -----------------------------------
 	//;-------------------  Parámetros de Alarma  ------------------------------------
@@ -844,7 +901,7 @@ enum parametrosEEplantilla  {
 	eetimeHold,					//;LA -	Tiempo de bloqueo de display despues del deshielo (15 minutos)
 	eetimeDefi,					//09/FEB/2022		DC.B	0	;	16461 d	404D h	;LB -	 tiempo de compresor encendido para realizar mediciones de deficiencia 5 minutos (0 = funcion cancelada)
 	eealarmDelay,				// LC	tiempo para silenciar alarma
-	eeLD_b,						//09/FEB/2022		DC.B	0	;	16463 d	404F h	;LD -
+	eetimeRetCo,						//09/FEB/2022		DC.B	0	;	16463 d	404F h	;LD -
 	eetmDoorEvent,				//09/FEB/2022		DC.B	0	;	16464 d	4050 h	;LE -
 	eeloggerTime,				//09/FEB/2022		DC.B	0	;	16465 d	4051 h	;LF -
 
@@ -1061,7 +1118,8 @@ enum parametrosBloque_TiempoReal  {
 	volt_RT,							//uint8_t volt_RT				= 0;	// voltaje de AC
 	actuadores_RT,						//uint8_t actuadores_RT		= 0;	// Registro de alarmas en tiempo real
 	alarmas2_RT,						//uint8_t alarmas2_RT			= 0;	// Registro de alarma en tiempo real
-	alarmas_RT							//uint8_t alarmas_RT			= 0;	// Registro de alarma en tiempo real
+	alarmas_RT,							//uint8_t alarmas_RT			= 0;	// Registro de alarma en tiempo real
+	corriente_RT_H, corriente_RT_L		//uint16_t corriente_RT			= 0;	// Copia de corriente
 };
 // Fin del bloque de estado en tiempo real
 
@@ -1121,6 +1179,17 @@ extern uint8_t timeOutRx;	//
 
 
 extern uint8_t 	timeUnlockWIFI;
+
+extern	uint8_t		compState;
+
+
+//;Definición de bits variable numSens
+#define		f_sen1		0 //;f_sen1:		equ 0
+#define		f_sen2		1 //;f_sen2:		equ 1
+#define		f_sen3	 	2 //;f_sen3:		equ 2
+
+#define		f_senCo	 	7		//f_senCo:		equ 7
+
 
 extern uint8_t 	timeRstBLE;	//
 
@@ -1252,7 +1321,7 @@ extern _Bool flagsBuzzer[8];
 
 extern uint16_t 	 silencioAlarmH;
 
-extern _Bool 		flagsTC[3]; // uint8_t flagsTC;
+extern _Bool 		flagsTC[8]; // uint8_t flagsTC;
 // banderaas asociadas a flagsTC
 #define		f_TC1			0
 #define		f_TC2			1
@@ -1261,6 +1330,11 @@ extern _Bool 		flagsTC[3]; // uint8_t flagsTC;
 //;Definición de bits de estado a logicos2
 #define		doorOFF			0//;		Bandera para indicar que la puerta está inhabilitada (incluidas funciones asociadas) (programa mantien puerta cerrada y cancela funciones que se activan con puerta cerrada)
 #define		ventDoorOFF		1//;		Bandera que indica que el ventilador ignora señal de puerta como entrada de control.
+
+
+#define		modLogic		4//		modLogic:				equ		 4//; Cambia comportamiento en ciertos aspectos de CTOF
+
+
 
 #define		funReleDesh		3//; Cambia funcion de relevador cerradura a deshielo en equipo Health
 #define		frecAC			7//;		Seleccion de frecuencia de alimentación de AC 0 = 60hz, 1 = 50 hz
@@ -1287,6 +1361,7 @@ extern _Bool  	estado4 [8];
 #define		est1Reset		 4		//est1Reset:		equ		 4//;		Reset general del proyecto
 #define		est1Snooze		 5		//est1Snooze:		equ		 5//;		silencio de buzer temporal
 #define		est1LockDr		 6		//est1LockDr:		equ		 6//;		ontrol de cerradura
+#define     est1WifiReset    7
 
 extern uint8_t		cntMsgCmd;
 extern uint8_t		numMsg;
@@ -1318,9 +1393,12 @@ extern uint8_t time_min;
 extern uint8_t time_sec;
 
 extern uint32_t timeUNIX;
+extern uint32_t timeUNIX_copy;
 //@near uint32_t daysToMonth[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
 extern uint32_t daysToMonth[12];
 extern uint8_t leapYears;
+
+extern uint8_t timeDpyDf;
 
 extern uint8_t timeBuzzOn;
 extern uint8_t retPowerOn;
@@ -1330,6 +1408,16 @@ extern uint16_t	tDisplay_w;
 
 
 extern uint8_t debBtn2F3;
+
+extern uint16_t	potencia;
+
+extern uint16_t		timeOnVaho_w;			//@near uint16_t timeOnVaho_w = 0;
+extern uint16_t		timeOffVaho_w;			//@near uint16_t timeOffVaho_w = 0;
+extern uint8_t 		flagsVaho[8];			//@near uint8_t flagsVaho			= 0;
+extern uint16_t 	timeAlarmRetCo_w;		//@near uint16_t timeAlarmRetCo_w = 0;
+extern uint8_t 		cntRetCo;				//@near uint8_t cntRetCo			= 0;
+
+
 extern _Bool  	flagsBattery	[8];
 //extern  uint8_t flagsBattery;
 // banderas de bateria
@@ -1351,6 +1439,7 @@ extern _Bool flagsTxControl[8];
 #define	f_select 		0//;			Bandera para seleccionar BLE = 0 o WiFi = 1
 #define	f_statBLE		1//;			BLE status
 #define	f_statWIFI		2//;
+#define f_auxEventWIFI	7
 
 extern uint8_t delayComStat;
 extern uint8_t DevLock;
@@ -1361,8 +1450,8 @@ extern uint8_t difName[50];
 extern uint8_t timeTxTBLE;	//
 extern uint16_t timeoutTBLE;
 
-extern uint8_t timePreDh_h;
-extern uint8_t timePreDh_l;
+//extern uint8_t timePreDh_h;
+//extern uint8_t timePreDh_l;
 
 // Bloque de evento WiFi EX
 extern uint8_t BloqEventWiFiEx [18];
@@ -1381,6 +1470,11 @@ enum parametros_Bloque_Ev_Wifi_Ex  {
 // Fin del bloque de evento WiFi
 };
 
+extern char directorioMQTT[17];
+
+extern uint8_t temp_wifiEvent;		//@near uint8_t temp_wifiEvent = 0;
+
+
 //extern uint16_t comandoWF;	//
 //extern uint8_t softVersion1WF;	// versión del software
 //extern uint8_t softVersion2WF;	// versión del software
@@ -1396,7 +1490,14 @@ enum parametros_Bloque_Ev_Wifi_Ex  {
 
 
 
+extern uint8_t   t_filtro_flanco;       //RM_20240530 Para agregar el filtro de medición de voltaje
+
 extern uint8_t timeBCD_sec_ANT;
+extern uint8_t tiempoPrCargas;      //RM_20240819 Para el comando de prueba de cargas
+
+
+extern uint16_t timeDpyS3;			//@near uint16_t timeDpyS3		= 0;
+
 
 // para reservar memoria Flash dedicada a Logger
 //#pragma section @near {eventLogger}
@@ -1456,3 +1557,6 @@ extern void  op_menu (uint8_t dig1, uint8_t dig2);
 extern void  Bclear_Clear_trfst(uint8_t * trfst_3, uint8_t * trfst_4,uint8_t V, uint8_t W);
 extern void  Bset_Clear_trfst(uint8_t * trfst_1, uint8_t * trfst_2,uint8_t X, uint8_t Y);
 extern void  grabacion_exitosa_handshake (void);
+extern uint16_t   timeoutRXFw;
+extern void reinicio_valores_act_fw(void);
+extern void clean_logger(void);

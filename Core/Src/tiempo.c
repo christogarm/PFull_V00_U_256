@@ -2,6 +2,8 @@
 Traduccion hecha por : MGHJ__12/07/2024
  */
 
+// rutina refrigera Adaptada CTOF Completa ..............
+
 #include "main.h"
 #include "customMain.h"
 
@@ -21,7 +23,11 @@ void tiempo (void){
 tiempo10:
 				cntblkh++;						/// Cada 10 ms
 
+			   decword(&timeDpyS3);		/// decrementa tiempo de despliegue sensor 3
+
+
 			   decwreg(&delayComStat);
+
 			   decwreg(&cntMsgCmd);			//	Decrementa tiempo de desplegado de mensajes de comando
 			   decwreg(&timeBuzzOn);		//	Decrementa tiempo de encedido del buzzer
 
@@ -54,6 +60,8 @@ no_dec_deb:
 
 tiempo12:
 				cntcent = 0;				//clr			cntcent;		/ Si, inicia desde 0 centésimas
+
+				decwreg(&tiempoPrCargas);   //ldw			X,#tiempoPrCargas;   RM_20240819 Para comando de activación de cargas
 //;***********************************************************************************
 //;-----------------------------------------------------------------------------------
 
@@ -78,7 +86,7 @@ selectCOM:
 toggleCOM:
 				//; no cambies el canal de comunicación si hay una respuesta en transmisión en progreso
 				//tnz		keyTx
-				if(keyTx)//jrne	no_toggleCOM
+				if(keyTx != 0)//jrne	no_toggleCOM
 					goto no_toggleCOM;
 				flagsTxControl[f_select] = !(flagsTxControl[f_select]);// bcpl		flagsTxControl,#f_select
 				delayComStat = 10;//mov			delayComStat,#10
@@ -107,23 +115,26 @@ endSelect:
 //no_inc_timeH:
 //
 //noIncTime:
+				decword(&timeOnVaho_w);
+				decword(&timeOffVaho_w);
+				decword(&timeAlarmRetCo_w);
+				decwreg(&cntRetCo);
 
-	            decword(&temp_doorEvent);		// decremnta registro de duración evento puerta
-	            decwreg(&timeTxTBLE);
+
+				decword(&temp_doorEvent);		// decremnta registro de duración evento puerta
+				decwreg(&timeDpyDf);			//; decrementa tiempo para mostrar mensaje "dF"
+				decwreg(&timeTxTBLE);
 				decword(&timeoutTBLE);
 	            decwreg(&timeTxTWF);
 		    	decword(&timeoutTWF);			// decrementa timeout token wifi
 		    	decwreg(&timeoutTxWifi);		// decrementa timeout respuesta de wifi
 		    	decwreg(&delayTxLoggWifi);		// decrementa tiempo entre envíos de logger
-		    	decwreg(&retLampOff);			// decrementa tiempo de retardo para apagado de lampara
 		    	decwreg(&retPowerOn);			// decrementa tiempo de retardo para apagado de lampara
 		    	decwreg(&timeUnlockWIFI);		// decrementa tiempo de desbloqueo de comandos protegidos por password
-		    	decwreg(&debBtn2F3);			// Agota el retardo para función 3 boton 2
 
 
 		    	decword(&silencioAlarmH);		// decremnta registro de duración evento puerta
-		    	decword(&timePreDh_h);
-
+		    	decwreg(&temp_wifiEvent);
 
 
 		    	////    Variables que se decrenetan cada segundo
@@ -157,7 +168,7 @@ tiempo16:		//call		decwreg;
 		    	decwreg(&timeRstBLE);
 		    	//decword(&cntLogger_H);			// decrementra contador de logger
 		    	decwreg(&cntInitTx);
-		    	decword(&timeDataWF_H);			// decrementra contador de envio de datos por tiempo WIFI
+//		    	decword(&timeDataWF_H);			// decrementra contador de envio de datos por tiempo WIFI
 
 		    	decword(&t_ahorro1_H);
 		    	decword(&t_ahorro2_H);
@@ -219,7 +230,7 @@ tiempo40:
 				//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 				cntseg++;							//inc			cntseg;			/ Un segundo más
-				if(cntseg < 9){ //cp cntseg, #9
+				if(cntseg < (uint8_t)time_auto){ //cp cntseg, #9
 		    		goto tiempo50;				//jrult		tiempo50;		/ No, espera otro segundo
 		    	}
 				flagsa[0]= 0;		 // bres		flagsa,#0;0x01;	/ Si, termina arranque

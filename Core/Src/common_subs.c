@@ -1921,6 +1921,488 @@ void copyVector(uint8_t *srcX, uint8_t *dstY){
 	}
 	wreg = 0;
 }
+
+//;=====================================================================
+//;	Subrutina de control función vaho
+//;=====================================================================
+void vaho_func(){
+
+				if(Plantilla[tOnVh] == 0){
+					goto	vaho_end;		//jreq		vaho_end
+				}
+				if(Plantilla[tOffVh] == 0){
+					goto	vaho_end;		//jreq		vaho_end
+				}
+
+				if(flagsVaho[0]){
+					goto	vaho_ON;						//btjt		flagsVaho,#0,vaho_ON
+				}
+
+
+vaho_OFF:
+				GPIOR0[f_dh] = 0;							//bres		GPIOR0,#f_dh
+				flagsVaho[0] = 0;							//bres		flagsVaho,#0
+				timeOnVaho_w = Plantilla[tOnVh] * 60 ;		//mov		wreg,tOnVh;
+				if(timeOffVaho_w == 0){
+					goto	vaho_ON;						//jreq		vaho_ON
+				}
+				goto	vaho_end;							//jra		vaho_end
+
+vaho_ON:
+
+				GPIOR0[f_dh] = 1;							//bset		GPIOR0,#f_dh
+				flagsVaho[0] = 1;							//bset		flagsVaho,#0
+				timeOffVaho_w = Plantilla[tOffVh] * 60 ;	//mov		wreg,tOffVh;
+				if(timeOnVaho_w == 0){
+					goto	vaho_OFF;						//jreq		vaho_OFF
+				}
+				goto	vaho_end;							//jra		vaho_end
+vaho_end:
+
+}
+
+//;===============================================================================
+//;SUBTURINAS ASOCIADAS A LA MEDICIÓN DE VOLTAJE Y CORRIENTE TRMS
+//;===============================================================================
+
+//;=========================================  Rutina DETECCIÓN DE FLANCO DE BAJADA
+//;Por las características del hardware no se considera cruce por cero como tal.
+//;La señal se obtiene de un circuito aislado que tiene DEFASE.
+
+// Adaptacion revisada 30-MAY-2025 ........
+void detecta_flanco(){
+
+			s_reloj[2] = 0;//bres    s_reloj,#2        ;[b_flancob] ;Desactiva bandera de flanco de bajada
+
+up_anterior:
+			if(s_reloj[0]){	//btjt s_reloj,#0,alto   [actual]	   ;¿El valor de la bandera "actual" es 1?
+				goto alto;
+			}
+			s_reloj[1] = 0;   				//bres s_reloj,#1    ;[anterior]  ;NO: Anterior <- 0
+			goto end_up_anterior;//jra end_up_anterior
+
+alto:
+			s_reloj[1] = 1; 	//bset s_reloj,#1		;[anterior]   ;SI: Anterior <- 1
+end_up_anterior:
+
+up_actual:	 //;Actualiza la bandera "actual", con el valor actual del pin de flanco
+			if	(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_15)){
+				goto pin_cruce_alto;//jruge   pin_cruce_alto
+			}
+			s_reloj[0] = 0;		// bres    s_reloj,#0       ;[actual] ;NO: actual <- 0
+			goto end_up_actual;//;Determina si existió cruce
+pin_cruce_alto:
+			s_reloj[0] = 1;	 		//bset    s_reloj,#0         ;[actual] ;SI: actual <- 1
+end_up_actual:
+
+
+determina_flanco: //---------------------------------------------------------?
+			//ld      A,s_reloj     ;Enmascara variable para determinar flanco
+			//and     A,#$03        ;Las banderas son 0 ANT y 1 ACT enmascara con '00000011'
+			//cp      A,#$02        ;Estado buscado flanco de bajada ANT = 1 y ACT = 0,'00000010'
+	        if((s_reloj[1]) & (!s_reloj[0]) ){// jreq    flanco_bajada ;Coloca bandera de flanco de bajada
+				goto flanco_bajada;			//jreq    flanco_bajada ;Coloca bandera de flanco de bajada
+			}
+			goto fin_detecta_flanco;//jra fin_detecta_flanco
+
+
+flanco_bajada:
+			s_reloj[2] = 1;				//bset    s_reloj,#2     ;[b_flancos]    ;Activar bandera de flanco de subida
+			cruze_por_cero[0] = 1;		//bset    cruze_por_cero,#0     ;Activa bandera de cruce por cero
+
+fin_detecta_flanco:
+
+}
+
+//;=====================================  FIN Rutina DETECCIÓN DE FLANCO DE BAJADA
+//
+//;=============================================  Rutina de calibración de voltaje
+//;CONSIDERACIONES PARA CALIBRACIÓN:
+//;1. Debieron pasar 3 segundos con el equipo alimentado y muestreando
+//;2. En el instante que se va a realizar la calibración se deben tener 3
+//;muestras promediadas (8 muestras) IGUALES
+//;3. Las muestras deben estar en un rango definido
+
+// Adaptacion revisada 30-MAY-2025 ........
+void calibra_voltaje(){
+
+			muestras_cal_volt++; 			//inc  	muestras_cal_volt
+			if(muestras_cal_volt >= 23){	//	cp      A,#23                     ;23 muestras (23*8*16.6ms = 3 segundos)
+				goto espera_iguales;//jruge   espera_iguales
+			}
+			goto fin_calibra_voltaje;// jp fin_calibra_voltaje
+
+espera_iguales:
+			if(muestras_cal_volt != 23) {	//cp      A,#23
+				goto segunda_muestra;		//jrne    segunda_muestra
+			}
+			voltaje_ant_cal = volt_trms;	//	mov voltaje_ant_cal,volt_trms
+			goto fin_calibra_voltaje;		//jp  fin_calibra_voltaje
+
+segunda_muestra:
+			//goto calibracion_valida;
+			if(muestras_cal_volt != 24){	//cp      A,#24
+				goto tercera_muestra;		//jrne    tercera_muestra
+			}
+			tolerancia_cal_volt();			//call    tolerancia_cal_volt
+			//STM8_A viene de  "tolerancia_cal_volt()"
+			if(STM8_A != 0x55){					//cp      A,#24
+				goto calibra_reset;			//jrne    tercera_muestra
+			}
+			goto	fin_calibra_voltaje;	//jp      fin_calibra_voltaje
+
+
+tercera_muestra:
+			tolerancia_cal_volt();			//call    tolerancia_cal_volt
+			//STM8_A viene de  "tolerancia_cal_volt()"
+			if(STM8_A == 0x55){					//cp      A,#55
+					goto calibracion_valida;			//jreq    calibracion_valida
+			}
+			goto	calibra_reset;	//jp      calibra_reset
+
+
+
+
+calibracion_valida:
+
+//				clrw    X
+//				ld      A,volt_trms
+//				ld      XL,A
+
+v_ubajo_cv:
+				//ldw Y,#60
+				//ldw waux,Y
+				//waux = 60;
+				if(volt_trms > 60 ){//cpw X,waux -------x =   ;Compara la medición sin factor con el umbral bajo
+					goto v_ualto_cv;//jrugt  v_ualto_cv
+				}
+				goto calibra_reset;//jp   calibra_reset
+
+v_ualto_cv:
+				//ldw     Y,#80
+				//ldw     waux,Y
+				//waux = 80;
+				if(volt_trms >= 80 ){//cpw     X,waux, x  ;Mayor o igual al umbral alto, resistores mal soldados o inadecuados
+					goto calibra_reset;//jruge   calibra_reset
+				}
+				wreg = 100;					//mov  wreg,#100
+				waux = volt_trms;			//mov  waux,volt_trms
+
+graba_calvolt:
+
+desbloquea_eeprom:
+				uint32_t AddressDestination;
+				uint32_t Data ;
+	//			HAL_FLASHEx_DATAEEPROM_Unlock();
+
+		                    //btjt FLASH_IAPSR,#3,eeprom_desbloqueada
+eeprom_bloqueada:		//----------------------------------registro interno
+		                      //mov FLASH_DUKR,#$AE
+		                      //mov  FLASH_DUKR,#$56
+eeprom_bloqueada_1:
+		                     //btjf FLASH_IAPSR,#3,eeprom_bloqueada_1  ------------?
+eeprom_desbloqueada:
+				//ld  A, wreg
+				//ldw  X, #eevolt_mul
+				// (eevolt_mul) = wreg; //ld (X), A
+				//Data = (uint32_t)wreg;											//;Guarda la variable de multiplicación en EEPROM
+				//AddressDestination = &eevolt_mul;
+				wreeprom(wreg,&eevolt_mul);
+				reevolt_mul = wreg;
+
+	//			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
+				//HAL_IWDG_Refresh( &hiwdg );
+graba_1:
+		         //btjt FLASH_IAPSR,#2,graba_1 ------------------------registro
+
+				//ld  A,waux
+				 //ldw  X,#eevolt_div
+				 //ld	(X),A
+				//Data = (uint32_t)waux;										//;Guarda la variable de división en EEPROM
+				//AddressDestination = &eevolt_div;
+				wreeprom(waux,&eevolt_div);
+				reevolt_div = waux;
+	//			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
+				//HAL_IWDG_Refresh( &hiwdg );
+graba_2:
+		         //btjt	FLASH_IAPSR,#2,graba_2  ----------------registro
+
+				// ld  A,#$3C
+				//ldw X,#eef_voltaje
+				//ld (X),A
+				//Data = (uint32_t)0x3C;										//;Indica que ya se realizo calibración de voltaje en EEPROM
+				//AddressDestination = &eef_voltaje;
+	//			HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_BYTE, AddressDestination, Data);
+				wreeprom(0x3C,&eef_voltaje);
+				reef_voltaje = 0x3C;
+
+				//HAL_IWDG_Refresh( &hiwdg );
+
+graba_3: //----------------------------------registro
+		        //btjt FLASH_IAPSR,#2,graba_3
+		        // mov FLASH_IAPSR,#$00	   ;Bloquea la EEPROM inmediatamente
+	//			HAL_FLASHEx_DATAEEPROM_Lock();
+		        goto fin_calibra_voltaje;//jp fin_calibra_voltaje
+
+calibra_reset:
+				asm ("nop");
+				asm ("nop");
+		        goto calibra_reset;//jp      calibra_reset
+
+fin_calibra_voltaje:
+//		        goto fin_voltrms;// jp fin_voltrms
+//error_muestreo:
+//				cnt_mues = 0;//clr cnt_mues
+//				cnt_veces_muestreo = 0;//clr cnt_veces_muestreo
+//				edo_muestreo = 0;//mov edo_muestreo,#0
+//fin_voltrms:
+
+
+
+}
+
+//;=================================================  FIN Rutina para RESET de MCU
+
+//;==============================================================  Rutina muestreo
+//;Adquiere y procesa 64 muestras de voltaje y corriente.
+
+// Adaptacion revisada 30-MAY-2025 ........
+void muestreo_trms(){
+
+		if(!ban_muestreo[0]){						//btjf    ban_muestreo,#0,adq_muestra_i ;¿Nuevo ciclo a medir?
+			goto adq_muestra_i;
+		}
+		ban_muestreo[0] = 0;		//bres    ban_muestreo,#0           ;Limpia bandera que indica que es inicio de un nuevo ciclo
+		//clr     sigma_cuad_sampl_1_1      ;Limpia las variables de la sumatoria CH1
+		//clr     sigma_cuad_sampl_2_1      ;/
+		//clr     sigma_cuad_sampl_3_1      ;/
+		//clr     sigma_cuad_sampl_4_1      ;/
+		sigma_cuad_sampl_1 = 0;
+		//clr     sigma_cuad_sampl_1_2      ;Limpia las variables de la sumatoria CH2
+		//clr     sigma_cuad_sampl_2_2      ;/
+		//clr     sigma_cuad_sampl_3_2      ;/
+		//clr     sigma_cuad_sampl_4_2      ;/
+	    sigma_cuad_sampl_2 = 0;
+		cnt_mues = 0;				//clr     cnt_mues                  ;Limpia el contador de muestras
+
+
+adq_muestra_i:            //;------------------------------  Adquiere la muestra n
+		if(cnt_mues <= 64){						//jrule   adq_muestra_i_1
+			goto adq_muestra_i_1;
+		}
+		goto	fin_muestreo_trms;		//fin_muestreo_trms			//jp      fin_muestreo_trms
+
+adq_muestra_i_1:
+		//Captura ADC CANAL de CORRIENTE
+		ADC1->CHSELR = 0;
+		ADC1->CHSELR |= ADC_CHSELR_CHSEL0;  // "STM32U:PC0_Canal 0_FOTOCELDA"  ----->  "STM8:PE5 ADC_IN 23"
+		capturaAD();
+
+		ram_h = adcramh;			// ;Guarda el resultado de la conversión en RAM TEMPORAL
+
+//		;acond_corriente:
+//		;  ldw     X,ram_h
+//		;  cpw     X,#512
+//		;  jruge   positivo
+//		;    ldw     X,#512
+//		;    subw    X,ram_h
+//		;    ldw     ram_h,X
+//		;    jra     fin_acond_corriente
+//
+//		;:positivo:
+//		;  subw    X,#512
+//		;  ldw     ram_h,X
+
+fin_acond_corriente:
+
+		STM8_16_X = ram_h;  		  //ldw     X,ram_h        ;Almacena la muestra en X para calculos en RAM
+		  	  	  	  	  	  	  	  //ldw     Y,ram_h        ;Almacena la muestra en Y para colocarlo en RAM
+
+		fact_mul = 1;  				//mov     fact_mul,#1     ;eecorr_mul    ;Aplica factor, el resultado llega en X
+		fact_div = 1;  				//mov     fact_div,#1     ;eecorr_div    ;/
+		aplica_factor();			//call    aplica_factor          ;Aplica el factor a la muestra adquirida
+
+		//  mov     sigma_cuad_sampl_4,sigma_cuad_sampl_4_1   ;CANAL 1 es la corriente
+		//  mov     sigma_cuad_sampl_3,sigma_cuad_sampl_3_1   ;/
+		//  mov     sigma_cuad_sampl_2,sigma_cuad_sampl_2_1   ;/
+		//  mov     sigma_cuad_sampl_1,sigma_cuad_sampl_1_1   ;/
+		sigma_cuad_sampl = sigma_cuad_sampl_1;
+		cuadrado_suma();			//call    cuadrado_suma  ;Eleva la muestra al cuadrado y realiza suma acumulada
+//		  mov     sigma_cuad_sampl_4_1,sigma_cuad_sampl_4   ;CANAL 1 es la corriente
+//		  mov     sigma_cuad_sampl_3_1,sigma_cuad_sampl_3   ;/
+//		  mov     sigma_cuad_sampl_2_1,sigma_cuad_sampl_2   ;/
+//		  mov     sigma_cuad_sampl_1_1,sigma_cuad_sampl_1   ;/
+		sigma_cuad_sampl_1 = sigma_cuad_sampl;
+
+adq_muestra_v:            //;------------------------------  Adquiere la muestra n
+		//Captura ADC CANAL de Voltaje
+		ADC1->CHSELR = 0;
+		ADC1->CHSELR |= ADC_CHSELR_CHSEL9;  // "STM32U:PC0_Canal 0_FOTOCELDA"  ----->  "STM8:PE5 ADC_IN 23"
+		capturaAD();
+
+		ram_h = adcramh;		//;Guarda el resultado de la conversión en RAM TEMPORAL
+
+		ram_h >>= 1;    			//srlw    X              ;Convierte la muestra de 10 bits en 9 bits
+		ram_h >>= 1; 				//srlw    X              ;Convierte la muestra de  9 bits en 8 bits
+
+		STM8_16_X = ram_h;
+
+		fact_mul = reevolt_mul;  	//mov     fact_mul,eevolt_mul    ;Aplica factor, el resultado llega en X
+		fact_div = reevolt_div;  	//mov     fact_div,eevolt_div    ;/
+		aplica_factor();			//call    aplica_factor          ;Aplica el factor a la muestra adquirida
+
+//		  mov     sigma_cuad_sampl_4,sigma_cuad_sampl_4_2   ;CANAL 2 es el voltaje
+//		  mov     sigma_cuad_sampl_3,sigma_cuad_sampl_3_2   ;/
+//		  mov     sigma_cuad_sampl_2,sigma_cuad_sampl_2_2   ;/
+//		  mov     sigma_cuad_sampl_1,sigma_cuad_sampl_1_2   ;/
+		sigma_cuad_sampl =  sigma_cuad_sampl_2;
+		cuadrado_suma();			//call    cuadrado_suma  ;Eleva la muestra al cuadrado y realiza suma acumulada
+//		  mov     sigma_cuad_sampl_4_2,sigma_cuad_sampl_4   ;CANAL 1 es la corriente
+//		  mov     sigma_cuad_sampl_3_2,sigma_cuad_sampl_3   ;/
+//		  mov     sigma_cuad_sampl_2_2,sigma_cuad_sampl_2   ;/
+//		  mov     sigma_cuad_sampl_1_2,sigma_cuad_sampl_1   ;/
+		 sigma_cuad_sampl_2 = sigma_cuad_sampl;
+
+		 cnt_mues++;			//inc     cnt_mues       ;Una muestra más
+
+fin_muestreo_trms:
+
+}
+
+
+//;=========================================================  Rutina aplica factor
+//;Llega un dato de 2 BYTES en X, el dato es multiplicado por un factor que la
+//;apróxima al valor calculado (revisar tablas de diseño).
+
+// Adaptacion revisada 30-MAY-2025 ........
+void aplica_factor(){
+											//;*fact_mul límitado a 64 para resultado 2 BYTES
+	uint32_t foo = STM8_16_X * fact_mul;		//call    mul_16x16
+											//;Resultado de 2 BYTES en level_1st_result_H
+	STM8_16_X = (uint16_t)(foo / fact_div);  		//;Divide entre factor
+
+}
+
+//;=====================================================  FIN Rutina aplica factor
+
+//;============================================== Rutina cuadrado y suma acumulada
+//;La muestra con el factor aplicado se eleva al cuadrado y se guarda en las
+//;variables para la suma acumulada de las muestras elevadas al cuadrado, el
+//;resultado es de 4 BYTES.
+//;Antes de llamar la rutina y al regreso se deben indicar las variables del CANAL
+
+// Adaptacion revisada 30-MAY-2025 ........
+void cuadrado_suma(){
+		//	  ldw     waux,X            ;waux.. wreg     mult 1 X Muestra con factor 2 BYTES
+		//	  ldw     resulh,X          ;resulh:resull.. mult 2 X Muestra con factor 2 BYTES
+		//	  call    mul_16x16         ;El resultado es un dato de 4B (En la aplicación 3B)
+//;waux:wreg      mult 1
+//;resulh:resull  mult 2
+//;El resultado lo almacena en [level_2st_result_H:level_1st_result_L]
+		uint32_t	foo = STM8_16_X * STM8_16_X;
+//		;---------------------------------------------------------------  Suma acumulada
+//		;Suma 2 variables de 4 BYTES despreciando el acarreo del MSB
+//		;Considerando la limitante (511) del algoritmo la suma acumulada de las muestras
+//		;elevadas al cuadrado será máximo: 16,711,744d - FF0040h 3B
+//		;Por lo anterior, despreciar el acarreo no tiene efecto, pues nunca existirá
+
+suma_acumulada:
+//ldw     X,level_1st_result_H   ;Suma acumulada PARTE BAJA
+//addw    X,sigma_cuad_sampl_2   ;/
+//ldw     sigma_cuad_sampl_2,X   ;sigma_cuad_sampl_X auxiliar suma acumulada
+//clr     waux                   ;Para sumar si existe acarreo
+//clr     wreg                   ;/
+//jrnc    not_inc_byte3_2        ;/
+//  inc  		wreg                 ;/
+//not_inc_byte3_2:
+//ldw     X,waux                 ;/
+//addw    X,level_2st_result_H   ;Suma acumulada PARTE ALTA
+//addw    X,sigma_cuad_sampl_4   ;/
+//ldw     sigma_cuad_sampl_4,X   ;sigma_cuad_sampl_X auxiliar suma acumulada
+		sigma_cuad_sampl = sigma_cuad_sampl + foo;
+
+}
+
+//;===========  Rutina promedio de suma acumulada de muestras elevadas al cuadrado
+//;Rutina que promedia la sumatoria de las muestras elevadas al cuadrado esta en
+//;4 bytes c_sigma_cuad_sampl[4:1], promedio se guardada en las mismas variables.
+//
+//;Para realizar el promedio de 64 muestras se realizan 6 corrimientos 2^6 = 64
+//;Para realizar el promedio de 32 muestras se realizan 5 corrimientos 2^5 = 32
+
+// Adaptacion revisada 30-MAY-2025 ........
+void prom_muestras(){
+
+//      ld      A,#5                 ;5 corrimientos para promediar 32
+//      ;ld      A,#6                 ;6 corrimientos para promediar 64
+//
+//taking_prom:
+//  	  srl     c_sigma_cuad_sampl_4   ;Divide un dato de 4 BYTES entre 2
+//  	  rrc     c_sigma_cuad_sampl_3   ;/
+//  	  rrc     c_sigma_cuad_sampl_2   ;/
+//  	  rrc     c_sigma_cuad_sampl_1   ;/
+//  	  dec     A                      ;¿"A" corrimientos realizados?
+//  	  tnz     A                      ;/
+//  	  jrne    taking_prom            ;/
+
+	c_sigma_cuad_sampl = c_sigma_cuad_sampl / 32;
+
+}
+
+//;========================================  Rutina para calcular la raíz cuadrada
+//;Cálcula la raíz cuadrada de un número de 2 BYTES con el MÉTODO BABILÓNICO
+//;Valor a calcular c_sigma_cuad_sampl_x (promedio de la sumatoria de las muestras
+//;elevadas al cuadrado), regresa en X el valor de la raíz.
+//;TRUNCAMIENTO: 255 al cuadrado es 65025d FE01h, FFFFh equivale a 255, si el dato
+//;promediado es de 3 BYTES (pero no 4, es imposible*), trunca calculo de la raíz:
+//;Dato a calcular / 4 -> calcula raíz y el resultado es multiplicado por 2
+//;Antes de llamar la rutina se debe indicar a que CANAL se le calculará la RAÍZ
+//;*Revisar archivo de diseño medidor TRMS
+
+// Adaptacion revisada 30-MAY-2025 ........
+void calcula_raiz(){
+
+	STM8_16_X = sqrt(c_sigma_cuad_sampl);
+
+
+}
+
+//;===============  FIN Rutina promedio de suma acumulada de 8 muestras de 2 BYTES
+//
+//;=====================================  Rutina tolerancia calibración de voltaje
+//;Debido al glitter para la señal de cruce por cero y que no se tiene rectificación
+//;de onda completa se deja una toelrancia de +-1V en las 3 señales que son
+//;comparadas al realizar la calibración.
+//;Se usan las variables volt_trms y voltaje_ant_cal, si estan en tolerancia
+//;en A se carga el valor 55 decimal
+
+// Adaptacion revisada 30-MAY-2025 ........
+void	tolerancia_cal_volt(){
+
+		STM8_A = volt_trms;					//ld      A,volt_trms
+		if(STM8_A == voltaje_ant_cal){
+			goto med_en_tolerancia;			//	cp      A,voltaje_ant_cal
+		}									//	jreq    med_en_tolerancia
+			STM8_A--;							//dec     A
+			if(STM8_A == voltaje_ant_cal){		//
+				goto med_en_tolerancia;			//	cp      A,voltaje_ant_cal
+			}									//jreq    med_en_tolerancia
+				STM8_A++;							//inc A;
+				STM8_A++;							//inc A;
+				if(STM8_A == voltaje_ant_cal){		//
+					goto med_en_tolerancia;			//	cp      A,voltaje_ant_cal
+				}
+				STM8_A = 0;							//clr     A
+				goto	fin_tolerancia_cal_volt;	//jra     fin_tolerancia_cal_volt
+
+
+med_en_tolerancia:
+		STM8_A = 0x55;						//ld      A,#55
+		goto fin_tolerancia_cal_volt;		//jra     fin_tolerancia_cal_volt
+
+fin_tolerancia_cal_volt:
+}
+
 /*;=====================================================================
 ;	SUBRUTINA para calcular checksum. el dato debe estar en el acumulador
 ;

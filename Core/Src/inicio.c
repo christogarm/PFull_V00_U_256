@@ -5,6 +5,11 @@
 #include "ELTEC_EmulatedEEPROM.h"
 
 uint8_t BCDtoByte(uint8_t wreg_);
+void chk_var(void);
+
+
+
+
 
 void inicio (void){
 
@@ -264,7 +269,6 @@ void timeBCD_to_UNIX(void){
 	time_sec=BCDtoByte(timeBCD_sec);
 }
 
-
 uint8_t BCDtoByte(uint8_t wreg_){
 	// clr		waux;								/ limpia el byte salida
 	// ld		A,wreg;							/ carga dato BCD
@@ -281,6 +285,63 @@ uint8_t BCDtoByte(uint8_t wreg_){
 	return (uint8_t)( (wreg_ & 0x0F)+ ((wreg_ & 0xF0)>>4)*10 );// ld		waux,A;							/ guarda byte de salida
 
 }
+
+//	LN 6704 ------------------------------------------------------------------------------------------
+void chk_var(void){
+	//;Verifica que la duración de deshielo este dentro de rango
+	//ld			A,durdhh
+	//and			A,#%11100000
+	//tnz			A
+	if(durdhh & 0xE0)	//jrne		error_loop2
+		goto error_loop;			// CGM 06/06/2025 es un mismo loop
+
+	//ld			A,tminstoph
+	//and			A,#%11111000
+	//tnz			A
+	if(tminstoph & 0xF8)//jrne		error_loop
+		goto error_loop;
+
+	//	ld			A,retproth
+	//	and			A,#%11111000
+	//	tnz			A
+	if(retproth & 0xF8)//jrne		error_loop
+		goto error_loop;
+
+	//	ld			A,drp_comph
+	//	and			A,#%11111100
+	//	tnz			A
+	if(drp_comph & 0xFC)//jrne		error_loop
+		goto error_loop;	//
+	//	ld			A,drp_fanh
+	//	and			A,#%11111100
+	//	tnz			A
+	if(drp_fanh & 0xFC)//jrne		error_loop
+		goto error_loop;
+
+	//	ldw			X,limsup_w
+	//	cpw			X,liminf_w
+	//	jrslt		error_loop
+	if( ( (int) limsup_w ) < ( (int) liminf_w ) )
+		goto error_loop;
+
+	// CGM 06/06/2025		revisar este seccion es necesario de adaptar?
+//	ld			A,TIM4_PSCR
+//	sub			A,#$04		 ;Manuel 03-MAr-2022:	#$03
+//	tnz			A
+//	jrne		error_loop
+//
+//	ld			A,TIM4_ARR
+//	sub			A,#250
+//	tnz			A
+//	jrne		error_loop
+
+	return;
+
+error_loop:
+	goto error_loop;
+
+}
+
 
 /*
  * Funcion para encontrar en donde se debe comenzar a escribir el logger en la FLASH, tanto para el Logger de Tiempos (Datos) y el Logger de Eventos

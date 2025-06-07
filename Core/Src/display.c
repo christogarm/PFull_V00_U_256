@@ -1,3 +1,6 @@
+/* CGM 27/05/2025
+ * Ya Adaptado a CTOFF
+ */
 
 
 #include "main.h"
@@ -17,11 +20,16 @@ uint8_t	dpytab[]  =		{0x81, 0xBD, 0x92, 0x98, 0xAC, 0xC8, 0xC0, 0x9D, 0x80, 0x88
 };
 
 
+/* CGM 28/05/2025
+ * Variables Auxiliares para trabajar con los arreglos
+ */
+_Bool trefst_aux = 0;
+_Bool trefst2_aux = 0;
+
 
 
 
 void display (void){
-	uint8_t estado1_Aux = reeEstado1; // Agrego para no realizar tantas llamadas; CGM 25/02/2025
     asm ("nop");
 
 	if(edorefri == 0x00){
@@ -51,11 +59,12 @@ void display (void){
 	datled_clear();
 	//BitClear(datled,0);			// bres		datled,#0						;	/ Apaga el signo y punto decimal
 	//BitClear(datled,1);			// bres		datled,#1
+
 	goto display_01;
 
 display_00:
 //;================= FIN RM_20231106 Agrega mensaje de despliegue bL fijo
-	if (GetRegFlagState(estado1_Aux, est1Refri)){									//btjt   eeEstado1,#est1Refri,display_00b   ;¿Bandera on/off activada? O, no despliegues nada
+	if (GetRegFlagState(reeEstado1, est1Refri)){									//btjt   eeEstado1,#est1Refri,display_00b   ;¿Bandera on/off activada? O, no despliegues nada
 		goto display_00b;
 	}
 	op_menu (0x11, 0x10);
@@ -78,6 +87,49 @@ display_00b:
 
 
 display_01:
+/* CGM 28/05/2025
+ * Se agrega Rutina del CTOFF
+ */
+//;-----------------------------------------------------------------------------------------------
+//;										 Muestra temperatura sensor 3
+//;-----------------------------------------------------------------------------------------------
+dpys3:
+
+	//ldw			X,timeDpyS3
+	if(timeDpyS3 == 0)		//tnzw		X
+		goto finDpys3;	//jreq		finDpys3
+	//
+	//;los primeros segundos muestra la leyenda SH
+	if(timeDpyS3 < 1150) 		//cpw			X,#1150
+		goto dpys3_01;			//jrult		dpys3_01
+	datdig1 = 0x5;				//mov			datdig1,#$05         ;Despliega S
+	datdig2 = 0x13;				//mov			datdig2,#$13         ;Despliega H
+	//bres		datled,#0						;	/ Apaga el signo y punto decimal
+	//bres		datled,#1
+	datled_clear();
+
+dpys3_01:
+	//;los ultimos segundos muestra la leyenda tr
+	if(timeDpyS3 > 200)			//cpw			X,#200
+		goto dpys3_02;			//jrugt		dpys3_02
+	datdig1 = 0x20;				//mov			datdig1,#$20         ;Despliega t
+	datdig2 = 0x28;				//mov			datdig2,#$28         ;Despliega r
+	//bres		datled,#0						;	/ Apaga el signo y punto decimal
+	//bres		datled,#1
+	datled_clear();
+
+dpys3_02:
+//
+//;apaga el display aprox cada 640ms
+	//ld			a,xl
+	//ld			wreg,a
+	if(!GetRegFlagState(timeDpyS3, 6))//btjf		wreg,#6,finDpys3
+		goto finDpys3;
+
+	goto dpy03;	//jra			dpy03
+
+finDpys3:
+
 
 //;-----------------------------------------------------------------------------------------------
 //;										 Mensajes temporales de comandos
@@ -110,7 +162,7 @@ msg1:
 	op_menu (0x11, 0x10);
 	//datdig1 = 0x11;//mov			datdig1,#$11
 	//datdig2 = 0x10;//mov			datdig2,#$10         ;/
-	if(!GetRegFlagState(estado1_Aux, est1Refri)){//btjf		eeEstado1,#est1Refri,msg1_01 ***********
+	if(!GetRegFlagState(reeEstado1, est1Refri)){//btjf		eeEstado1,#est1Refri,msg1_01 ***********
 		goto msg1_01;
 	}
 	datled[sign] = 1;		   //datled = sign; //bset		datled,#sign;
@@ -124,48 +176,40 @@ askMsg2:
 	}
 
 msg2:
-	op_menu (0x11, 0x01);
+	op_menu (0x11, 0x0A);		// Se modifica CTOFF
 	//datdig1 = 0x11; //mov  datdig1,#$11
-	//datdig2 = 0x01;//mov			datdig2,#$01
-	if(!GetRegFlagState(estado1_Aux, est1Lamp)){//btjf		eeEstado1,#est1Lamp,msg2_01
+	//datdig2 = 0x0A;//mov			datdig2,#$01
+	if(!GetRegFlagState(reeEstado1, est1Lamp)){//btjf		eeEstado1,#est1Lamp,msg2_01
 		goto	msg2_01;
 	}
-	datdig2 = 0x02;//mov datdig2,#$02
+	//datdig2 = 0x02;//mov datdig2,#$02
+	//Modificacion CTOFF
+	BitSet(datdig2 , sign); // bset		datled,#sign;					enciende signo
+
 
 msg2_01:
 	goto dpy07;		// jra dpy07
 
 
 askMsg3:
-	if(numMsg  != 3){//a,#3
-		goto askMsg4;  //jrne askMsg4
-	}
-
-msg3:
-	op_menu (0x11, 0x00);
-	//datdig1 = 0x11;//mov			datdig1,#$11
-	//datdig2 = 0x00;//mov			datdig2,#$00
-	if(GetRegFlagState(estado1_Aux, est1LockDr)){//btjt eeEstado1,#est1LockDr,msg3_01 ***************************
-		goto msg3_01;
-	}
-	datled[sign] = 1;			//bset		datled,#sign;
-
-msg3_01:
-	goto dpy07;//jra dpy07
 
 askMsg4:
-	if(numMsg != 4){ //cp			a,#4
-		goto askMsg5;  //jrne		askMsg5
+	/*
+	 * Se Modifica CTOFF
+	 */
+	if(numMsg  != 4){//a,#3
+		goto askMsg5;  //jrne askMsg4
 	}
 
 msg4:
 	op_menu (0x1F, 0x1D);
-	//datdig1 = 0x1F;  //mov datdig1,#$1F
-	//datdig2 = 0x1D;  // mov	datdig2,#$1D
+	//datdig1 = 0x11;//mov			datdig1,#$11
+	//datdig2 = 0x00;//mov			datdig2,#$00
 
-	goto dpy07;//jra			dpy07
+//msg4_01:
+	goto dpy07;//jra dpy07
 
-askMsg5:     ///
+askMsg5:
 	goto dpy07;
 
 
@@ -238,7 +282,7 @@ display_j02:
     goto dpy07;//jra dpy07
 
 dpy06:
-   if(fauto[3] == 1){//btjt		fauto,#3,dpy07  *******************************
+   if(fauto[3]){//btjt		fauto,#3,dpy07  *******************************
 	   goto dpy07;
    }
    if(flagsb[f_prog]){//btjt		flagsb,#f_prog,dpy07; *******************************
@@ -275,14 +319,17 @@ dpy07:
 //;--------------------------------  Acciones a realizar con el BUZZER
 buzzer:
 		//++++++++++++++++++++++++++++++++++++++++++++++
+		trefst_aux = 0;
+		trefst2_aux = 0;
 		for(uint8_t k=0; k<8; k++){
-			if(trefst[k] ){ //tnz  trefst ***************??
-				goto ask_snooze; //jrne	ask_snooze
-			}
-			if(trefst2[k] ){ //tnz  trefst2  *************** ???
-				goto ask_snooze;  //jrne	ask_snooze
-			}
+			trefst_aux |= trefst[k];
+			trefst2_aux |= trefst2[k];
 		}
+
+		if(trefst_aux)
+			goto ask_snooze;
+		if(trefst2_aux)
+			goto ask_snooze;
 
         // silencioAlarmL = 0;//clr	silencioAlarmL
         silencioAlarmH = 0;//clr	silencioAlarmH
@@ -362,37 +409,6 @@ buzzer_activado_04:
 
 
 buzzer_activado_05:
-		if(!flagsBattery[batON]){//btjf		flagsBattery,#batON,buzzer_activado_08
-			goto buzzer_activado_08;
-		}
-		edo_buzzer = 2;//mov     edo_buzzer,#2
-
-buzzer_activado_08:
-		if(!flagsTC[f_TC1]){//btjf	flagsTC,#f_TC1,buzzer_activado_01
-			goto buzzer_activado_01;
-		}
-		edo_buzzer = 2;//mov     edo_buzzer,#2
-
-buzzer_activado_01:
-		if(!flagsTC[f_TC2]){//btjf		flagsTC,#f_TC2,buzzer_activado_02
-			goto buzzer_activado_02;
-		}
-		edo_buzzer = 3;//mov     edo_buzzer,#3
-
-buzzer_activado_02:
-		if(!flagsTC[f_TC3]){//btjf		flagsTC,#f_TC3,buzzer_activado_03
-			goto buzzer_activado_03;
-		}
-		edo_buzzer = 1;//mov     edo_buzzer,#1
-
-buzzer_activado_03:
-		if(!flagsBattery[batLOW]){//btjf flagsBattery,#batLOW,buzzer_activado_09
-			goto buzzer_activado_09;		//; ---------------------------------------------------------------------------------------------------
-		}
-		edo_buzzer = 1;//mov     edo_buzzer,#1
-
-buzzer_activado_09:
-
 		//ld			A,trefst
 		//and			A,#%00111111
 		//cp			A,#0
@@ -412,7 +428,7 @@ buzzer_activado_06:
 		for(int k=0; k<8;k++){
 			trefst_aux_ |= trefst2[k]<<k;
 		}
-		if(trefst_aux_ == 0x00){//cp A,#0 // //jreq		buzzer_activado_07
+		if((trefst_aux_ & 0xFB)== 0x00){//cp A,#0 // //jreq		buzzer_activado_07
 			goto buzzer_activado_07;
 		}
 		edo_buzzer = 1;//mov     edo_buzzer,#1
@@ -434,31 +450,10 @@ buzzer_activado_07:
 				//break;
 			case 4: goto buzzer_etapa_4;
 				//break;
+			case 5: goto buzzer_etapa_5;
 			default: goto buzzer_disponible;//jra			buzzer_disponible
 				//break;
 		}
-
-//		if( edo_buzzer == 0){			//jreq		buzzer_activado
-//			goto buzzer_activado;
-//		}
-//		//cp			A,#1
-//		if(edo_buzzer == 1){//jreq		buzzer_etapa_1
-//			goto buzzer_etapa_1;
-//		}
-//		//cp			A,#2
-//		if(edo_buzzer == 2){//jreq		buzzer_etapa_2
-//			goto buzzer_etapa_2;
-//		}
-//		//cp			A,#3
-//		if(edo_buzzer == 3){//jreq		buzzer_etapa_3
-//			goto buzzer_etapa_3;
-//		}
-//		//cp			A,#4
-//		if(edo_buzzer == 4){//jreq		buzzer_etapa_4
-//			goto buzzer_etapa_4;
-//		}
-//		goto buzzer_disponible;//jra			buzzer_disponible
-
 
 
 buzzer_activado:  //;------------------------------------------------------------
@@ -471,8 +466,6 @@ inicializa_tiempo_bz:
 		t_buzzer = cnt_gen_ms + 100;
 
 		goto realiza_multiplexeo; 		//jp      realiza_multiplexeo
-
-
 
 buzzer_etapa_1:
 		//ldw			X,#500
@@ -503,7 +496,16 @@ buzzer_etapa_3:
 buzzer_etapa_4:
 		// waux = 0xE3;//mov waux,#%11100011
 
+		goto activa_buzzer;	// jp      activa_buzzer
 
+buzzer_etapa_5:
+//	;/ tiempos para poder sincornizar buzzer con mensajes en display.
+		//ldw			X,#500
+		buzzer_ton = 500; 		//ldw			buzzer_ton,X
+		//ldw			X,#2060
+		buzzer_toff = 2060;		//ldw			buzzer_toff,X
+		//mov     waux,#%11100011		   ;BEEP Control/Status Register @4 KHz
+		//jp      activa_buzzer
 
 activa_buzzer:
 		//ldw     X,cnt_gen_ms
@@ -540,6 +542,9 @@ buzzer_disponible:
 
 realiza_multiplexeo:
 //;-------------------------------------------------------------------------------
+	/*
+	 * Se modifica CTOFF
+	 */
 	for(uint8_t k=0;k<8;k++){
 		Ind_Par[k] = 1;//	mov			Ind_Par,#$FF
 	}
@@ -558,54 +563,31 @@ realiza_multiplexeo:
 		Ind_Par[7] = 0;		//	bres		Ind_Par,#7;/ No, apagalo.
 
 
-
-	if(edorefri >=2){
-		goto	clt_ledInd;
-	}
 	Ind_Par[2] = 0;		//	bres		Ind_Par,#2
-	goto	no_blk;
 
-clt_ledInd:
+	if(datled[luzD])	//	btjt		datled,#luzD,blink_dia
+		goto blink_dia;
+		//
+	if(!flagsC[f_doorOpen])	//	btjf		flagsC,#f_doorOpen,no_blk
+		goto no_blk;
+		//
+	if(GetRegFlagState(cntblkl, 5))	//	btjt		cntblkl,#5,display_j11;		/ Parpadea cada 320 ms
+		goto display_j11;
 
-	Ind_Par[2] = 1;			//bset		Ind_Par,#2;
-	if(datled[luzD]){
-		goto	blink_dia;
-	}
+	Ind_Par[2] = 1;	//	bset		Ind_Par,#2
 
-	if(cnt_pta_fan == 0){				// / El contador de puerta abierta llego a cero?
-		goto	no_blk;
-	}
-	if(!flagsC[f_doorOpen]){// if(!GetRegFlagState(flagsC, f_doorOpen)){
-		goto	no_blk;
-	}
+	goto no_blk;	//	jra			no_blk;			/ continua
 
-	if(GetRegFlagState(lowByte(cntblkh), 5)){				// cntblkl,#5,display_j11;		Parpadea cada 320 ms
-	    asm ("nop");
-		goto	display_j11;
-	}
-	Ind_Par[2] = 0;					//bres		Ind_Par,#2
-	goto	no_blk;
 
 blink_dia:
 	if(GetRegFlagState(lowByte(cntblkh), 7)){			  // cntblkl,#7,display_j11; 		Parpadea cada 1280 ms
 		goto	display_j11;
 	}
-	Ind_Par[2] = 0;
+	Ind_Par[2] = 1;
 
 display_j11:
 no_blk:
 
-	asm ("nop");
-//;---------------------------------------------------------------------------
-//;							Con refri OFF manten led puerta apagado.
-//;---------------------------------------------------------------------------
-
-	if (estado1_Aux & (1 << est1Refri)){									//btjt   eeEstado1,#est1Refri,display_00b   ;¿Bandera on/off activada? O, no despliegues nada
-		goto	refriON;
-	}
-refriOFF_2:
-	Ind_Par[2] = 1;
-refriON:
 
 findpy:
 

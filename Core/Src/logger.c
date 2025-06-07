@@ -1,12 +1,11 @@
+/* CGM 27/05/2025
+ * Ya Adaptado a CTOFF
+ */
 
 
 #include "main.h"
 #include "customMain.h"
 #include "ELTEC_EmulatedEEPROM.h"
-
-
-
-
 
 void logger (void){
 
@@ -15,7 +14,7 @@ void logger (void){
 
 		//ld A,edorefri;
 		//cp A,#2;
-		if(edorefri >= 2){
+		if(edorefri >= 2 && flagsRxFirm[0] == 0){  //Parche, inhibicion de logger mientras se actualiza el fw
 			goto logger_01;//jruge	logger_01;
 		}
 		goto fin_logger; //jp fin_logger
@@ -179,6 +178,25 @@ comp_event_end:
 		BloqEventComp[EC_tempEvaEnd_H] = teval;							//ldw		X,teval
 		BloqEventComp[EC_tempEvaEnd_L] = tevaf;							//ldw		EC_tempEvaEnd,x;				/ copia el dato de temperatura evaporador
 
+		/* Se Agrega Rutina del CTOFF
+		 * CGM 27/05/2025
+		 */
+
+		//		ldw		X,potencia
+		//		ld		A,XL
+		//		ld		EC_voltInit,A
+		BloqEventComp[EC_voltInit] = (uint8_t) potencia;
+//		;cambia de posición  la parte alta  para combinar 3 bits con event type
+//		ld		A,XH
+//		swap	A
+//		sll		A
+//		and		A,#%11100000
+//		or		A,EC_eventType
+//		ld		EC_eventType,A
+
+
+		BloqEventComp[EC_eventType] |= (uint8_t)((potencia >> 3) & 0xE0);
+
 		dirDataLoad = &BloqEventComp[EC_timeInit_4];					//ldw X,#EC_timeInit_HW
 		//ldw	dirDataLoad,X;/ indica el inicio del bloque de datos a cargar (evento compresor)
 		load_event();			//call	load_event
@@ -296,12 +314,34 @@ wifi_event_start:
 		BloqEventWiFiEx[WF_tempAmbInit_L] = tdevf;
 		BloqEventWiFiEx[WF_voltInit] = voltl;		//mov		WF_voltInit,voltl; /carga voltaje
 		flagsEvent[4] = 1;			//bset	flagsEvent,#4;					/ indica que el evento wifi ya inició
+		/* Se Agrega Sentencia del CTOFF
+		 * CGM 27/05/2025
+		 */
+		temp_wifiEvent = 60;
+
 		goto alarm_event;			//jp		alarm_event;						/ continúa
 ask_wfE_end:
-		if(flagsTxControl[f_statWIFI])	//btjt	flagsTxControl,#f_statWIFI,wifi_event_end; Volvió la conexión wifi ? Sí, termina evento falla de wifi
-			goto wifi_event_end;
-		goto alarm_event;				//jra	alarm_event;						/ Sí, continúa sin terminar evento
+//		if(flagsTxControl[f_statWIFI])	//btjt	flagsTxControl,#f_statWIFI,wifi_event_end; Volvió la conexión wifi ? Sí, termina evento falla de wifi
+//			goto wifi_event_end;
+
+		/* Se Agrega Rutina del CTOFF
+		 * CGM 27/05/2025
+		 */
+		if(!flagsTxControl[f_statWIFI])
+			goto alarm_event;				//		btjf	flagsTxControl,#f_statWIFI,alarm_event; Volvió la conexión wifi ? Sí, termina evento falla de wifi
+		if(flagsTxControl[f_auxEventWIFI])
+			goto wifi_event_end;			//		btjt	flagsTxControl,#f_auxEventWIFI,wifi_event_end;  Si viene con bandera auxiliara arriba ignora tirmpo minimo de fallas (viene de un reset)
+		if(temp_wifiEvent == 0)				//		tnz		temp_wifiEvent;					/ la duración minima se cumplió ?
+			goto wifi_event_end;			//		jreq	wifi_event_end;					/ Sí, cierra evento
+		flagsEvent[1] = 0;					//		bres	flagsEvent,#4;					/ NO, borra inicio de evento wifi
+		goto alarm_event;					//		jra		alarm_event;						/ continúa sin grabar evento
+
 wifi_event_end:
+		/* Se Agrega Sentencia del CTOFF
+		 * CGM 27/05/2025
+		 */
+		flagsTxControl[f_auxEventWIFI] = 0;		//bres	flagsTxControl,#f_auxEventWIFI ; borra bandera auxiliar
+
 		//ldw		X,timeSeconds_HW
 		BloqEventWiFiEx[WF_timeEnd_4] = highByte(timeSeconds_HW);	//ldw		WF_timeEnd_HW,X
 		BloqEventWiFiEx[WF_timeEnd_3] = lowByte(timeSeconds_HW);

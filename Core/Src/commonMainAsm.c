@@ -6,53 +6,110 @@
 #include "customMain.h"
 
 
+// rutina refrigera Adaptada CTOF Completa ..............
+
+
 //***************************** Traduccion Completa *******************************************
 void main10(void){
-	//Operacion exlusiva para el control SW Display i2c
-		if(portX[dp_sw])
-		  HAL_GPIO_WritePin(PFULLDEF_dp_sw, GPIO_PIN_SET);        //28-May-2024:  Enciende DPY I2C
-		  //GPIOC->BSRR = GPIO_BSRR_BS_3;
-		else
-		  HAL_GPIO_WritePin(PFULLDEF_dp_sw, GPIO_PIN_RESET);      //28-May-2024:  Apaga DPY I2C
-		 //GPIOC->BSRR = GPIO_BSRR_BR_3;
+		//Operacion exlusiva para el control SW Display i2c
+		if(!portX[dp_sw]){
+			goto	put_dp_sw_low;
+		}
+		HAL_GPIO_WritePin(PFULLDEF_dp_sw, GPIO_PIN_SET);        //28-May-2024:  Enciende DPY I2C
+		goto	end_dp_sw;			//jra		end_dp_sw
+put_dp_sw_low:
+		HAL_GPIO_WritePin(PFULLDEF_dp_sw, GPIO_PIN_RESET);      //28-May-2024:  Apaga DPY I2C
+end_dp_sw:
 
+
+//;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//;			Relevador 1 40A			J7:2....PA5: Compresor
+//;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		//(1)Operacion exlusiva para el compresor
-		if(portX[rel_co])
+		if(!GetRegFlagState(Plantilla[logicos2],modLogic)){
+				goto	noModlog_00;
+		}
+		if(!portX[rel_dh]){
+			goto	put_rel_co_low;
+		}
+		goto	put_rel_co_high;		//jra		put_rel_co_high
+noModlog_00:
+		if(!portX[rel_co]){				//;RM_20220622 Cambio de puerto para compresor en PCB V3
+			goto	put_rel_co_low;
+		}
+put_rel_co_high:
 		  HAL_GPIO_WritePin(PFULLDEF_rel_co, GPIO_PIN_SET);        //28-May-2024:  Enciende compresor
-		  //GPIOA->BSRR = GPIO_BSRR_BS_9;
-		else
+		  goto		end_rel_co;		//jra		end_rel_co
+put_rel_co_low:
 		  HAL_GPIO_WritePin(PFULLDEF_rel_co, GPIO_PIN_RESET);      //28-May-2024:  Apaga compresor
-		  //GPIOA->BSRR = GPIO_BSRR_BR_9;
+end_rel_co:
 
-		//(2)Operacion exlusiva para  Aux.Luz				-----Manuel 10-Mar-2022: Para ADaptar pines
-		if(portX[rel_lz])
-		  HAL_GPIO_WritePin(PFULLDEF_rel_lz, GPIO_PIN_SET);        //28-May-2024:  Enciende  Aux.Luz
-		  //GPIOC->BSRR = GPIO_BSRR_BS_9;
-		else
-		  HAL_GPIO_WritePin(PFULLDEF_rel_lz, GPIO_PIN_RESET);      //28-May-2024:  Apaga  Aux.Luz
-		  //GPIOC->BSRR = GPIO_BSRR_BR_9;
 
+//;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//;			Relevador 4 10A				J7:4....PE6: Aux./Luz
+//;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		//;(2)Operacion exlusiva para  Aux.Luz				-----Manuel 10-Mar-2022: Para ADaptar pines
+		if(!GetRegFlagState(Plantilla[logicos2],modLogic)){
+			goto	noModlog_01;
+		}
+		if(!portX[rel_co]){
+			goto	put_rel_lz_low;
+		}
+		goto	put_rel_lz_high;		//jra		put_rel_co_high
+noModlog_01:
+		if(!portX[rel_lz]){				//;RM_20220622 Cambio de puerto para compresor en PCB V3
+			goto	put_rel_lz_low;
+		}
+put_rel_lz_high:
+		HAL_GPIO_WritePin(PFULLDEF_rel_lz, GPIO_PIN_SET);        //28-May-2024:  Enciende  Aux.Luz
+		goto		end_rel_lz;		//jra		end_rel_co
+put_rel_lz_low:
+		HAL_GPIO_WritePin(PFULLDEF_rel_lz, GPIO_PIN_RESET);      //28-May-2024:  Apaga  Aux.Luz
+end_rel_lz:
+
+
+//;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//;			Relevador 2 40A     J7:1....PA2: Ventilador o segundo Compresor
+//;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		//;(3)Operacion exlusiva para Ventilador			-----Manuel 10-Mar-2022: Para ADaptar pines
-		if(portX[rel_dh])
-		  HAL_GPIO_WritePin(PFULLDEF_rel_fn, GPIO_PIN_SET);        //28-May-2024:  Enciende Ventilador
-		  //GPIOA->BSRR = GPIO_BSRR_BS_8;
-		else
-		  HAL_GPIO_WritePin(PFULLDEF_rel_fn, GPIO_PIN_RESET);      //28-May-2024:  Apaga Ventilador
-		  //GPIOA->BSRR = GPIO_BSRR_BR_8;
+		if(!portX[rel_fn]){
+			goto	put_rel_fn_low;
+		}
+		HAL_GPIO_WritePin(PFULLDEF_rel_fn, GPIO_PIN_SET);        //28-May-2024:  Enciende Ventilador
+		goto		end_rel_fn;		//jra		end_rel_fn
+put_rel_fn_low:
+		HAL_GPIO_WritePin(PFULLDEF_rel_fn, GPIO_PIN_RESET);      //28-May-2024:  Apaga Ventilador
+end_rel_fn:
+
+//;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//;			Relevador 3 20A		J7:3....PE7: Deshielo
+//;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		//;(4)Operacion exlusiva para Deshielo
 		cntproc++;
-		//if(portX[rel_fn] && (cntproc & 0x01))
-		//	HAL_TIM_PWM_Start (&htim1,TIM_CHANNEL_3);
-		if(portX[rel_fn]){
-			HAL_TIM_PWM_Start (&htim1,TIM_CHANNEL_3);
+		if(!GetRegFlagState(Plantilla[logicos2],modLogic)){
+			goto	noModlog_02;
 		}
-			//HAL_GPIO_WritePin(PFULLDEF_rel_dh, GPIO_PIN_SET);        //28-May-2024:  Enciende  Deshielo
-		  //GPIOA->BSRR = GPIO_BSRR_BS_10;
-		else{
-			HAL_TIM_PWM_Stop (&htim1,TIM_CHANNEL_3);
+		if(!portX[rel_lz]){
+			goto	put_rel_dh_low;
 		}
-			//HAL_GPIO_WritePin(PFULLDEF_rel_dh, GPIO_PIN_RESET);      //28-May-2024:  Apaga  Deshielo
-		  //GPIOA->BSRR = GPIO_BSRR_BR_10;
+		goto	put_rel_dh_high;		//jra		put_rel_co_high
+noModlog_02:
+		if(!portX[rel_dh]){				//;RM_20220622 Cambio de puerto para compresor en PCB V3
+			goto	put_rel_dh_low;
+		}
+put_rel_dh_high:
+//		if(!GetRegFlagState(cntproc,0)){			//btjf		cntproc,#0,put_rel_dh_low;		/ El contador de procesos esta en un valor non?
+//			goto	put_rel_dh_low;
+//		}
+		HAL_TIM_PWM_Start (&htim1,TIM_CHANNEL_3);
+//		HAL_GPIO_WritePin(PFULLDEF_rel_dh, GPIO_PIN_SET);        //bset		PE_ODR,#rel_dh;	/ Borra el puerto para generar tono   ;RM_20220622 Cambio de puerto para deshielo en PCB V3   RM_20230208 Equipo peñafiel relevador de deshielo es de lámpara
+		goto		end_rel_dh;		//jra		end_rel_co
+put_rel_dh_low:
+		HAL_TIM_PWM_Stop (&htim1,TIM_CHANNEL_3);
+//		HAL_GPIO_WritePin(PFULLDEF_rel_dh, GPIO_PIN_RESET);      /// Borra el puerto para generar tono  ;RM_20220622 Cambio de puerto para deshielo en PCB V3    RM_20230208 Equipo peñafiel relevador de deshielo es de lámpara
+end_rel_dh:
+
+
 	//;----------------------------
 	cntbase++;			// Incrementa contador base
     if (cntbase >= 40){
@@ -66,7 +123,7 @@ void main10(void){
 //***************************** Traduccion Completa *******************************************
 void retardoDeActuadores(void){
 		//Revisa el retardo para encender COMPRESOR por cruece por cero
-			if(GPIOR0[f_comp] == 0){						//btjf  	GPIOR0,#f_comp,revisa_ret_comp_00          ;//¿Debe prenderse el COMPRESOR?
+			if(!GPIOR0[f_comp]){						//btjf  	GPIOR0,#f_comp,revisa_ret_comp_00          ;//¿Debe prenderse el COMPRESOR?
 				goto 	revisa_ret_comp_00;
 			}
 			if(cruze_por_cero[1]){			//btjt   cruze_por_cero,#1,dec_retcz_comp          ;//SI, Si ya arranco el cruce solo decrementa
@@ -85,7 +142,7 @@ revisa_ret_comp_00:
 
 //------------------------------------------------------------------------------------------
 revisa_ret_deshielo:			//Revisa el retardo para encender DESHILEO por cruece por cero
-			if(GPIOR0[f_dh] == 0){						//btjf  	GPIOR0,#f_dh,revisa_ret_desh_00            ;//¿Debe prenderse el DESHIELO?
+			if(!GPIOR0[f_dh]){						//btjf  	GPIOR0,#f_dh,revisa_ret_desh_00            ;//¿Debe prenderse el DESHIELO?
 				goto 	revisa_ret_desh_00;
 			}
 			if(cruze_por_cero[2]){			//btjt   cruze_por_cero,#2,dec_retcz_desh          ;//SI, Si ya arranco el cruce solo decrementa
@@ -104,7 +161,7 @@ revisa_ret_desh_00:
 
 //------------------------------------------------------------------------------------------
 revisa_ret_ventilador:      ;//Revisa el retardo para encender VENTILADOR por cruece por cero
-			if(GPIOR1[f_fan] == 0){						// btjf  	GPIOR1,#f_fan,revisa_ret_vent_00            ;//¿Debe prenderse el DESHIELO?
+			if(!GPIOR1[f_fan]){						// btjf  	GPIOR1,#f_fan,revisa_ret_vent_00            ;//¿Debe prenderse el DESHIELO?
 				goto 	revisa_ret_vent_00;
 			}
 			if(cruze_por_cero[3]){			// btjt   cruze_por_cero,#3,dec_retcz_vent          ;//SI, Si ya arranco el cruce solo decrementa
@@ -123,7 +180,7 @@ revisa_ret_vent_00:
 
 //------------------------------------------------------------------------------------------
 revisa_ret_lampara:            ;//Revisa el retardo para encender LAMPARA por cruece por cero
-			if(GPIOR0[f_lamp] == 0){						//btjf  	GPIOR0,#f_lamp,revisa_ret_lamp_00            ;//¿Debe prenderse la LAMPARA?
+			if(!GPIOR0[f_lamp]){						//btjf  	GPIOR0,#f_lamp,revisa_ret_lamp_00            ;//¿Debe prenderse la LAMPARA?
 				goto 	revisa_ret_lamp_00;
 			}
 			if(cruze_por_cero[4]){			//btjt   cruze_por_cero,#4,dec_retcz_lamp          ;//SI, Si ya arranco el cruce solo decrementa
@@ -164,7 +221,7 @@ void calculando_tiempo_UNIX (void){
 	timeUNIX = 0;
 
 	// Si es año bisiesto y ya pasó febrero añade un día (segundo por día =86400)
-	if ( (!(time_year%4)) && (time_month>2) ) {
+	if ( (!(time_year%4))  && (time_month>2) ) {
 		timeUNIX += 86400;
 	}
 	// Toma el número de días que han transcurrido hasta el mes actual para añadir los segundos correspondientes
@@ -197,6 +254,8 @@ void calculando_tiempo_UNIX (void){
 
 	// Añade el número de segundos transcurridos
 	timeUNIX += time_sec;
+
+	timeUNIX_copy = timeUNIX;
 
     //#pragma asm
 		//Restablece el Tiempo RTC
