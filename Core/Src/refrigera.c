@@ -322,8 +322,7 @@ endNocturno:
               //t_ahorro2_L = 0;
               t_ahorro2_H = 0;						//;			/ provoca entrada a modo ahorro2
 endNoct:
-			estado1_Aux = reeEstado1;
-			if(GetRegFlagState (estado1_Aux, est1Refri)){ //btjt eeEstado1,#est1Refri,refriON
+			if(GetRegFlagState (reeEstado1, est1Refri)){ //btjt eeEstado1,#est1Refri,refriON
             	 goto refriON;
              }
 
@@ -436,11 +435,11 @@ Indi_int:	 //mov			tempo2,interdh;	/ Muestra interdeshielo en horas
 Indi_time:
             //tempo2 = Plantilla[timedh];		//mov			tempo2,timedh;	/ Toma el tiempo de duración del deshielo en minutos
             //if(Plantilla[dhmode] != 1 ){  /// ¿El deshielo es por gas caliente?
-            if(reePlantilla[dhmode] != 1){
+            if(Plantilla[dhmode] != 1){
 				goto indica45;
             }
             //soloent(Plantilla[timedh]);		//call soloent
-            soloent( reePlantilla[timedh] );
+            soloent( Plantilla[timedh] );
             datled[dp] = 1;					//;	/ Enciende el punto
             goto defindi;
 indica45:   // tempo1 = 0;
@@ -559,7 +558,7 @@ ask_fan_on:
 
 
 				//; con cambio de lógica apaga el ventilador miesntras el compresor esté encendido
-				if(!Plantilla[modLogic]){			//btjf		logicos2,#modLogic,noModlog_04
+				if(!GetRegFlagState(Plantilla[logicos2],modLogic)){			//btjf		logicos2,#modLogic,noModlog_04
 					goto noModlog_04;
 				}
 				goto	fan_off;					//jra			fan_off
@@ -569,7 +568,7 @@ noModlog_04:
 
 fan_control:
 				//; con cambio de lógica enciende el ventilador miesntras el compresor esté apagado
-				if(!Plantilla[modLogic]){			//btjf		logicos2,#modLogic,noModlog_05
+				if(!GetRegFlagState(Plantilla[logicos2],modLogic)){			//btjf		logicos2,#modLogic,noModlog_05
 					goto noModlog_05;
 				}
 				goto	fan_on;						//jra			fan_on;

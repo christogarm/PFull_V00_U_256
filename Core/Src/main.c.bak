@@ -830,7 +830,7 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		[eetC_H]=highByte(0),     				[eetC_L]=lowByte(0), 			//uint16_t	eetC_w = 0;						//09/FEB/2022		DC.W	{0}	;	16409 d	4019 h	;tC_W
 		[eedifAhorro1_H]=highByte(17),     		[eedifAhorro1_L]=lowByte(17), 			//uint16_t	eedifAhorro1 = 0;		//09/FEB/2022		DC.W	{10}		;	tD
 		[eedifAhorro2_H]=highByte(0),     		[eedifAhorro2_L]=lowByte(0), 			//uint16_t	eedifAhorro2 = 0;		//09/FEB/2022		DC.W	{10}		;	tE
-		[eealarmaIny_H]=highByte(50),    		[eealarmaIny_L]=lowByte(50), 			//uint16_t	eetF_w = 0;						//09/FEB/2022		DC.W	{0}	;	16415 d	401F h	;tF_W
+		[eealarmaIny_H]=highByte(300),    		[eealarmaIny_L]=lowByte(50), 			//uint16_t	eetF_w = 0;						//09/FEB/2022		DC.W	{0}	;	16415 d	401F h	;tF_W
 
 		//;-------------------  GRUPO DE PAR�?METROS A (Alarmas)  -----------------------------------
 		//;-------------------  Parámetros de Alarma  ------------------------------------
@@ -856,8 +856,8 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		//;-------------------  GRUPO DE PAR�?METROS L (Límites)  -----------------------------------
 		//;-------------------  Parámetros de limites  -----------------------------------
 		[eevolt_000]=90, 										//uint8_t		eevolt_000 = 85;			//09/FEB/2022		DC.B	85	;	16450 d	4042 h	;L0 - Voltaje mínimo de protección para 120v	0_85 V
-		[eevolt_100]=50, 										//uint8_t		eevolt_100 = 30;			//09/FEB/2022		DC.B	40	;	16451 d	4043 h	;L1 - Voltaje máx de protección para 120v y mín para 220v	1_40 V
-		[eevolt_200]=50, 										//uint8_t		eevolt_200 = 40;			//09/FEB/2022		DC.B	40	;	16452 d	4044 h	;L2 - Voltaje máximo de protección para 220v	2_40 V
+		[eevolt_100]=150, 										//uint8_t		eevolt_100 = 30;			//09/FEB/2022		DC.B	40	;	16451 d	4043 h	;L1 - Voltaje máx de protección para 120v y mín para 220v	1_40 V
+		[eevolt_200]=250, 										//uint8_t		eevolt_200 = 40;			//09/FEB/2022		DC.B	40	;	16452 d	4044 h	;L2 - Voltaje máximo de protección para 220v	2_40 V
 		[eeprotval]=15, 										//uint8_t		eeprotval = 15;				//09/FEB/2022		DC.B	15	;	16453 d	4045 h	;L3 - Tiempo de validación para protección del compresor	15 segundos
 		[eeinterdh]=06, 										//uint8_t		eeinterdh = 04;				//09/FEB/2022		DC.B	04	;	16454 d	4046 h	;L4 - Tiempo de inter-deshielo	4 horas
 		[eetimedh]=30, 										//uint8_t		eetimedh = 1;//30;				//09/FEB/2022		DC.B	30	;	16455 d	4047 h	;L5 - Tiempo de deshielo	30 minutos
@@ -875,15 +875,15 @@ __attribute__((section(".myBufSectionEEPROM_P"))) uint8_t	eePlantilla [128] ={
 		//;-------------------  GRUPO DE PAR�?METROS C (Configuración)  -----------------------------------
 		//;-------------------  Parámetros de configuración  -----------------------------
 		[eeescala]=0, 										//uint8_t		eeescala = 00;					//09/FEB/2022		DC.B	00	;	16466 d	4052 h	;C0 - Escala de temperatura	00 : °C , 01: °F
-		[eelogicos]=0x02, 										//uint8_t		eelogicos = 0x02;//0x02;//01;//17;				//09/FEB/2022		DC.B	17	;	16467 d	4053 h	;C1 - Banderas de configuración	* Ver lista al final
-		[eefiltro]=9, 										//uint8_t		eefiltro = 0;				//09/FEB/2022		DC.B	06	;	16468 d	4054 h	;C2 - Intensidad filtro del sensor ambiente a la subida	[ 0 a 9 ]
-		[eedhmode]=0, 										//uint8_t		eedhmode = 00;				//09/FEB/2022		DC.B	02	;	16469 d	4055 h	;C3 - Modo de deshielo	00: flujo de aire, 01: gas, 02: resistencia
+		[eelogicos]=0x2, 										//uint8_t		eelogicos = 0x02;//0x02;//01;//17;				//09/FEB/2022		DC.B	17	;	16467 d	4053 h	;C1 - Banderas de configuración	* Ver lista al final
+		[eefiltro]=0, 										//uint8_t		eefiltro = 0;				//09/FEB/2022		DC.B	06	;	16468 d	4054 h	;C2 - Intensidad filtro del sensor ambiente a la subida	[ 0 a 9 ]
+		[eedhmode]=2, 										//uint8_t		eedhmode = 00;				//09/FEB/2022		DC.B	02	;	16469 d	4055 h	;C3 - Modo de deshielo	00: flujo de aire, 01: gas, 02: resistencia
 		[eetimeadap]=0, 										//uint8_t		eetimeadap = 0;				//09/FEB/2022		DC.B	00	;	16470 d	4056 h	;C4 - Tiempo adaptivo de deshielo	[ 0 a 8 ]
-		[eeprotype]=01, 										//uint8_t		eeprotype = 01;//02	 	//Manuel 09-MAR-2022;				//09/FEB/2022		DC.B	01	;	16471 d	4057 h	;C5 - Tipo de protección del compresor	00: sin protección , 01: 110V , 02: 220V
+		[eeprotype]=1, 										//uint8_t		eeprotype = 01;//02	 	//Manuel 09-MAR-2022;				//09/FEB/2022		DC.B	01	;	16471 d	4057 h	;C5 - Tipo de protección del compresor	00: sin protección , 01: 110V , 02: 220V
 		[eesensit]=00, 										//uint8_t		eesensit = 01;				//09/FEB/2022		DC.B	01	;	16472 d	4058 h	;C6 - Sensibilidad de la fotocelda	[ 0 a 9 ]
 		[eenumSens]=0x87, 										//uint8_t		eenumSens = 04;				//09/FEB/2022		DC.B	0	;	16473 d	4059 h	;C7 - Número de sensores con los que trabajará el equipo
-		[eenivDpyFail]=15, 										//uint8_t		eenivDpyFail = 0x01;//0x0F;						//09/FEB/2022		DC.B	0	;	16474 d	405A h	;C8 -
-		[eelogicos2]=2, 										//uint8_t		eelogicos2 = 0x00;						//09/FEB/2022		DC.B	0	;	16475 d	405B h	;C9 -
+		[eenivDpyFail]=1, 										//uint8_t		eenivDpyFail = 0x01;//0x0F;						//09/FEB/2022		DC.B	0	;	16474 d	405A h	;C8 -
+		[eelogicos2]=0x0, 										//uint8_t		eelogicos2 = 0x00;						//09/FEB/2022		DC.B	0	;	16475 d	405B h	;C9 -
 		[eeflagsBuzz]=0xFF, 										//uint8_t		eeCA_b = 0;						//09/FEB/2022		DC.B	0	;	16476 d	405C h	;CA -
 		[eeflagsBuzz2]=0xFF, 										//uint8_t		eeCB_b = 0;						//09/FEB/2022		DC.B	0	;	16477 d	405D h	;CB -
 		[eeCC_b]=0, 										//uint8_t		eeCC_b = 0;						//09/FEB/2022		DC.B	0	;	16478 d	405E h	;CC -
@@ -1415,9 +1415,9 @@ __attribute__((section(".dataLogger"))) uint8_t dataLoggerFin = 0;
 __attribute__((section(".varFlash"))) uint8_t  versionFirm1 = 0;
 __attribute__((section(".varFlash"))) uint8_t  versionFirm2 = 01;
 //@near uint8_t versionFirm2 = 02;  //RM_20230908 VFW 0.002 Ajuste en calibración y envio de MAC a llave
-__attribute__((section(".varFlash"))) uint8_t  fm_hardware = 10;			//17-jun-2025 RGM: 02;
-__attribute__((section(".varFlash"))) uint8_t  fm_modelo0 = 70;   //'F'		//17-jun-2025 RGM: 'F';
-__attribute__((section(".varFlash"))) uint8_t  fm_modelo  =  79;  //'O'		//17-jun-2025 RGM: '7';
+__attribute__((section(".varFlash"))) uint8_t  fm_hardware = 02;
+__attribute__((section(".varFlash"))) uint8_t  fm_modelo0 = 'F';
+__attribute__((section(".varFlash"))) uint8_t  fm_modelo  = '7';
 
 __attribute__((section(".BOOTLOADER"))) uint32_t crudo_bootloader[1024]= {
 
@@ -2574,17 +2574,17 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-//  MX_GPIO_Init();
-//  MX_DMA_Init();
-//  MX_ADC1_Init();
-//  MX_I2C1_Init();
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_ADC1_Init();
+  MX_I2C1_Init();
   MX_IWDG_Init();
   MX_RTC_Init();
-//  MX_TIM3_Init();
-//  MX_TIM6_Init();
-//  MX_USART2_UART_Init();
-//  MX_USART4_UART_Init();
-//  MX_TIM1_Init();
+  MX_TIM3_Init();
+  MX_TIM6_Init();
+  MX_USART2_UART_Init();
+  MX_USART4_UART_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
   initEEPROMEmulated(); // Init EEPROM Emulated
@@ -3264,9 +3264,9 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
-  hiwdg.Init.Window = 800;
-  hiwdg.Init.Reload = 800;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_1024;
+  hiwdg.Init.Window = 4000;
+  hiwdg.Init.Reload = 4000;
   hiwdg.Init.EWI = 0;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {

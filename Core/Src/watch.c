@@ -15,7 +15,6 @@ void watch (void){
 
 //	;--------------------------------------------------------------------------------------------------
 //	;							Supervisión falla compresor. (sensor 1 y sensor de corriente)
-falla_co:
 	if(!trefst2[f_retCo])		//btjf		trefst2,#f_retCo,ask_falla_co;	// se disparo falla ? No, pregunta por condiciones de falla
 		goto ask_falla_co;
 	GPIOR0[f_comp] = 0;			//bres		GPIOR0,#f_comp;									// Si se disparo la falla manten el compresor apagado.
@@ -34,7 +33,7 @@ ask_falla_co:
 		goto fin_falla_co;
 	if(trefst[f_saa])	//	btjt		trefst,#f_saa,fin_falla_co;	/ en caso de fallas de sensor no verifiques alarma
 		goto fin_falla_co;//
-	if(portX[rel_co])//	btjf		puertoa,#rel_co,fin_falla_co;	/ El compresor esta encendido? No, no verifiques alarma
+	if(!portX[rel_co])//	btjf		puertoa,#rel_co,fin_falla_co;	/ El compresor esta encendido? No, no verifiques alarma
 		goto fin_falla_co;//
 	//	ldw			X,tdevl;									// Carga temperatura (sensor 1)
 	uint16_t tdevl_W = (uint16_t) ((tdevl << 8) + tdevf);
@@ -73,8 +72,8 @@ falla_iny:
 		goto fin_falla_iny;
 		//
 	//	ldw			X,tret_w;									// Carga temperatura de Inyección (sensor 3)
-	uint16_t alarmaIny =  (uint16_t) ((Plantilla[alarmaIny_H] << 8) + Plantilla[alarmaIny_L]);
-	if(tret_w < alarmaIny)		//	cpw			X,alarmaIny
+	int16_t alarmaIny =  (int16_t) ((Plantilla[alarmaIny_H] << 8) + Plantilla[alarmaIny_L]);
+	if((int16_t)tret_w < alarmaIny)		//	cpw			X,alarmaIny
 		goto fin_falla_iny;		//	jrult		fin_falla_iny;						// temperatura de inyección es menor a temperatura de falla ? Sí, termina con bandera de falla en cero
 	trefst[f_iny] = 1;			//	bset		trefst,#f_iny;								// limpia bandera de falla de inyección
 
@@ -161,12 +160,13 @@ LoAlarmHist:
 	trefst2[f_ambLo] = 0;	//	bres		trefst2,#f_ambLo
 tempAlarmFin:
 
-	//chk_var();		// call		chk_var
+	chk_var();		// call		chk_var
 
 	// call		mcuset	;			/ Refresca los valores de los registros IO que no deben cambiar
+
 	//SIM	;					/ Deshabilita interrupciones
 
-	//call		param2eeprom
+	param2eeprom();	//call		param2eeprom
 
 	memodriver();	//call		memodriver	;		/ Refresca los parámetros de operación del refrigerador uno a la vez cada ms
 
@@ -361,12 +361,42 @@ noPrCargas:
 //;------------------------- Revision de verifica_eeprom:
 
 
-//;------------------------- Revision de verifica_ram:
 
+//;------------------------- Revision de verifica_ram:
+verifica_ram:
+	//	ld      A,dato_seg1        ;Verifica las variables de seguridad de EEPROM
+	if(Plantilla[dato_seg1] == 0xAA)//	cp      A,#$AA             ;/
+		goto v_ram2;	//	jreq    v_ram2             ;/
+	goto espera_reset;		//	jp      espera_reset     ;/
+v_ram2:
+		//ld      A,dato_seg2        ;/
+ 	if(Plantilla[dato_seg2] == 0x66)	// cp      A,#$66             ;/
+ 		goto v_ram3;		//jreq    v_ram3             ;/
+ 	goto espera_reset;		//jp      espera_reset     ;/
+v_ram3:
+	//	ld      A,dato_seg3        ;/
+	if(Plantilla[dato_seg3] == 0xCC)//	cp      A,#$CC             ;/
+		goto verifica_ob;			//	jreq    verifica_ob        ;¿Son iguales? SI, Continua
+	goto espera_reset;				//	jp      espera_reset     ;NO, Resetea el MCU
 
 //;------------------------- Revision de los Option Bytes
+verifica_ob:       //;10 Option Bytes localizados de la dirección $4800 a la $480A
+	/*
+	 * Descomentar cuando se realice la proteccion de memoria
+	 */
+	//if((FLASH->OPTR & 0xFF) == 0xAA || (FLASH->OPTR & 0xFF) == 0xCC)		// Read Proteccion Level 1
+	//	goto espera_reset;
+	if((FLASH->OPTR & 0x700) != 0)	// BOR Level 0
+		goto espera_reset;
+	if(( (FLASH->OPTR >> 16) & 0x1 ) == 0x1)	// Software Independent Watchdog
+		goto espera_reset;
+	if(( (FLASH->OPTR >> 17) & 0x1 ) == 0)
+		goto end_watch2;
 
+espera_reset:		          	//;Loop infinito para que el IWDG resetee el MCU
+	goto espera_reset;			//jra    espera_reset     ;/
 
-
+end_watch2:
+	return;
 
 }

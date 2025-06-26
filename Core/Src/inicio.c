@@ -6,9 +6,7 @@
 
 uint8_t BCDtoByte(uint8_t wreg_);
 void chk_var(void);
-
-
-
+void param2eeprom(void);
 
 
 void inicio (void){
@@ -23,7 +21,7 @@ void inicio (void){
 	flagsa[7] = 1;				//	mov		flagsa,#$81;	/ Indica que esta en período de arranque
 	flagsa[0] = 1;
 
-	cntseg =0;					//	mov		cntseg,#0;
+	cntseg =time_auto - time_ini;					//	mov		cntseg,#0;
 
 	luminos = 0x81;				//	mov		luminos,wreg;
 
@@ -43,6 +41,7 @@ inicializa_comu:
 	for(uint8_t k=0;k<5; k++){								// clr     cruze_por_cero
 		cruze_por_cero[k] = 0;
 	}
+	cntCiclosCmp = 1;		// CGM 16/06/2025 Se agrega para que no se activen los tiempos de ahorro 1 y 2
 	muestras_cal_volt = 0;							// clr     muestras_cal_volt         ;RM_20230908 Variables para mejorar la calibración de voltaje
 	voltaje_ant_cal = 0;							// clr     voltaje_ant_cal           ;RM_20230908 Variables para mejorar la calibración de voltaje
 
@@ -199,30 +198,8 @@ no_ini_210:
 		//cntBlockFlash = cntBlockEVENT;			// Con la optimización anterior, no es necesario esta instrucción CGM 23/04/2025
 		load_next_buffer();						//; carga buffer de RAM con el bloque de datos
 
-		flagsC[f_spReached]=0;			// bres	flagsC,#f_spReached
-
-	//;/ carga estado inicial de la lampara
-		flagsC[f_lampDoor] = 0;			//	bres		flagsC,#f_lampDoor
-		uint8_t estado1_Aux = reeEstado1; // Agrego para no realizar tantas llamadas; CGM 25/02/2025
-		if(!GetRegFlagState(estado1_Aux, est1Lamp)){
-			goto initLampOFF;
-		}
-		flagsC[f_lampDoor] = 1;			//	bset		flagsC,#f_lampDoor
 initLampOFF:
-		if(GetRegFlagState(Plantilla[logicos2], funReleDesh))//btjt		logicos2,#funReleDesh,deshTypeAct_02; omite estado Lock sí se eligio función deshielo para relevador
-			goto deshTypeAct_02;
-		//;/ carga estado inicial de la cerradura
-		GPIOR0[f_dh] = 0;			//	bres		GPIOR0,#f_dh
-		if(!GetRegFlagState(estado1_Aux, est1LockDr)){
-			goto initLockDrOFF;
-		}
-		GPIOR0[f_dh] = 1;			//	bset		GPIOR0,#f_dh
-initLockDrOFF:
-deshTypeAct_02:
-//		ldw			X,#90
-//		ldw			cntSetName,X
 		cntSetName = 90;
-	//jp	end_init
 }
 
 void timeBCD_to_UNIX(void){
@@ -292,36 +269,36 @@ void chk_var(void){
 	//ld			A,durdhh
 	//and			A,#%11100000
 	//tnz			A
-	if(durdhh & 0xE0)	//jrne		error_loop2
+	if(durdhh & 0xE000)	//jrne		error_loop2
 		goto error_loop;			// CGM 06/06/2025 es un mismo loop
 
 	//ld			A,tminstoph
 	//and			A,#%11111000
 	//tnz			A
-	if(tminstoph & 0xF8)//jrne		error_loop
+	if(tminstoph & 0xF800)//jrne		error_loop
 		goto error_loop;
 
 	//	ld			A,retproth
 	//	and			A,#%11111000
 	//	tnz			A
-	if(retproth & 0xF8)//jrne		error_loop
+	if(retproth & 0xF800)//jrne		error_loop
 		goto error_loop;
 
 	//	ld			A,drp_comph
 	//	and			A,#%11111100
 	//	tnz			A
-	if(drp_comph & 0xFC)//jrne		error_loop
+	if(drp_comph & 0xFC00)//jrne		error_loop
 		goto error_loop;	//
 	//	ld			A,drp_fanh
 	//	and			A,#%11111100
 	//	tnz			A
-	if(drp_fanh & 0xFC)//jrne		error_loop
+	if(drp_fanh & 0xFC00)//jrne		error_loop
 		goto error_loop;
 
 	//	ldw			X,limsup_w
 	//	cpw			X,liminf_w
 	//	jrslt		error_loop
-	if( ( (int) limsup_w ) < ( (int) liminf_w ) )
+	if( ( (int16_t) limsup_w ) < ( (int16_t) liminf_w ) )
 		goto error_loop;
 
 	// CGM 06/06/2025		revisar este seccion es necesario de adaptar?
@@ -329,17 +306,51 @@ void chk_var(void){
 //	sub			A,#$04		 ;Manuel 03-MAr-2022:	#$03
 //	tnz			A
 //	jrne		error_loop
+	if(hiwdg.Instance->PR != IWDG_PRESCALER_4)
+		goto error_loop;
 //
 //	ld			A,TIM4_ARR
 //	sub			A,#250
 //	tnz			A
 //	jrne		error_loop
+	if(hiwdg.Instance->RLR != 800)
+		goto error_loop;
 
 	return;
 
 error_loop:
 	goto error_loop;
 
+}
+
+// ;LN 6306 ============================================================
+void param2eeprom(void){
+	if(fcom[f_pprog])	// btjt		fcom,#f_pprog,ask_4com
+		goto ask_4com;
+	//;//manuel reduc...     jp 			no_prog_param
+	goto no_prog_param;//jra 			no_prog_param
+ask_4com:
+	if(fcom[f_ecom])// btjt		fcom,#f_ecom,do_prog_param
+		goto do_prog_param;
+	//;//manuel reduc...     jp 			no_prog_param
+	goto no_prog_param;		//jra 			no_prog_param
+do_prog_param:
+	if(fcom[f_doprog])//btjt		fcom,#f_doprog,ask_prog_ok
+		goto ask_prog_ok;
+
+	cntmemo = 0;			//mov			cntmemo,#$00;		/ Para grabar desde la primera localidad de EEPROM
+	ctlmemo = 0xAA;			//mov			ctlmemo,#$AA;		/ Graba los datos en EEPROM
+	fcom[f_doprog] = 1;		// bset		fcom,#f_doprog
+	//;//manuel reduc...     jp			no_prog_param
+	goto no_prog_param;					//jra			no_prog_param
+ask_prog_ok:
+	//tnz			ctlmemo
+	if(ctlmemo)					//jrne		no_prog_param
+		goto no_prog_param;
+	fcom[f_progr] = 1;			// bset		fcom,#f_progr
+
+no_prog_param:
+	return;
 }
 
 

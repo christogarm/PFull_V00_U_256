@@ -1,5 +1,6 @@
-../Core/Src/inicio.c:14:6:inicio	6
-../Core/Src/inicio.c:228:6:timeBCD_to_UNIX	1
-../Core/Src/inicio.c:272:9:BCDtoByte	1
-../Core/Src/inicio.c:290:6:chk_var	7
-../Core/Src/inicio.c:350:6:findPointLogger	6
+../Core/Src/inicio.c:12:6:inicio	3
+../Core/Src/inicio.c:205:6:timeBCD_to_UNIX	1
+../Core/Src/inicio.c:249:9:BCDtoByte	1
+../Core/Src/inicio.c:267:6:chk_var	9
+../Core/Src/inicio.c:327:6:param2eeprom	5
+../Core/Src/inicio.c:361:6:findPointLogger	6

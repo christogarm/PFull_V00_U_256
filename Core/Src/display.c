@@ -179,13 +179,13 @@ msg2:
 	op_menu (0x11, 0x0A);		// Se modifica CTOFF
 	//datdig1 = 0x11; //mov  datdig1,#$11
 	//datdig2 = 0x0A;//mov			datdig2,#$01
-	if(!GetRegFlagState(reeEstado1, est1Lamp)){//btjf		eeEstado1,#est1Lamp,msg2_01
+	if(GetRegFlagState(reeEstado1, est1Lamp)){//btjf		eeEstado1,#est1Lamp,msg2_01
 		goto	msg2_01;
 	}
 	//datdig2 = 0x02;//mov datdig2,#$02
 	//Modificacion CTOFF
-	BitSet(datdig2 , sign); // bset		datled,#sign;					enciende signo
-
+	//BitSet(datdig2 , sign); // bset		datled,#sign;					enciende signo
+	datled[sign] = 1;
 
 msg2_01:
 	goto dpy07;		// jra dpy07
@@ -228,7 +228,7 @@ display_02:
     op_menu (0x0A, 0x0A);
     //datdig1 = 0x0A;		//mov			datdig1,#$0A
     //datdig2 = 0x0A;		//mov			datdig2,#$0A
-    if (GetRegFlagState(lowByte(cntblkh), 6)){//btjt		cntblkl,#6,blk_aa;  ******************
+    if (cntblkh & 0x40){//btjt		cntblkl,#6,blk_aa;  ******************
     	goto blk_aa;
     }
     op_menu (0x1F, 0x1F);
@@ -292,19 +292,6 @@ dpy06:
    fallas();	/// *** Revisa si hay que indicar fallas
 
 dpy07:
-		// prueba de matematica 02-ago-2024
-		// asm ("nop");
-		 //convadec_math((uint16_t)(tsac_w));
-		 // convadec_math((uint16_t)(-350));
-		// asm ("nop");
-
-		// sp_dpy();					// Prueba, Despliega solo SP     ... Ok Funciona
-		// dif_dpy();					//call dif_dpy      ... Ok Funciona
-		// soloent(versionFirm1);		// Prueba, primer dato de version     ... Ok Funciona
-		//wreg = num_ver;			// Versión del Firmware
-		//soloent1();				//call soloent1   ... Ok Funciona
-		//soloent (Plantilla [interdh]);	//call soloent   ... Ok Funciona
-		// prueba de matematica 02-ago-2024
 
 
 		Display_1 = dpytab[datdig1];		// Apunta al dato correspondiente
@@ -370,6 +357,7 @@ noBtnBuzz:
 		edo_buzzer = 0;//mov     edo_buzzer,#0
 		//mov   	BEEP_CSR2,#%00000011	;BEEP Control/Status Register DESACTIVADO
 		HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2);					// Apaga Sonido de Buzzer por Pruebas
+		dms_extra[f_buzzDpy] = 0;
 		//ldw     X,cnt_gen_ms
 		//addw    X,#5000
 		//ldw     t_buzzer,X
@@ -385,6 +373,7 @@ noBtnBuzz_01:
 		edo_buzzer = 0;//mov     edo_buzzer,#0
 		//mov   	BEEP_CSR2,#%00000011 ****************************BEEP_CSR2 no esta******
 		HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2);					// Apaga Sonido de Buzzer por Pruebas
+		dms_extra[f_buzzDpy] = 0;
 		//ldw     X,cnt_gen_ms
 		//addw    X,#100
 		//ldw     t_buzzer,X
@@ -519,6 +508,7 @@ activa_buzzer:
 buzzer_off:
 		//BEEP_CSR2 //mov       BEEP_CSR2,#%00000011 *************BEEP_CSR2  no esta****************
 		HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_2);					// Apaga Sonido de Buzzer por Pruebas
+		dms_extra[f_buzzDpy] = 0;
 		//ldw     X,cnt_gen_ms
 		//addw    X,buzzer_toff
 		//ldw     t_buzzer,X
@@ -528,6 +518,7 @@ buzzer_off:
 buzzer_on:
 		//mov     BEEP_CSR2,waux ******************BEEP_CSR2 no esta*****
 		HAL_TIM_PWM_Start (&htim3,TIM_CHANNEL_2);			// Enciende PWM
+		dms_extra[f_buzzDpy] = 1;
 		//ldw     X,cnt_gen_ms
 		//addw    X,buzzer_ton
 		//ldw     t_buzzer,X
@@ -571,7 +562,7 @@ realiza_multiplexeo:
 	if(!flagsC[f_doorOpen])	//	btjf		flagsC,#f_doorOpen,no_blk
 		goto no_blk;
 		//
-	if(GetRegFlagState(cntblkl, 5))	//	btjt		cntblkl,#5,display_j11;		/ Parpadea cada 320 ms
+	if(cntblkh & 0x20)	//	btjt		cntblkl,#5,display_j11;		/ Parpadea cada 320 ms
 		goto display_j11;
 
 	Ind_Par[2] = 1;	//	bset		Ind_Par,#2
@@ -580,7 +571,7 @@ realiza_multiplexeo:
 
 
 blink_dia:
-	if(GetRegFlagState(lowByte(cntblkh), 7)){			  // cntblkl,#7,display_j11; 		Parpadea cada 1280 ms
+	if(cntblkh & 0x80){			  // cntblkl,#7,display_j11; 		Parpadea cada 1280 ms
 		goto	display_j11;
 	}
 	Ind_Par[2] = 1;

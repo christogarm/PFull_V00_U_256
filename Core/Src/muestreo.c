@@ -16,7 +16,7 @@ uint32_t cnt_veces_muestreo_2 = 0;
 void muestreo(void){
 
 
-		if(GetRegFlagState(Plantilla[eelogicos2],5)){		//;¿Se usará el TRANSDUCTOR de corriente de IMBERA?
+		if(GetRegFlagState(reePlantilla[eelogicos2],5)){		//;¿Se usará el TRANSDUCTOR de corriente de IMBERA?
 				goto	muestreo_00;
 		}
 		cnt_2ms_corrIMB++;									//inc     cnt_2ms_corrIMB           ;SI, obten una muestra instantanea cada 2ms
@@ -419,6 +419,11 @@ coloca_voltaje:                      		//;/
 
 
 voltaje_calibrado:
+			/*
+			 * SALTOOOOOOO para evistar el calibra Reset
+			 */
+			goto corriente_calibrada;
+
 			if(reef_voltaje == 0x3C){
 				goto corriente_calibrada; //		jreq    grabadoEmergencia_00         ;
 			}
@@ -444,7 +449,7 @@ fin_calcula_trms:
 			variable_corriente = 0;			//ldw     variable_corriente,X
 			goto	fin_calcula_trms_1;		//jra     fin_calcula_trms_1
 selecciona_transductor:
-			if(GetRegFlagState(Plantilla[eelogicos2],5)){		//btjt    eelogicos2,#5,transductor_ELTEC
+			if(GetRegFlagState(reePlantilla[eelogicos2],5)){		//btjt    eelogicos2,#5,transductor_ELTEC
 				goto	transductor_ELTEC;
 			}
 		    										//ldw     X,corriente_IMB

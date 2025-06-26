@@ -107,6 +107,8 @@ uint16_t   tempo = 0;
 uint16_t   raux = 0;
 uint16_t   promant = 0;
 uint16_t   ultimoprm = 0;
+
+uint16_t tdev_w = 0;
 //uint16_t   tdev = 0;
 //uint16_t   tDisplay_w = 0;
 //uint16_t   tdevdpy_w = 0;
@@ -248,7 +250,7 @@ loadret_S03:
 
 sens_ok_S03:
 		//A = retcncfr;
-		if(retcncfr != 0)                 // Ya se agotó el retardo?
+		if(retcncfr)                 // Ya se agotó el retardo?
 			goto tempeLoad_s03;
 		Bclear_Clear_trfst(&trefst2[0], &trefst2[0],4, 5);
 //		BitClear(trefst2,4);       // Cancela banderas de falla de sensor de salida
@@ -417,7 +419,7 @@ tempe25a:
 		goto tempe25b;            //La diferencia de promedios es positiva?
 
 	//Y = Y - 0xFFFF;               // La diferencia es igual a -1?
-	if (resul == 0xFFFF)
+	if ((resul - promant)== 0xFFFF)
 		goto vesiestab;  		  // Si, revisa estabilidad
 
 	resul = resul - 1;
@@ -466,8 +468,9 @@ tempe29:
 		//;//manuel reduc...     jp			tempe40
 		//
 		//ldw			X,#$FE34
-		tdevf = 0x34;		//ldw			tdevl,X
-		tdevl = 0xFE;		//
+		//ldw			tdevl,X
+		tdevf = 0x34;		//
+		tdevl = 0xFE;
 		goto tempe40;		//jra			tempe40
 
 
@@ -477,38 +480,40 @@ tempe30:
 		goto tempe39;
 
 temper_j02:
-		Y = tdevdpy_w;         // manuel_math_change//   tdevdpyl;
-		//Y = Y - tDisplay_w;    // w = TdeVdpy - TdeV
-		Y = Y - tdevl;
-		if (Y == 0)
+		tdev_w = (uint16_t) ( (tdevl << 8) + tdevf);
+
+		if (tdevdpy_w == tdev_w)
 			goto tempe40;
-		else if ((GetRegFlagState(Y, 15)) == 0)                               //nota3 checar combinacion con JRSGT
+tempe35:
+		if ( (int16_t)(tdevdpy_w) > (int16_t)(tdev_w) )                               //nota3 checar combinacion con JRSGT
 			goto tempe39;      // La diferencia es positiva?
 
-		A =  Plantilla [filtro];
-		if(A == 0)
+		//A =  Plantilla [filtro];
+		if(Plantilla [filtro] == 0)
 			goto tempe39;
-		A = A << 1;
+		//A = A << 1;
 		ret_up++;              // 800 ms más de retardo
 
-		if(A > ret_up)
+		if((Plantilla [filtro] << 1) > ret_up)
 			goto tempe50;
 
-		Y = (Y ^ 0xFFFF) + 1;
-		if (Y < 11)           // Se compara con 0xFE si se quieren dos decrementos abajo
+tempe37:
+		//Y = (Y ^ 0xFFFF) + 1;
+		if ( (-(tdevdpy_w - tdev_w)) < 11)           // Se compara con 0xFE si se quieren dos decrementos abajo
 			goto tempe37b;
+tempe37a:
+		tdev_w = (uint16_t) ( (tdevl << 8) + tdevf);
+		X = tdev_w - 10;
+		wreg = (uint8_t)(X & 0xFF);
+		waux = (uint8_t)(X >> 8);
 
-		X = tdevl;
-		X = X - 10;            //w = tdev - 1.0
-		//waux = X;
-		waux = X;
 		goto tempe39a;
 
 tempe37b:
-		X = tdevdpy_w;     //manuel_math_change//  tdevdpyf;
-		X = X + 1;         //manuel_math_change//  tdevdpyl;
-		//waux = X;
-		waux = X;
+		X = tdevdpy_w + 1;
+		 wreg = (uint8_t)(X & 0xFF);
+		 waux= (uint8_t)(X >> 8);
+
 		goto tempe39a;
 
 tempe39:
@@ -520,15 +525,11 @@ tempe39:
 // manuel_math_change ............................. filtro digital
 tempe39a:
 
-		A = cnthold;
-		if (A == 0)                   // Ya terminó el tiempo?
+		if (cnthold == 0)                   // Ya terminó el tiempo?
 			goto tempe39b;            // Si, carga el dato a tdevdpy
 
-		//Y = limsup_w;                 // manuel_math_change//   limsupl;/ Compara contra el límite superior para que congele en ese valor
-		//Y = Y - waux;                 // tdev esta por arriba de limsup?
-		//if(Y < 0)   //////////////////JRSLT              nota4: checar combinacion con JRSLT
-		//if(GetRegFlagState(Y, 15))
-		if(limsup_w < waux)
+
+		if((int16_t)limsup_w < (int16_t)((waux << 8) + wreg))
 			goto tempe40;             // Si, congela el display en limsup
 tempe39b:
 //tdevdpyl,waux;	/ Almacena el dato anterior para la siguiente comparación
@@ -536,9 +537,8 @@ tempe39b:
 		 * No se hizo correctamente el cargado de la Palabra
 		 */
 		// X = waux;
-		X = waux;
 
-		tdevdpy_w = ((uint16_t) tdevl << 8) + tdevf;
+		tdevdpy_w = (uint16_t)((waux << 8) + wreg);
 tempe40:
 		ret_up = 0;  // Inicia el retardo hacia arriba
 tempe50:
@@ -546,24 +546,21 @@ tempe50:
 		if (!trefst[f_sda]) //#f_sda
 		//if (GetRegFlagState(trefst_aux, 3) == 0) //#f_sda
 			goto tempe52;
-		X = 0xFE34;
-		tevaf = lowByte(X);      // Entrega el dato de temperatura del evaporador a 10 bits
-		teval = highByte(X);
+		teval = 0xFE;
+		tevaf = 0x34;		//
+
 
 tempe52:
 		if (!trefst2[f_s3open]) //#f_s3open
 		//if (GetRegFlagState(trefst2_aux, 5) == 0) //#f_s3open
 			goto tempe53;
-		X = 0xFE34;
-		tret_w = X;
+		tret_w = 0xFE34;
 
 tempe53:
 
 fintemp:
 
-		A = edorefri;
-
-		if (A == 1)
+		if (edorefri == 1)
 			goto noClrSensFail;  // sí estás en autoprueba permite fallas
 
 clrEvaFail:

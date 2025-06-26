@@ -68,7 +68,7 @@ void   SerializeString2 (uint8_t *tosend, uint8_t tamano)
 }
 /*
 */
-void serialEvent_Ble ()
+void serialEvent_Ble (void)
 {
 	//------------------------------------------------------------------------------------------------
 		uint16_t sizeBufferRx_1;
@@ -144,9 +144,9 @@ unsigned int SendATreply_Ble(char command[20], char replystr[30],int Caseuno,int
 //*************************************************************************************************
 
 static unsigned int  ParamItem = 1;
-static unsigned int  BaudRateTest = 1;
+//static unsigned int  BaudRateTest = 1;
 
-void SetUpBluetooth_Ble(){
+void SetUpBluetooth_Ble(void){
 	//if (findLastValue((uint32_t)&eePlantilla[eeFlagBLE]) == 0){				// Mauel 09-dic-2021:	Si ya fue configurado "EEPROM VAR", jamas vuelve a llamar a configuracion ???
 		ConfigBLE_Ble ();
 	//}
@@ -159,7 +159,7 @@ void SetUpBluetooth_Ble(){
 	//}
 }
 
-void	ConfigBLE_Ble (){
+void ConfigBLE_Ble(void){
 
 	if (tick_1s == 1){
 		HAL_GPIO_WritePin(GPIOC, PFULLDEF_FET_ON_OFF_WIFI, GPIO_PIN_RESET);    // Libera la energia del modulo, despues de 1 segundo del power on
@@ -235,7 +235,7 @@ void	ConfigBLE_Ble (){
 */
 	  case 5:			//  Manuel,   Cambia el nombre de difusion
 		  	if (SendATreply_Ble("BLE_AT+NAMEIMBERA-CTOF-WF\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
-			//if (SendATreply_Ble("BLE_AT+NAMEIMBERA-HEALTH\r\n\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
+			//if (SendATreply_Ble("BLE_AT+NAMEIMBERA-CTOF-PFULL\r\n\r\n","BLE_OK\r\n",ParamItem,0,2000) == ParamItem){      //  Manuel, retorno un GSM_Response = 1?
 				WaitSerAnsw_Ble_func(6);
 //				WaitSerAnsw_Ble = 0;
 //				ParamItem = 6;
@@ -264,7 +264,7 @@ void	ConfigBLE_Ble (){
 			asm ("nop");
 			// Termina configuracion, escribe en EEPROM un testigo
 
-			FlashManager((uint32_t) &eePlantilla[eeFlagBLE], 0x66);			// Revisar si es necesario poner este testigo
+			//FlashManager((uint32_t) &eePlantilla[eeFlagBLE], 0x66);			// Revisar si es necesario poner este testigo
 
 			break;
 	}
@@ -277,7 +277,7 @@ void ChangeBaud_Ble (uint32_t USART2_BAUDRATE){
 
 }
 //*************************************************************************************************
-void GetParamBluetooth_Ble(){
+void GetParamBluetooth_Ble(void){
 	uint8_t i =0;
 	char *foo;
 
@@ -304,7 +304,7 @@ uint8_t RndNumber = 0 ;       // RGM_8-Dic-2023      //RM_20240304 Para agregar 
 //uint8_t DevLock = 0 ;       // RGM_8-Dic-2023        //RM_20240304 Para agregar PASSWORD de seguridad BLE
 
 //*************************************************************************************************
-void TransmitReceive_Ble(){
+void TransmitReceive_Ble(void){
     asm ("nop");
 
     uint8_t i_ = 0;

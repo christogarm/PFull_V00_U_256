@@ -15,34 +15,25 @@
 #define PFULLDEF_MP1						GPIOB,GPIO_PIN_3
 
 
-#define PFULLDEF_P1_PORT					GPIOB
-#define PFULLDEF_P1_PIN						GPIO_PIN_4
-#define PFULLDEF_P2_PORT					GPIOB
-#define PFULLDEF_P2_PIN						GPIO_PIN_4
+#define PFULLDEF_P1_PORT					GPIOC
+#define PFULLDEF_P1_PIN						GPIO_PIN_13
+#define PFULLDEF_P2_PORT					GPIOF
+#define PFULLDEF_P2_PIN						GPIO_PIN_3
 #define PFULLDEF_P3_PORT					GPIOB
-#define PFULLDEF_P3_PIN						GPIO_PIN_4
+#define PFULLDEF_P3_PIN						GPIO_PIN_7
 #define PFULLDEF_P4_PORT					GPIOB
 #define PFULLDEF_P4_PIN						GPIO_PIN_6
 #define PFULLDEF_P5_PORT					GPIOB
 #define PFULLDEF_P5_PIN						GPIO_PIN_4
 
-#define PFULLDEF_MP0_PORT					GPIOB
-#define PFULLDEF_MP0_PIN					GPIO_PIN_3
+#define PFULLDEF_MP0_PORT					GPIOC
+#define PFULLDEF_MP0_PIN					GPIO_PIN_12
 #define PFULLDEF_MP1_PORT					GPIOB
 #define PFULLDEF_MP1_PIN					GPIO_PIN_3
-#define PFULLDEF_MP2_PORT					GPIOB
-#define PFULLDEF_MP2_PIN					GPIO_PIN_3
-#define PFULLDEF_MP3_PORT					GPIOB
-#define PFULLDEF_MP3_PIN					GPIO_PIN_3
-
-extern GPIO_TypeDef * PFULLDEF_Px_PORT[5];
-extern uint8_t PFULLDEF_Px_PIN[5];
-
-extern GPIO_TypeDef * PFULLDEF_MPx_PORT[4];
-extern uint8_t PFULLDEF_MPx_PIN[4];
-
-
-//Canales ADC
+#define PFULLDEF_MP2_PORT					GPIOC
+#define PFULLDEF_MP2_PIN					GPIO_PIN_11
+#define PFULLDEF_MP3_PORT					GPIOD
+#define PFULLDEF_MP3_PIN					GPIO_PIN_2
 
 //Salidas ----> GPIOA
 #define PFULLDEF_rel_fn						GPIOA,GPIO_PIN_8  		//PA8:REL4		Salida	Relevador Ventilador

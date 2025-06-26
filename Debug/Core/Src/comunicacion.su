@@ -1,2 +1,3 @@
-../Core/Src/comunicacion.c:22:6:comunicacion	24	static
-../Core/Src/comunicacion.c:116:6:detecta	24	static
+../Core/Src/comunicacion.c:26:6:comunicacion	16	static
+../Core/Src/comunicacion.c:101:6:detecta	32	static
+../Core/Src/comunicacion.c:539:6:doorDetect	48	static

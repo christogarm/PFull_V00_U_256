@@ -22,7 +22,7 @@ void tiempo (void){
 	////    Variables que se decrenetan cada centesima
 tiempo10:
 				cntblkh++;						/// Cada 10 ms
-
+				HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_10);
 			   decword(&timeDpyS3);		/// decrementa tiempo de despliegue sensor 3
 
 

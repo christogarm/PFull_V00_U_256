@@ -499,6 +499,17 @@ extern _Bool  	flagsC [8];			//08/FEB/2022		DS.B 1      	; / Registro C de bande
 #define		f_ahorro1		 1//;		Bandera de modo de ahorro 1
 #define		f_ahorro2		 2//;		Bandera de modo de ahorro 2
 #define		f_tempAhorro	 3//;		Bandera que indica que se cumplio la temperatura de ahorro al arranque
+
+//;Definición de banderas, (Registro FCOM)
+#define 	f_pprog			0	//;	Bandera se requiere porgramación de parámetros
+#define 	f_ecom			1	//;	Bandera comunicacion lista para programación de parámetros
+#define 	f_progr			2	//;	Bandera programacion realizada
+#define 	f_doprog		3	//;	Bandera programacion en proceso
+#define 	f_2btn			4	//;	Bandera error 2 botones oprimidos
+
+
+
+
 //
 #define		f_lampDoor		 6//;		Bandera de estado de lampara con puerta cerrada
 #define		f_spReached		 7//; Bandera que indica que el set point se alcanzó al menos una vez
@@ -567,7 +578,7 @@ enum parametrosPlantilla  {
 		osnoct_H,     			osnoct_L, 				//uint16_t		osnoct_w = 0;			//08/FEB/2022		DS.W 1	;	equ	$010B	;	267 d	;t5 - Offset para el modo nocturno
 		rngmin_H,     			rngmin_L, 				//uint16_t		rngmin_w = 0;			//08/FEB/2022		DS.W 1	;	equ	$010D	;	269 d	;t6 - Rango mínimo para ajuste del set point
 		rngmax_H,     			rngmax_L, 				//uint16_t		rngmax_w = 0;			//08/FEB/2022		DS.W 1	;	equ	$010F	;	271 d	;t7 - Rango máximo para ajuste del set point
-		t8_H,     				t8_L, 					//uint16_t		t8_w = 0;					//
+		alarmaRetCo_H,     		alarmaRetCo_L, 					//uint16_t		t8_w = 0;					//
 		defrResetTemp_H,     	defrResetTemp_L, 		//uint16_t		defrResetTemp = 0;//
 		defrStartTemp_H,     	defrStartTemp_L, 		//uint16_t		defrStartTemp = 0;					//08/FEB/2022		DS.W 1	;	equ	$0115	;	277 d	;tA_W
 		tempRetCo_H,     		tempRetCo_L, 	//uint16_t		defrStartTempAmb = 0;					//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
@@ -580,16 +591,16 @@ enum parametrosPlantilla  {
 		//;-------------------  Parámetros de Alarma  ------------------------------------
 		limevach_H,				limevach_L,				//uint16_t		limevach_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0121	;	289 d	;A0 - Temperatura sensor evaporador para cancelar deshielo
 		limambch_H,				limambch_L,				////uint16_t		limambch_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0123	;	291 d	;A1 - Temperatura sensor ambiente para cancelar deshielo
-		tsumidero_H,			tsumidero_L,			////uint16_t		tsumidero_w = 0;	//08/FEB/2022		DS.W 1	;	equ	$0125	;	293 d	;A2 - Temperatura de sumidero
-		anticong_H,				anticong_L,				////uint16_t		anticong_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0127	;	295 d	;A3 - Temperatura de anticongelamiento del producto
+		horaAhOn_H,				horaAhOn_L,				////uint16_t		anticong_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0127	;	295 d	;A3 - Temperatura de anticongelamiento del producto
+		horaAhOff_H,			horaAhOff_L,			////uint16_t		tsumidero_w = 0;	//08/FEB/2022		DS.W 1	;	equ	$0125	;	293 d	;A2 - Temperatura de sumidero
 		pulldown_H,				pulldown_L,				////uint16_t		pulldown_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0129	;	297 d	;A4 - Temperatura mínima para que se active el modo pulldown
 		limineav_H,				limineav_L,				////uint16_t		limineav_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$012B	;	299 d	;A5 - Limite inferior de alarma de temperatura evaporador
 		limsual_H,				limsual_L,				////uint16_t		limsual_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$012D	;	301 d	;A6 - Limite superior alarma de temperatura
 		liminal_H,				liminal_L,				////uint16_t		liminal_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$012F	;	303 d	;A7 - Limite inferior alarma de temperatura
 		difTempAl_H,			difTempAl_L,			////uint16_t		difTempAl = 0;		//08/FEB/2022		DS.W 1	;	equ	$0131	;	305 d	;A8 -
 		difDefi_H,				difDefi_L,				////uint16_t		difDefi = 0;					//08/FEB/2022		DS.W 1	;	equ	$0133	;	307 d	;A9 -
-		tempTC1_H,				tempTC1_L,				////uint16_t		tempTC1 = 0;					//08/FEB/2022		DS.W 1	;	equ	$0135	;	309 d	;AA -
-		tempTC2_H,				tempTC2_L,				////uint16_t		tempTC2 = 0;					//08/FEB/2022		DS.W 1	;	equ	$0137	;	311 d	;AB -
+		AA_b_H,					AA_b_L,				////uint16_t		tempTC1 = 0;					//08/FEB/2022		DS.W 1	;	equ	$0135	;	309 d	;AA -
+		AB_b_H,					AB_b_L,				////uint16_t		tempTC2 = 0;					//08/FEB/2022		DS.W 1	;	equ	$0137	;	311 d	;AB -
 		spdiur_BK_H,			spdiur_BK_L,			////uint16_t		spdiur_w_BK = 0;					//08/FEB/2022		DS.W 1	;	equ	$0139	;	313 d	;AC -
 		difdiur_BK_H,			difdiur_BK_L,			////uint16_t		difdiur_w_BK = 0;					//08/FEB/2022		DS.W 1	;	equ	$013B	;	315 d	;AD -
 		limsual_BK_H,			limsual_BK_L,			////uint16_t		limsual_w_BK = 0;					//08/FEB/2022		DS.W 1	;	equ	$013D	;	317 d	;AE -
@@ -714,7 +725,7 @@ enum parametrosCPlantilla  {
 		cosnoct_H,     			cosnoct_L, 				//uint16_t		cosnoct_w = 0;			//08/FEB/2022		DS.W 1	;	equ	$010B	;	267 d	;t5 - Offset para el modo nocturno
 		crngmin_H,     			crngmin_L, 				//uint16_t		crngmin_w = 0;			//08/FEB/2022		DS.W 1	;	equ	$010D	;	269 d	;t6 - Rango mínimo para ajuste del set point
 		crngmax_H,     			crngmax_L, 				//uint16_t		crngmax_w = 0;			//08/FEB/2022		DS.W 1	;	equ	$010F	;	271 d	;t7 - Rango máximo para ajuste del set point
-		ct8_H,     				ct8_L, 					//uint16_t		ct8_w = 0;				//
+		calarmaRetCo_H,     	calarmaRetCo_L, 					//uint16_t		ct8_w = 0;				//
 		cdefrResetTemp_H,     	cdefrResetTemp_L, 		//uint16_t		cdefrResetTemp = 0;//
 		cdefrStartTemp_H,     	cdefrStartTemp_L, 		//uint16_t		cdefrStartTemp = 0;		//08/FEB/2022		DS.W 1	;	equ	$0115	;	277 d	;tA_W
 		ctempRetCo_H,    		ctempRetCo_L, 	//uint16_t		cdefrStartTempAmb = 0;	//08/FEB/2022		DS.W 1	;	equ	$0117	;	279 d	;tB_W
@@ -727,16 +738,16 @@ enum parametrosCPlantilla  {
 		//;-------------------  Parámetros de Alarma  ------------------------------------
 		climevach_H,			climevach_L,			//uint16_t		climevach_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0121	;	289 d	;A0 - Temperatura sensor evaporador para cancelar deshielo
 		climambch_H,			climambch_L,			////uint16_t	climambch_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0123	;	291 d	;A1 - Temperatura sensor ambiente para cancelar deshielo
-		ctsumidero_H,			ctsumidero_L,			////uint16_t	ctsumidero_w = 0;	//08/FEB/2022		DS.W 1	;	equ	$0125	;	293 d	;A2 - Temperatura de sumidero
-		canticong_H,			canticong_L,			////uint16_t	canticong_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0127	;	295 d	;A3 - Temperatura de anticongelamiento del producto
+		choraAhOn_H,			choraAhOn_L,			////uint16_t	canticong_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0127	;	295 d	;A3 - Temperatura de anticongelamiento del producto
+		choraAhOff_H,			choraAhOff_L,			////uint16_t	ctsumidero_w = 0;	//08/FEB/2022		DS.W 1	;	equ	$0125	;	293 d	;A2 - Temperatura de sumidero
 		cpulldown_H,			cpulldown_L,			////uint16_t	cpulldown_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$0129	;	297 d	;A4 - Temperatura mínima para que se active el modo pulldown
 		climineav_H,			climineav_L,			////uint16_t	climineav_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$012B	;	299 d	;A5 - Limite inferior de alarma de temperatura evaporador
 		climsual_H,				climsual_L,				////uint16_t	climsual_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$012D	;	301 d	;A6 - Limite superior alarma de temperatura
 		climinal_H,				climinal_L,				////uint16_t	climinal_w = 0;		//08/FEB/2022		DS.W 1	;	equ	$012F	;	303 d	;A7 - Limite inferior alarma de temperatura
 		cdifTempAl_H,			cdifTempAl_L,			////uint16_t	cdifTempAl = 0;		//08/FEB/2022		DS.W 1	;	equ	$0131	;	305 d	;A8 -
 		cdifDefi_H,				cdifDefi_L,				////uint16_t	cdifDefi = 0;					//08/FEB/2022		DS.W 1	;	equ	$0133	;	307 d	;A9 -
-		ctempTC1_H,				ctempTC1_L,				////uint16_t	ctempTC1 = 0;					//08/FEB/2022		DS.W 1	;	equ	$0135	;	309 d	;AA -
-		ctempTC2_H,				ctempTC2_L,				////uint16_t	ctempTC2 = 0;					//08/FEB/2022		DS.W 1	;	equ	$0137	;	311 d	;AB -
+		cAA_b_H,				cAA_b_L,				////uint16_t	ctempTC1 = 0;					//08/FEB/2022		DS.W 1	;	equ	$0135	;	309 d	;AA -
+		cAB_b_H,				cAB_b_L,				////uint16_t	ctempTC2 = 0;					//08/FEB/2022		DS.W 1	;	equ	$0137	;	311 d	;AB -
 		cspdiur_BK_H,			cspdiur_BK_L,			////uint16_t	cspdiur_w_BK = 0;					//08/FEB/2022		DS.W 1	;	equ	$0139	;	313 d	;AC -
 		cdifdiur_BK_H,			cdifdiur_BK_L,			////uint16_t	cdifdiur_w_BK = 0;					//08/FEB/2022		DS.W 1	;	equ	$013B	;	315 d	;AD -
 		climsual_BK_H,			climsual_BK_L,			////uint16_t	climsual_w_BK = 0;					//08/FEB/2022		DS.W 1	;	equ	$013D	;	317 d	;AE -
@@ -775,11 +786,11 @@ enum parametrosCPlantilla  {
 		cnumSens,					//uint8_t		cnumSens = 0;				//08/FEB/2022		DS.B 1	;	equ	$0159	;	345 d	;C7 -
 		cnivDpyFail,				//uint8_t		cnivDpyFail = 0;			//08/FEB/2022		DS.B 1	;	equ	$015A	;	346 d	;C8 -
 		clogicos2,					//uint8_t		clogicos2 = 0;				//08/FEB/2022		DS.B 1	;	equ	$015B	;	347 d	;C9 -
-		cCA_b,						//uint8_t		cCA_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$015C	;	348 d	;CA -
-		cCB_b,						//uint8_t		cCB_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$015D	;	349 d	;CB -
+		cflagsBuzz,						//uint8_t		cCA_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$015C	;	348 d	;CA -
+		cflagsBuzz2,						//uint8_t		cCB_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$015D	;	349 d	;CB -
 		cCC_b,						//uint8_t		cCC_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$015E	;	350 d	;CC -
-		cD1_Msg1,					//uint8_t		cCD_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$015F	;	351 d	;CD -
-		cD2_Msg1,					//uint8_t		cCE_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$0160	;	352 d	;CE -
+		cCD_b,					//uint8_t		cCD_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$015F	;	351 d	;CD -
+		cCE_b,					//uint8_t		cCE_b = 0;					//08/FEB/2022		DS.B 1	;	equ	$0160	;	352 d	;CE -
 		cFlagBLE,					//uint8_t 		cFlagBLE					= 0	;//
 
 		//;-------------------  GRUPO DE PARÁMETROS F (Función)  -----------------------------------
@@ -791,10 +802,10 @@ enum parametrosCPlantilla  {
 		cmaxwork,					//uint8_t		cmaxwork = 0;				//08/FEB/2022		DS.B 1	;	equ	$0166	;	358 d	;F4 - Tiempo máximo de compresor encendido
 		cexhausted,					//uint8_t		cexhausted = 0;			//08/FEB/2022		DS.B 1	;	equ	$0167	;	359 d	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON
 		ccicloFd,					//uint8_t		ccicloFd = 0;				//08/FEB/2022		DS.B 1	;	equ	$0168	;	360 d	;F6 - Cicleo para ventilador en modo diurno
-		ctimeBreakDh,					//uint8_t		ccicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
+		ccicloFn,					//uint8_t		ccicloFn = 0;				//08/FEB/2022		DS.B 1	;	equ	$0169	;	361 d	;F7 - Cicleo para ventilador en modo nocturno
 		ctimedoor,					//uint8_t		ctimedoor = 0;				//08/FEB/2022		DS.B 1	;	equ	$016A	;	362 d	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno
-		cparamSr,					//uint8_t		cparamSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
-		cmargdes,					//uint8_t		cmargdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
+		ctOnVh,					//uint8_t		cparamSr = 0;				//08/FEB/2022		DS.B 1	;	equ	$016B	;	363 d	;F9 - Pre-salida del modo Nocturno
+		ctOffVh,					//uint8_t		cmargdes = 0;				//08/FEB/2022		DS.B 1	;	equ	$016C	;	364 d	;FA - Margen de descarte
 		ctimeluzoff,				//uint8_t		ctimeluzoff = 0;			//08/FEB/2022		DS.B 1	;	equ	$016D	;	365 d	;FB - Retardo apagado de pancarta al entrar a nocturno
 		cFC_b,						//uint8_t		cFC_b = 0;						//08/FEB/2022		DS.B 1	;	equ	$016E	;	366 d	;FC -
 		ctiempoAhorro1,				//uint8_t		ctiempoAhorro1 = 0;	//08/FEB/2022		DS.B	1	;	FD
@@ -829,6 +840,10 @@ enum parametrosCPlantilla  {
 };
 
 //;------------------------ bancomu Variables relacionadas con el proceso de COMUNICACIÓN
+extern uint8_t		T_Espera;					//08/FEB/2022		DS.B 1 ;Tiempo de espera para la comunicación
+
+
+//;------------------------ bancomu Variables relacionadas con el proceso de COMUNICACIÓN
 extern uint8_t		Cnt_EspComu;			//08/FEB/2022		DS.B 1 ;Contador para Tx Rx un byte cada 2ms
 
 
@@ -837,9 +852,10 @@ extern uint8_t		Cnt_EspComu;			//08/FEB/2022		DS.B 1 ;Contador para Tx Rx un byt
 extern uint8_t		Display_1;				//08/FEB/2022		DS.B 1 ;1 1B - Desplegado para el display 1 en 7 segmentos y punto
 extern uint8_t		Display_2;				//08/FEB/2022		DS.B 1 ;2 1B - Desplegado para el display 2 en 7 segmentos y punto
 extern _Bool 		Ind_Par[8];				//08/FEB/2022		DS.B 1 ;3 1B - 2 Indicadores LED y un bit de control de parpadeo
-extern uint8_t		dms_extra;				//08/FEB/2022		DS.B 1 ;4 1B - 2 Indicadores LED y un bit de control de parpadeo
+extern _Bool 		dms_extra[8];				//08/FEB/2022		DS.B 1 ;4 1B - 2 Indicadores LED y un bit de control de parpadeo
 
-//extern uint8_t		Botones_T;				//08/FEB/2022		DS.B 1 ;7 1B - 4 botones touch e interruptor de la puerta
+//;Datos que son Recibidos de TREFTSAA a TREFPT44
+//;¡¡¡¡¡¡¡¡¡¡¡¡¡NO MODIFICAR EL ORDEN!!!!!!!!!!!!!!
 extern _Bool Botones_T[8];
 
 // LN_833:	#pragma space extern [] @eeprom @near
@@ -856,7 +872,7 @@ enum parametrosEEplantilla  {
 	eeosnoct_H,				eeosnoct_L,						//09/FEB/2022		DC.W	{-5};{0}	;	16395 d	400B h	;t5 - Offset para el modo nocturno	0 ° C
 	eerngmin_H,				eerngmin_L,						//09/FEB/2022		DC.W	{-150}	;	16397 d	400D h	;t6 - Rango mínimo para ajuste del set point	-15 ° C
 	eerngmax_H,				eerngmax_L,						//09/FEB/2022		DC.W	{150}	;	16399 d	400F h	;t7 - Rango máximo para ajuste del set point	15 ° C
-	eet8_H,					eet8_L,							//
+	eealarmaRetCo_H,		eealarmaRetCo_L,							//
 	eedefrResetTemp_H,		eedefrResetTemp_L,				//;t9 - t9	Defrost reset temperature 3.0°C
 	eedefrStartTemp_H,		eedefrStartTemp_L,				//; tA	Defrost start temperature -10.0 ºC
 	eetempRetCo_H,			eetempRetCo_L,						//09/FEB/2022		DC.W	{0}	;	16407 d	4017 h	;tB_W
@@ -869,16 +885,16 @@ enum parametrosEEplantilla  {
 	//;-------------------  Parámetros de Alarma  ------------------------------------
 	eelimevach_H,		eelimevach_L,					//09/FEB/2022		DC.W	{150}	;	16417 d	4021 h	;A0 - Temperatura sensor evaporador para cancelar deshielo	15 ° C
 	eelimambch_H,		eelimambch_L,					//09/FEB/2022		DC.W	{300}	;	16419 d	4023 h	;A1 - Temperatura sensor ambiente para cancelar deshielo	30 ° C
-	eetsumidero_H,		eetsumidero_L,					//09/FEB/2022		DC.W	{300}	;	16421 d	4025 h	;A2 - Temperatura de sumidero	30 ° C
-	eeanticong_H,		eeanticong_L,					//09/FEB/2022		DC.W	{-310}	;	16423 d	4027 h	;A3 - Temperatura de anticongelamiento del producto	-31 ° C
+	eehoraAhOn_H,		eehoraAhOn_L,					//09/FEB/2022		DC.W	{-310}	;	16423 d	4027 h	;A3 - Temperatura de anticongelamiento del producto	-31 ° C
+	eehoraAhOff_H,		eehoraAhOff_L,					//09/FEB/2022		DC.W	{300}	;	16421 d	4025 h	;A2 - Temperatura de sumidero	30 ° C
 	eepulldown_H,		eepulldown_L,					//09/FEB/2022		DC.W	{120}	;	16425 d	4029 h	;A4 - Temperatura mínima para que se active el modo pulldown	12 ° C
 	eelimineav_H,		eelimineav_L,					//09/FEB/2022		DC.W	{-300}	;	16427 d	402B h	;A5 - Limite inferior de alarma de temperatura evaporador	-30 ° C
 	eelimsual_H,		eelimsual_L,					//09/FEB/2022		DC.W	{120}	;	16429 d	402D h	;A6 - Limite superior alarma de temperatura	12 ° C
 	eeliminal_H,		eeliminal_L,					//09/FEB/2022		DC.W	{-120}	;	16431 d	402F h	;A7 - Limite inferior alarma de temperatura	-12 ° C
 	eedifTempAl_H,		eedifTempAl_L,					//09/FEB/2022		DC.W	{0}	;	16433 d	4031 h	;A8 -
 	eedifDefi_H,		eedifDefi_L,					//09/FEB/2022		DC.W	{0}	;	16435 d	4033 h	;A9 -	diferencial de deficiencia (2.0°C)
-	eetempTC1_H,		eetempTC1_L,					//09/FEB/2022		DC.W	{0}	;	16437 d	4035 h	;AA -
-	eetempTC2_H,		eetempTC2_L,					//09/FEB/2022		DC.W	{0}	;	16439 d	4037 h	;AB -
+	eeAA_b_H,			eeAA_b_L,					//09/FEB/2022		DC.W	{0}	;	16437 d	4035 h	;AA -
+	eeAB_b_H,			eeAB_b_L,					//09/FEB/2022		DC.W	{0}	;	16439 d	4037 h	;AB -
 	eespdiur_BK_H,		eespdiur_BK_L,					//09/FEB/2022		DC.W	{0}	;	16441 d	4039 h	;AC -
 	eedifdiur_BK_H,		eedifdiur_BK_L,					//09/FEB/2022		DC.W	{0}	;	16443 d	403B h	;AD -
 	eelimsual_BK_H,		eelimsual_BK_L,					//09/FEB/2022		DC.W	{0}	;	16445 d	403D h	;AE -
@@ -917,11 +933,11 @@ enum parametrosEEplantilla  {
 	eenumSens,				//09/FEB/2022		DC.B	0	;	16473 d	4059 h	;C7 - Número de sensores con los que trabajará el equipo
 	eenivDpyFail,			//09/FEB/2022		DC.B	0	;	16474 d	405A h	;C8 -
 	eelogicos2,				//09/FEB/2022		DC.B	0	;	16475 d	405B h	;C9 -
-	eeCA_b,					//09/FEB/2022		DC.B	0	;	16476 d	405C h	;CA -
-	eeCB_b,					//09/FEB/2022		DC.B	0	;	16477 d	405D h	;CB -
+	eeflagsBuzz,					//09/FEB/2022		DC.B	0	;	16476 d	405C h	;CA -
+	eeflagsBuzz2,					//09/FEB/2022		DC.B	0	;	16477 d	405D h	;CB -
 	eeCC_b,					//09/FEB/2022		DC.B	0	;	16478 d	405E h	;CC -
-	eeD1_Msg1,				//09/FEB/2022		DC.B	0	;	16479 d	405F h	;CD -	"U"
-	eeD2_Msg1,				//09/FEB/2022		DC.B	0	;	16480 d	4060 h	;CE -	"A"
+	eeCD_b,				//09/FEB/2022		DC.B	0	;	16479 d	405F h	;CD -	"U"
+	eeCE_b,				//09/FEB/2022		DC.B	0	;	16480 d	4060 h	;CE -	"A"
 	eeFlagBLE,				//
 
 	//;-------------------  GRUPO DE PARÁMETROS F (Función)  -----------------------------------
@@ -933,10 +949,10 @@ enum parametrosEEplantilla  {
 	eemaxwork,				//09/FEB/2022			 	DC.B	00	;	16486 d	4066 h	;F4 - Tiempo máximo de compresor encendido	Indefinido
 	eeexhausted,			//09/FEB/2022		  	DC.B	250	;	16487 d	4067 h	;F5 - Tiempo compresor OFF si cumplió máx de compresor ON	25 horas
 	eecicloFd,				//09/FEB/2022				DC.B	33	;	16488 d	4068 h	;F6 - Cicleo para ventilador en modo diurno	3 minutos ON. 3 minutos OFF
-	eetimeBreakDh,				//09/FEB/2022			 	DC.B	33	;	16489 d	4069 h	;F7 - Cicleo para ventilador en modo nocturno	3 minutos ON. 3 minutos OFF
+	eecicloFn,				//09/FEB/2022			 	DC.B	33	;	16489 d	4069 h	;F7 - Cicleo para ventilador en modo nocturno	3 minutos ON. 3 minutos OFF
 	eetimedoor,				//09/FEB/2022				DC.B	20	;	16490 d	406A h	;F8 - Tiempo mínimo de puerta cerrada para entrar a nocturno	2 horas
-	eeparamSr,				//09/FEB/2022			 	DC.B	20	;	16491 d	406B h	;F9 - Pre-salida del modo Nocturno	2 horas
-	eemargdes,				//09/FEB/2022			 	DC.B	35	;	16492 d	406C h	;FA - Margen de descarte 	3.5 horas
+	eetOnVh,				//09/FEB/2022			 	DC.B	20	;	16491 d	406B h	;F9 - Pre-salida del modo Nocturno	2 horas
+	eetOffVh,				//09/FEB/2022			 	DC.B	35	;	16492 d	406C h	;FA - Margen de descarte 	3.5 horas
 	eetimeluzoff,			//09/FEB/2022				DC.B	0	;	16493 d	406D h	;FB - Retardo apagado de pancarta al entrar a nocturno	0 horas
 	eeFC_b,					//09/FEB/2022			  DC.B	0	;	16494 d	406E h	;FC -
 	eetiempoAhorro1,		//09/FEB/2022		  	DC.B	20	;	FD 	2.0 horas
@@ -1428,7 +1444,7 @@ extern _Bool  	flagsBattery	[8];
 extern uint8_t cntHoldP;
 extern uint8_t typeClock;
 
-extern uint8_t 	fCOM;
+extern _Bool 	fcom[8];
 extern uint16_t timeClearComst;
 extern uint16_t timeClearComst1;     		//RM_20240425 Segundo timer para estado de comunicación MODBUS
 
@@ -1495,6 +1511,27 @@ extern uint8_t   t_filtro_flanco;       //RM_20240530 Para agregar el filtro de 
 extern uint8_t timeBCD_sec_ANT;
 extern uint8_t tiempoPrCargas;      //RM_20240819 Para el comando de prueba de cargas
 
+//;Banderas para activar buzzer por alarma (Registro flagsBuzz)
+#define	bz_h1		0			//bz_h1:		equ		 0//;		Activa Buzzer para alarma H1
+#define	bz_h2		1			//bz_h2:		equ		 1//;		Activa Buzzer para alarma H2
+#define	bz_h3		2			//bz_h3:		equ		 2//;		Activa Buzzer para alarma H3
+#define	bz_t		3			//bz_t:			equ		 3//;		Activa Buzzer para alarma t
+#define	bz_f		4			//bz_f:			equ		 4//;		Activa Buzzer para alarma F
+#define	bz_p		5			//bz_p:			equ		 5//;		Activa Buzzer para alarma P
+#define	bz_a		6			//bz_a:			equ		 6//;		Activa Buzzer para alarma A
+#define	bz_c		7			//bz_c:			equ		 7//;		Activa Buzzer para alarma C
+
+//;Banderas para activar buzzer por alarma (Registro flagsBuzz2)
+#define	bz_u		0			//bz_u:			equ		 0//;		Activa Buzzer para alarma U
+#define	bz_mu		1			//bz_mu:		equ		 1//;		Activa Buzzer para alarma -U
+#define	bz_h4		2			//bz_h4:		equ		 2//;		Activa Buzzer para alarma H4 sensor 4
+
+#define	bz_in		5			//bz_in:		equ		 5//;		Activa Buzzer para alarma In falla de inyeccion
+#define	bz_co		6			//bz_co:		equ		 6//;		Activa Buzzer para alarma CO falla de compresor por corriente
+#define	bz_ba		7			//bz_ba:		equ		 7//;		Activa Buzzer para alarma Bateria
+
+#define f_buzzDpy	0			//;		Bandera para indicar el estado del buzzer al display
+
 
 extern uint16_t timeDpyS3;			//@near uint16_t timeDpyS3		= 0;
 
@@ -1524,10 +1561,10 @@ extern uint8_t		countResetI2C;
 #define sizePx		5
 
 extern GPIO_TypeDef * PFULLDEF_Px_PORT[5];
-extern uint8_t PFULLDEF_Px_PIN[5];
+extern uint16_t PFULLDEF_Px_PIN[5];
 
 extern GPIO_TypeDef * PFULLDEF_MPx_PORT[4];
-extern uint8_t PFULLDEF_MPx_PIN[4];
+extern uint16_t PFULLDEF_MPx_PIN[4];
 
 extern _Bool	FlagPuertaX [sizeMPx*sizePx]; // FlagPuertaX [Numero de Puertos MP][Numero de Puertos P] CGM 13/01/2025
 /*					   __
@@ -1560,3 +1597,6 @@ extern void  grabacion_exitosa_handshake (void);
 extern uint16_t   timeoutRXFw;
 extern void reinicio_valores_act_fw(void);
 extern void clean_logger(void);
+
+
+
